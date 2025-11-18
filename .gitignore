@@ -1,0 +1,8 @@
+config.py
+data/*.db
+*.sqlite
+*.sqlite3
+utils/*.db
+__pycache__/
+*.pyc
+.idea/
