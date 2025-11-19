@@ -25,6 +25,7 @@ class XPSystem(commands.Cog):
     # ------------------------------
     @commands.Cog.listener()
     async def on_message(self, message):
+
         if message.author.bot:
             return
 
@@ -108,9 +109,5 @@ class XPSystem(commands.Cog):
             color=discord.Color.gold()
         )
 
-        await interaction.response.send_message(embed=embed)
-
-
-# NECESSÁRIO PARA COG FUNCIONAR
 async def setup(bot):
     await bot.add_cog(XPSystem(bot))
