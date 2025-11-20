@@ -1,23 +1,28 @@
 import discord
 from discord.ext import commands
-from discord import ui
 from discord import app_commands
 from pymongo import MongoClient
 import random
 import time
-from config import MONGO_URL  # ← Certifique-se que esse valor está no config.py
+import os
+
 
 class XP(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+        # --- Pega a URL do Mongo do ambiente (Railway ou .env) ---
+        MONGO_URL = os.getenv("MONGO_URL")
+        if not MONGO_URL:
+            raise ValueError("❌ ERRO: Variável de ambiente MONGO_URL não encontrada!")
 
         # Conexão com MongoDB
         self.client = MongoClient(MONGO_URL)
         self.db = self.client["ralsei_bot"]
         self.col = self.db["users"]
 
-        # Criar índice para melhorar o ranking (opcional, mas recomendado)
-        self.col.create_index("users")
+        # Index para ranking (sem erro)
+        self.col.create_index("xp")
 
         print("Conectado ao MongoDB com sucesso!")
 
@@ -44,7 +49,7 @@ class XP(commands.Cog):
             })
             user = {"xp": 0, "last_xp": 0}
 
-        # Cooldown de 10 segundos
+        # Cooldown de 10s
         if now - user["last_xp"] >= 10:
             gained = random.randint(5, 15)
 
@@ -56,11 +61,10 @@ class XP(commands.Cog):
                 }}
             )
 
-        # Permitir comandos funcionarem
         await self.bot.process_commands(message)
 
     # ------------------------------
-    # COMANDO /xp
+    # /xp — mostra XP do usuário
     # ------------------------------
     @app_commands.command(name="xp", description="Mostra seu XP atual e seu rank.")
     async def xp_command(self, interaction: discord.Interaction, user: discord.Member = None):
@@ -70,12 +74,10 @@ class XP(commands.Cog):
 
         if not data:
             return await interaction.response.send_message(
-                f"{user.mention} ainda não possui XP registrado no meu Banco de Dados."
+                f"{user.mention} ainda não possui XP registrado."
             )
 
         xp_value = data["xp"]
-
-        # Calcula rank contando quem tem mais XP
         rank = self.col.count_documents({"xp": {"$gt": xp_value}}) + 1
 
         await interaction.response.send_message(
@@ -85,12 +87,11 @@ class XP(commands.Cog):
         )
 
     # ------------------------------
-    # COMANDO /rank — top 10
+    # /rank — top 10
     # ------------------------------
     @app_commands.command(name="rank", description="Mostra o ranking dos usuários com mais XP.")
     async def rank_command(self, interaction: discord.Interaction):
-        top = self.col.find().sort("xp", -1).limit(10)
-        top = list(top)
+        top = list(self.col.find().sort("xp", -1).limit(10))
 
         if not top:
             return await interaction.response.send_message("Ainda não há usuários com XP registrado.")
@@ -98,20 +99,20 @@ class XP(commands.Cog):
         description = ""
 
         for pos, user in enumerate(top, start=1):
-            user_id = user["_id"]
+            uid = user["_id"]
 
             # Primeiro tenta pegar pelo servidor
-            member = interaction.guild.get_member(user_id)
+            member = interaction.guild.get_member(uid)
 
             if member:
                 name = member.display_name
             else:
+                # Busca o nome mesmo se o user saiu do servidor
                 try:
-                    # Busca o usuário via API mesmo fora do servidor
-                    fetched_user = await interaction.client.fetch_user(user_id)
-                    name = fetched_user.name
+                    fetched = await interaction.client.fetch_user(uid)
+                    name = fetched.name
                 except:
-                    name = f"Usuário desconhecido ({user_id})"
+                    name = f"Usuário desconhecido ({uid})"
 
             description += f"**#{pos}** — {name} — **{user['xp']} XP**\n"
 
@@ -122,8 +123,6 @@ class XP(commands.Cog):
         )
         
         await interaction.response.send_message(embed=embed)
-        
-# -------------------------------------
 
 
 async def setup(bot):

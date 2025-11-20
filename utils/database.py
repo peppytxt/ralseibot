@@ -1,11 +1,14 @@
 # =====================
 # === File: utils/database.py
 # =====================
-from pymongo import MongoClient
 import os
+from pymongo import MongoClient
+from dotenv import load_dotenv
 
-mongo_url = os.getenv("MONGO_URL")
-client = MongoClient(mongo_url)
+load_dotenv()
 
-db = client["ralsei_bot"]   # nome do banco
-users = db["users"]         # coleção (tabela)
+MONGO_URL = os.getenv("MONGO_URL")
+
+client = MongoClient(MONGO_URL)
+db = client["ralseibot"]
+
