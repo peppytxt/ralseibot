@@ -6,9 +6,6 @@ utils/*.db
 __pycache__/
 *.pyc
 .idea/
-<<<<<<< HEAD
 .env
-=======
 .venv
->>>>>>> 12010c046fcfe41a40ed3b8e06359cb888a5be3d
 migrate_sqlite_to_mongo.py

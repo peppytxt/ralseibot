@@ -1,12 +1,13 @@
 import discord
 from discord.ext import commands
+from discord import ui
 from discord import app_commands
 from pymongo import MongoClient
 import random
 import time
 from config import MONGO_URL  # ← Certifique-se que esse valor está no config.py
 
-class XPSystem(commands.Cog):
+class XP(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -69,7 +70,7 @@ class XPSystem(commands.Cog):
 
         if not data:
             return await interaction.response.send_message(
-                f"{user.mention} ainda não possui XP registrado."
+                f"{user.mention} ainda não possui XP registrado no meu Banco de Dados."
             )
 
         xp_value = data["xp"]
@@ -89,8 +90,7 @@ class XPSystem(commands.Cog):
     @app_commands.command(name="rank", description="Mostra o ranking dos usuários com mais XP.")
     async def rank_command(self, interaction: discord.Interaction):
         top = self.col.find().sort("xp", -1).limit(10)
-
-        top = list(top)  # transformar em lista
+        top = list(top)
 
         if not top:
             return await interaction.response.send_message("Ainda não há usuários com XP registrado.")
@@ -98,8 +98,20 @@ class XPSystem(commands.Cog):
         description = ""
 
         for pos, user in enumerate(top, start=1):
-            member = interaction.guild.get_member(user["_id"])
-            name = member.display_name if member else f"Usuário desconhecido ({user['_id']})"
+            user_id = user["_id"]
+
+            # Primeiro tenta pegar pelo servidor
+            member = interaction.guild.get_member(user_id)
+
+            if member:
+                name = member.display_name
+            else:
+                try:
+                    # Busca o usuário via API mesmo fora do servidor
+                    fetched_user = await interaction.client.fetch_user(user_id)
+                    name = fetched_user.name
+                except:
+                    name = f"Usuário desconhecido ({user_id})"
 
             description += f"**#{pos}** — {name} — **{user['xp']} XP**\n"
 
@@ -108,6 +120,11 @@ class XPSystem(commands.Cog):
             description=description,
             color=discord.Color.gold()
         )
+        
+        await interaction.response.send_message(embed=embed)
+        
+# -------------------------------------
+
 
 async def setup(bot):
-    await bot.add_cog(XPSystem(bot))
+    await bot.add_cog(XP(bot))
