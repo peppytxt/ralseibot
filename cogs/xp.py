@@ -81,9 +81,9 @@ class XP(commands.Cog):
     # ------------------------------
     # /xp — mostra XP do usuário
     # ------------------------------
-    @app_commands.command(name="xp", description="Mostra seu XP atual e seu rank.")
+    @app_commands.command(name="xp", description="Mostra seu XP global e do servidor.")
     async def xp_command(self, interaction: discord.Interaction, user: discord.Member = None):
-        user = user or interaction
+        user = user or interaction.user
         guild_id = str(interaction.guild.id)
 
         data = self.col.find_one({"_id": user.id})
@@ -92,7 +92,7 @@ class XP(commands.Cog):
             return await interaction.response.send_message(
                 f"{user.mention} ainda não possui XP registrado."
             )
-            
+
         ### ===== GLOBAL =====
         xp_global = data.get("xp_global", 0)
         rank_global = self.col.count_documents({"xp_global": {"$gt": xp_global}}) + 1
@@ -106,14 +106,25 @@ class XP(commands.Cog):
             f"xp_local.{guild_id}.xp": {"$gt": xp_local}
         }) + 1
 
-
-        await interaction.response.send_message(
-            f"🏅 **{user.display_name}**\n"
-            f"🔸 XP Global: **{xp_global}**\n"
-            f"🔸 Rank Global: **#{rank_global}**"
-            f"🔸 XP Local: **{xp_local}**\n"
-            f"🔸 Rank Local: **#{rank_local}**"
+        embed = discord.Embed(
+            title=f"XP — {user.display_name}",
+            color=discord.Color.blue()
         )
+
+        embed.add_field(
+            name="🌍 XP Global",
+            value=f"XP: **{xp_global}**\nRank global: **#{rank_global}**",
+            inline=False
+        )
+
+        embed.add_field(
+            name="🏠 XP Local (do servidor)",
+            value=f"XP: **{xp_local}**\nRank local: **#{rank_local}**",
+            inline=False
+        )
+
+        await interaction.response.send_message(embed=embed)
+
 
     # ------------------------------
     # /rank — top 10
