@@ -172,9 +172,9 @@ class XP(commands.Cog):
     # ------------------------------
     # /rank — top 10
     # ------------------------------
-    @app_commands.command(name="rank", description="Mostra o ranking dos usuários com mais XP.")
+    @app_commands.command(name="rank", description="Mostra o ranking global de XP.")
     async def rank_command(self, interaction: discord.Interaction):
-        top = list(self.col.find().sort("xp", -1).limit(10))
+        top = list(self.col.find().sort("xp_global", -1).limit(10))
 
         if not top:
             return await interaction.response.send_message("Ainda não há usuários com XP registrado.")
@@ -184,28 +184,30 @@ class XP(commands.Cog):
         for pos, user in enumerate(top, start=1):
             uid = user["_id"]
 
-            # Primeiro tenta pegar pelo servidor
+            # Pega nome
             member = interaction.guild.get_member(uid)
 
             if member:
                 name = member.display_name
             else:
-                # Busca o nome mesmo se o user saiu do servidor
                 try:
                     fetched = await interaction.client.fetch_user(uid)
                     name = fetched.name
                 except:
                     name = f"Usuário desconhecido ({uid})"
 
-            description += f"**#{pos}** — {name} — **{user['xp']} XP**\n"
+            xp_global = user.get("xp_global", 0)
+
+            description += f"**#{pos}** — {name} — **{xp_global} XP**\n"
 
         embed = discord.Embed(
-            title="🏆 Ranking de XP — Top 10",
+            title="🌍 Ranking Global — Top 10",
             description=description,
             color=discord.Color.gold()
         )
         
         await interaction.response.send_message(embed=embed)
+
 
 
 async def setup(bot):
