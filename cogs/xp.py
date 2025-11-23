@@ -260,4 +260,3 @@ class XP(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(XP(bot))
-    bot.tree.add_command(XP.rank_group)
