@@ -2,6 +2,7 @@ import os
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+from pymongo import MongoClient
 from cogs.moeda import setup as economia_setup
 
 load_dotenv()
@@ -9,6 +10,7 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 COMMAND_PREFIX = os.getenv("COMMAND_PREFIX", ".")
 DATA_DIR = os.getenv("DATA_DIR", "data")
+MONGO_URL = os.getenv("MONGO_URL")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -19,6 +21,20 @@ bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)
 # Criar pasta data
 os.makedirs(DATA_DIR, exist_ok=True)
 
+# ================================
+#      MongoDB
+# ================================
+try:
+    mongo_client = MongoClient(MONGO_URL)
+    bot.db = mongo_client["ralsei_bot"]
+    print("MongoDB conectado com sucesso!")
+except Exception as e:
+    print("Erro ao conectar no MongoDB:", e)
+    bot.db = None
+
+# ================================
+#       📌 Lista de COGS
+# ================================
 COGS = [
     "cogs.xp",
     "cogs.profile",
@@ -35,6 +51,9 @@ async def load_all_extensions():
         except Exception as e:
             print(f"Falha ao carregar {cog}: {e}")
 
+# ================================
+#         EVENTOS
+# ================================
 @bot.event
 async def on_ready():
     print(f"Bot online como {bot.user} :3 (ID: {bot.user.id})")
@@ -61,13 +80,13 @@ async def on_message(message):
     if message.author.bot:
         return
     await bot.process_commands(message)
-    
+
 @bot.event
 async def on_command_error(ctx, error):
     if hasattr(ctx.cog, "on_command_error"):
-        return  # evita duplicar
+        return  # evita duplicação
+    print("Erro tratado (main)", error)
 
-    print("Erro tratado (main)")
 
 if __name__ == "__main__":
     bot.run(TOKEN)
