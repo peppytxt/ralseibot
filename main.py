@@ -14,7 +14,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)
+bot = commands.Bot(command_prefix=None, intents=intents)
 
 # Criar pasta data
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -61,6 +61,13 @@ async def on_message(message):
     if message.author.bot:
         return
     await bot.process_commands(message)
+    
+@bot.event
+async def on_command_error(ctx, error):
+    if hasattr(ctx.cog, "on_command_error"):
+        return  # evita duplicar
+
+    print("Erro tratado (main)")
 
 if __name__ == "__main__":
     bot.run(TOKEN)
