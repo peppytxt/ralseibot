@@ -51,8 +51,8 @@ class Profile(commands.Cog):
         border_mask = Image.new("L", (border_size, border_size), 0)
         ImageDraw.Draw(border_mask).ellipse((0, 0, border_size, border_size), fill=255)
 
-        avatar_x = 40
-        avatar_y = 40
+        avatar_x = 50
+        avatar_y = 50
 
         img.paste(border, (avatar_x, avatar_y), border_mask)
         img.paste(avatar, (avatar_x + 10, avatar_y + 10), mask)
