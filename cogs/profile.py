@@ -22,4 +22,5 @@ class Profile(commands.Cog):
         await ctx.send(file=discord.File(buffer, filename="perfil.png"))
         
 async def setup(bot):
+    print("CARREGANDO PROFILE.PY!")
     await bot.add_cog(Profile(bot))
