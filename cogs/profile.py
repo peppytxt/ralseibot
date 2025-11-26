@@ -20,22 +20,35 @@ class Profile(commands.Cog):
     async def perfil(self, interaction: discord.Interaction, member: discord.Member = None):
         member = member or interaction.user
 
-        data = self.col.find_one({"_id": interaction.user.id})
+        data = self.bot.db.xp.find_one({"_id": member.id})
         if not data:
             return await interaction.response.send_message("Você ainda não possui XP registrado.")
 
+        img = Image.new("RGBA", (900, 550), (240, 240, 240, 255))
+        draw = ImageDraw.Draw(img)
+        
+        font_big = ImageFont.truetype("arial.ttf", 32)
+        font_small = ImageFont.truetype("arial.ttf", 26)
+
+        header = Image.new("RGBA", (900, 250), (170, 110, 255, 255))
+        img.paste(header, (0, 0))
+        
         avatar = await self.fetch_avatar(interaction.user)
         avatar = avatar.resize((220, 220))
-
-        img = Image.new("RGBA", (600, 300), (45, 45, 45, 255))
-        draw = ImageDraw.Draw(img)
         
         draw.rectangle([(0, 280), (900, 400)], fill=(44, 44, 44))
         
         mask = Image.new("L", (220, 220), 0)
         mask_draw = ImageDraw.Draw(mask)
         mask_draw.ellipse((0, 0, 220, 220), fill=255)
-        img.paste(avatar, (40, 90), mask)
+
+        border = Image.new("RGBA", (200, 200), (255, 255, 255, 255))
+        border_mask = Image.new("L", (200, 200), 0)
+        draw_bmask = ImageDraw.Draw(border_mask)
+        draw_bmask.ellipse((0, 0, 200, 200), fill=255)
+
+        img.paste(border, (40, 70), border_mask)
+        img.paste(avatar, (50, 80), mask)
 
         buffer = BytesIO()
         img.save(buffer, format="PNG")
