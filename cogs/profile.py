@@ -8,6 +8,7 @@ from io import BytesIO
 class Profile(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.col = bot.get_cog("XP").col
         
     async def fetch_avatar(self, user):
         url = user.avatar.url if user.avatar else user.default_avatar.url
@@ -28,6 +29,8 @@ class Profile(commands.Cog):
 
         img = Image.new("RGBA", (600, 300), (45, 45, 45, 255))
         draw = ImageDraw.Draw(img)
+        
+        draw.rectangle([(0, 280), (900, 400)], fill=(44, 44, 44))
         
         mask = Image.new("L", (220, 220), 0)
         mask_draw = ImageDraw.Draw(mask)
