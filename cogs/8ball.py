@@ -12,7 +12,7 @@ class ball8(commands.Cog):
     async def bola8(self, interaction: discord.Interaction, message: str):
         msg = ["Sim", "Não", "Talvez", "Provavelmente sim", "Provavelmente não", "Tente novamente...", "Quem sabe...", "Fake", "Verídico", "Sou inteligência artificial e não bola de cristal, bobão.", "Com certeza não", "Trouxa", "Não quero nem saber", "Não sei e nem quero saber", "Me dá robux que te conto", "Por você sim 👉👈😳", "fds", "Pelo meus cálculos sim", "Pelos meus cálculos não", "Preciso mesmo responder isso?", "Detergente", "Óbvio", "Nunca", "Jamais"]
         msgrandom = random.choice(msg)
-        await interaction.response.send_message(f"{interaction.guild.name}: {message}\n🎱 **{msgrandom}**")
+        await interaction.response.send_message(f"{interaction.name}: {message}\n🎱 **{msgrandom}**")
         
 async def setup(bot):
     await bot.add_cog(ball8(bot))
