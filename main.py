@@ -39,7 +39,7 @@ COGS = [
     "cogs.xp",
     "cogs.profile",
     "cogs.8ball",
-    "cogs.avatar"
+    "cogs.avatar",
     "cogs.tickets",
     "cogs.fun",
     "cogs.help_menu",
