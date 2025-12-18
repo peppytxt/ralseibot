@@ -42,7 +42,7 @@ class Economy(commands.Cog):
         )
 
         await interaction.response.send_message(
-            f"💰 Você coletou **{coins} moedas** hoje!"
+            f"<:ralsei_love:1410029625358417952> Você coletou **{coins} ralcoins!** hoje!"
         )
 
 
@@ -55,7 +55,7 @@ class Economy(commands.Cog):
         coins = data.get("coins", 0) if data else 0
 
         await interaction.response.send_message(
-            f"💳 **Saldo de {user.display_name}:** {coins} moedas"
+            f"💳 **Saldo de {user.display_name}:** {coins} ralcoins!"
         )
 
 async def setup(bot):
