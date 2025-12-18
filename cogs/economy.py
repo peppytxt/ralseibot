@@ -30,7 +30,7 @@ class Economy(commands.Cog):
                     "❌ Você já coletou seu daily hoje!", ephemeral=True
                 )
 
-        coins = random.randint(100, 300)
+        coins = random.randint(1000, 3000)
 
         self.col.update_one(
             {"_id": user_id},
