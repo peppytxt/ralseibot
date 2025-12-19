@@ -16,16 +16,22 @@ class RPSView(discord.ui.View):
         if not game:
             return
 
+        channel = game.get("channel")
+        if not channel:
+            del self.cog.ongoing_games[self.game_id]
+            return
+
         userA = game["userA"]
         userB = game["userB"]
 
-        await game["channel"].send(
+        await channel.send(
             f"⏰ **Tempo esgotado!**\n"
             f"{userA.mention} ou {userB.mention} não respondeu a tempo.\n"
             "A partida foi cancelada."
         )
 
         del self.cog.ongoing_games[self.game_id]
+
 
 class RockPaperScissors(commands.Cog):
     def __init__(self, bot):
@@ -80,7 +86,8 @@ class RockPaperScissors(commands.Cog):
             "B": None,
             "userA": interaction.user,
             "userB": oponente,
-            "amount": quantidade
+            "amount": quantidade,
+            "channel": interaction.channel 
         }
 
         view = RPSView(self, game_id)
@@ -178,12 +185,12 @@ class RockPaperScissors(commands.Cog):
             if winner is None:
                 text += "➡️ **Empate!** Ninguém perde ralcoins!"
             elif winner == "A":
-                text += (f"🎉 {userA.mention} **venceu** e ganhou **{reward} ralcoins**!\n🏦 Taxa do bot (0.5%): **{tax} ralcoins**\n")
+                text += (f"🎉 {userA.mention} **venceu** e ganhou **{reward} ralcoins**!\n🏦 Taxa do bot (5%): **{tax} ralcoins**\n")
                 db.update_one({"_id": userA.id}, {"$inc": {"coins": reward}})
                 db.update_one({"_id": userB.id}, {"$inc": {"coins": -amount}})
 
             else:
-                text += (f"🎉 {userB.mention} **venceu** e ganhou **{reward} ralcoins**!\n🏦 Taxa do bot (0.5%): **{tax} ralcoins**\n")
+                text += (f"🎉 {userB.mention} **venceu** e ganhou **{reward} ralcoins**!\n🏦 Taxa do bot (5%): **{tax} ralcoins**\n")
                 db.update_one({"_id": userB.id}, {"$inc": {"coins": reward}})
                 db.update_one({"_id": userA.id}, {"$inc": {"coins": -amount}})
 
