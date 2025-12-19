@@ -57,6 +57,50 @@ class Economy(commands.Cog):
         await interaction.response.send_message(
             f"💳 **Saldo de {user.display_name}:** {coins} ralcoins!"
         )
+        
+        # ------------------ RANK GLOBAL ------------------
+    @app_commands.command(name="rankcoins", description="Top 10 mais ricos do bot")
+    async def rank(self, interaction: discord.Interaction):
+
+        # busca top 10 ordenado por coins
+        top = list(
+            self.col.find(
+                {"coins": {"$exists": True}},
+                {"coins": 1}
+            ).sort("coins", -1).limit(10)
+        )
+
+        if not top:
+            return await interaction.response.send_message(
+                "Ainda não há dados de economia 😢"
+            )
+
+        description = ""
+        for i, user_data in enumerate(top, start=1):
+            user_id = user_data["_id"]
+            coins = user_data.get("coins", 0)
+
+            user = self.bot.get_user(user_id)
+            name = user.display_name if user else f"Usuário {user_id}"
+
+            medal = ""
+            if i == 1:
+                medal = "🥇"
+            elif i == 2:
+                medal = "🥈"
+            elif i == 3:
+                medal = "🥉"
+
+            description += f"**{i}. {medal} {name}** — {coins} ralcoins\n"
+
+        embed = discord.Embed(
+            title="🏆 Rank Global de Ralcoins",
+            description=description,
+            color=discord.Color.gold()
+        )
+
+        await interaction.response.send_message(embed=embed)
+
 
 async def setup(bot):
     await bot.add_cog(Economy(bot))
