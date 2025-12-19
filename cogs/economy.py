@@ -64,7 +64,7 @@ class Economy(commands.Cog):
             name = user.display_name
         elif user.bot:
             user_id = BOT_ECONOMY_ID
-            name = "Banco do Ralsei"
+            name = "🏦 Banco do Ralsei"
         else:
             user_id = user.id
             name = user.display_name
@@ -72,8 +72,13 @@ class Economy(commands.Cog):
         data = self.col.find_one({"_id": user_id}) or {}
         coins = data.get("coins", 0)
 
+        rank = self.col.count_documents({
+            "coins": {"$gt": coins}
+        }) + 1
+
         await interaction.response.send_message(
-            f"💳 **Saldo de {name}:** {coins} ralcoins!"
+            f"💳 **Saldo de {name}:** {coins} ralcoins\n"
+            f"🏆 **Rank global:** #{rank}"
         )
 
         
