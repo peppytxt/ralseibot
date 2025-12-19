@@ -42,7 +42,7 @@ class Economy(commands.Cog):
         )
 
         await interaction.response.send_message(
-            f"<:ralsei_love:1410029625358417952> Você coletou **{coins} ralcoins** hoje!"
+            f"<:ralsei_love:1410029625358417952> Você coletou **{coins} ralcoins** no daily!"
         )
 
 
