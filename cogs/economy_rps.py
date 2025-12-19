@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 import random
 
-TAX_RATE = 0.005  # 0.5%
+TAX_RATE = 0.05  # 0.5%
 
 class RockPaperScissors(commands.Cog):
     def __init__(self, bot):
@@ -28,8 +28,9 @@ class RockPaperScissors(commands.Cog):
         oponente: discord.Member,
         quantidade: int
     ):
+        await interaction.response.defer()
         if oponente.id == interaction.user.id:
-            return await interaction.response.send_message("Você não pode desafiar você mesmo!", ephemeral=True)
+            return await interaction.followup.send("Você não pode desafiar você mesmo!", ephemeral=True)
 
         db = self.bot.get_cog("XP").col
         user_data = db.find_one({"_id": interaction.user.id}) or {}
@@ -38,19 +39,19 @@ class RockPaperScissors(commands.Cog):
         MIN_BET = 100
 
         if quantidade < MIN_BET:
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 f"❌ A aposta mínima é de **{MIN_BET} ralcoins**!",
                 ephemeral=True
             )
 
         if user_data.get("coins", 0) < quantidade:
-            return await interaction.response.send_message("Você não tem ralcoins suficientes!", ephemeral=True)
+            return await interaction.followup.send("Você não tem ralcoins suficientes!", ephemeral=True)
         if opp_data.get("coins", 0) < quantidade:
-            return await interaction.response.send_message(f"{oponente.display_name} não tem ralcoins suficientes!", ephemeral=True)
+            return await interaction.followup.send(f"{oponente.display_name} não tem ralcoins suficientes!", ephemeral=True)
 
         game_id = f"{interaction.user.id}_{oponente.id}"
         if game_id in self.ongoing_games:
-            return await interaction.response.send_message("Já existe uma partida entre vocês!", ephemeral=True)
+            return await interaction.followup.send("Já existe uma partida entre vocês!", ephemeral=True)
 
         self.ongoing_games[game_id] = {
             "A": None,
@@ -77,7 +78,7 @@ class RockPaperScissors(commands.Cog):
 
             view.add_item(btn)
 
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"{interaction.user.mention} desafiou {oponente.mention} para uma aposta de **{quantidade} ralcoins**!\n"
             f"🏦 Taxa do bot: **0.5%** sobre o valor ganho\n\n"
             "🪨 📄 ✂ Escolha sua jogada!",
@@ -104,7 +105,7 @@ class RockPaperScissors(commands.Cog):
         _, game_id, choice = parts
 
         if game_id not in self.ongoing_games:
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 "Partida expirada ou inválida!",
                 ephemeral=True
             )
@@ -113,7 +114,7 @@ class RockPaperScissors(commands.Cog):
 
         # Verifica se quem clicou faz parte da partida
         if interaction.user.id not in (game["userA"].id, game["userB"].id):
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 "❌ Você não faz parte dessa partida!",
                 ephemeral=True
             )
