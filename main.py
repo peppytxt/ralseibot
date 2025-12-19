@@ -103,10 +103,10 @@ async def status_task():
 
     statuses = [
         discord.Game(name="DELTARUNE"),
-        discord.Game(name=f"em {guilds} servidores"),
+        discord.Game(name=f"Atualmente em {guilds} servidores"),
         discord.Activity(
             type=discord.ActivityType.watching,
-            name=f"{users} pessoas"
+            name=f"Interagindo com {users} pessoas"
         )
     ]
 
