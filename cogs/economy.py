@@ -53,15 +53,29 @@ class Economy(commands.Cog):
 
     # ------------------ BALANCE ------------------
     @app_commands.command(name="balance", description="Veja seu saldo")
-    async def balance(self, interaction: discord.Interaction, user: discord.Member = None):
-        user = user or interaction.user
+    async def balance(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member | None = None
+    ):
+        if user is None:
+            user = interaction.user
+            user_id = user.id
+            name = user.display_name
+        elif user.bot:
+            user_id = BOT_ECONOMY_ID
+            name = "Banco do Bot"
+        else:
+            user_id = user.id
+            name = user.display_name
 
-        data = self.col.find_one({"_id": user.id})
-        coins = data.get("coins", 0) if data else 0
+        data = self.col.find_one({"_id": user_id}) or {}
+        coins = data.get("coins", 0)
 
         await interaction.response.send_message(
-            f"💳 **Saldo de {user.display_name}:** {coins} ralcoins!"
+            f"💳 **Saldo de {name}:** {coins} ralcoins!"
         )
+
         
         # ------------------ RANK GLOBAL ------------------
     @app_commands.command(name="rankcoins", description="Top 5 mais ricos do bot")
