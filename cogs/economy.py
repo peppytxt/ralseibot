@@ -62,12 +62,12 @@ class Economy(commands.Cog):
     @app_commands.command(name="rankcoins", description="Top 10 mais ricos do bot")
     async def rank(self, interaction: discord.Interaction):
 
-        # busca top 10 ordenado por coins
+        # busca top 5 ordenado por coins
         top = list(
             self.col.find(
                 {"coins": {"$exists": True}},
                 {"coins": 1}
-            ).sort("coins", -1).limit(10)
+            ).sort("coins", -1).limit(5)
         )
 
         if not top:
