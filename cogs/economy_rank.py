@@ -2,45 +2,52 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-class EconomyRank(commands.Cog):
+class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.col = bot.get_cog("XP").col
 
     @app_commands.command(
         name="rankcoins",
-        description="Mostra o ranking dos 10 usuários mais ricos"
+        description="Mostra o ranking global de moedas"
     )
     async def rankcoins(self, interaction: discord.Interaction):
-        col = self.bot.get_cog("Economy").col
 
-        # Busca top 10 por moedas
-        top = col.find(
-            {"coins": {"$exists": True}},
-            {"_id": 1, "coins": 1}
-        ).sort("coins", -1).limit(10)
+        # busca top 10 mais ricos
+        top = list(
+            self.col.find({"coins": {"$gt": 0}})
+            .sort("coins", -1)
+            .limit(10)
+        )
+
+        if not top:
+            return await interaction.response.send_message(
+                "Ainda não há dados de economia.",
+                ephemeral=True
+            )
 
         embed = discord.Embed(
-            title="🏆 Ranking de Ralcoins",
+            title="🏆 Ranking Global de Moedas",
             color=discord.Color.gold()
         )
 
-        position = 1
-        for user in top:
+        medals = ["🥇", "🥈", "🥉"]
+
+        for i, user in enumerate(top):
             member = interaction.guild.get_member(user["_id"])
-            if not member:
-                continue
+
+            name = member.name if member else f"Usuário {user['_id']}"
+            coins = user.get("coins", 0)
+
+            emoji = medals[i] if i < 3 else f"#{i+1}"
 
             embed.add_field(
-                name=f"{position}º • {member.name}",
-                value=f"💰 {user['coins']} ralcoins",
+                name=f"{emoji} {name}",
+                value=f"💰 **{coins:,} moedas**",
                 inline=False
             )
-            position += 1
-
-        if position == 1:
-            embed.description = "Ninguém possui ralcoins ainda 😢"
 
         await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
-    await bot.add_cog(EconomyRank(bot))
+    await bot.add_cog(Economy(bot))
