@@ -344,34 +344,29 @@ class XP(commands.Cog):
         
         
     @app_commands.command(name="leveldm", description="Ativar ou desativar DM ao subir de nível")
-    @app_commands.describe(estado="on para ativar, off para desativar")
+    @app_commands.choices(
+        estado=[
+            app_commands.Choice(name="Ativado", value=1),
+            app_commands.Choice(name="Desativado", value=0)
+        ]
+    )
     async def leveldm(
         self,
         interaction: discord.Interaction,
-        estado: str
+        estado: app_commands.Choice[int]
     ):
-        estado = estado.lower()
-
-        if estado not in ("on", "off"):
-            return await interaction.response.send_message(
-                "❌ Use `on` ou `off`.",
-                ephemeral=True
-            )
-
-        value = estado == "on"
+        enabled = bool(estado.value)
 
         self.col.update_one(
             {"_id": interaction.user.id},
-            {"$set": {"dm_level": value}},
+            {"$set": {"dm_level": enabled}},
             upsert=True
         )
 
         await interaction.response.send_message(
-            f"🔔 DM de level **{'ativada' if value else 'desativada'}**!",
+            f"🔔 DM de level **{'ativada' if enabled else 'desativada'}**!",
             ephemeral=True
         )
-
-
 
 async def setup(bot):
     await bot.add_cog(XP(bot))
