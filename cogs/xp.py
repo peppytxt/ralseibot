@@ -88,14 +88,12 @@ class XP(commands.Cog):
         # ============================
         if now - last_global >= 10:
             gained = random.randint(5, 15)
-            xp_global += gained
+            await self.add_xp(message.author, gained)
 
+            # atualiza apenas o cooldown
             self.col.update_one(
                 {"_id": user_id},
-                {"$set": {
-                    "xp_global": xp_global,
-                    "last_xp_global": now
-                }}
+                {"$set": {"last_xp_global": now}}
             )
 
         # ============================
@@ -117,8 +115,6 @@ class XP(commands.Cog):
             )
 
         await self.bot.process_commands(message)
-
-
 
     # ------------------------------
     # /xp — mostra XP do usuário
@@ -296,10 +292,9 @@ class XP(commands.Cog):
 
 
 
-
     def get_xp_rank(self, user_id: int):
         users = list(
-            self.col.find().sort("xp", -1)
+            self.col.find().sort("xp_global", -1)
         )
 
         for i, u in enumerate(users, start=1):
@@ -307,6 +302,7 @@ class XP(commands.Cog):
                 return i
 
         return None
+
 
     def get_coin_rank(self, user_id: int):
         users = list(
