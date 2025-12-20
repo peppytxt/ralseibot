@@ -368,9 +368,15 @@ class XP(commands.Cog):
             ephemeral=True
         )
         
+    # ------------------ APAGAR DEPOIS ------------------ #
     @app_commands.command(name="addxp", description="(DEV) Adiciona XP para testes")
-    async def addxp(self, interaction: discord.Interaction, amount: int):
-
+    async def addxp(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member,
+        amount: int
+    ):
+        # Permissão
         if interaction.user.id != 274645285634834434:
             return await interaction.response.send_message(
                 "❌ Você não tem permissão para usar este comando.",
@@ -378,15 +384,15 @@ class XP(commands.Cog):
             )
 
         self.col.update_one(
-            {"_id": interaction.user.id},
+            {"_id": user.id},
             {"$inc": {"xp_global": amount}},
             upsert=True
         )
 
         await interaction.response.send_message(
-            f"🧪 XP aumentado em **{amount}** para testes."
-        )
-
+            f"🧪 XP de **{user.display_name}** aumentado em **{amount}**."
+    )
+    # -----------------------------------------------------
 
 async def setup(bot):
     await bot.add_cog(XP(bot))
