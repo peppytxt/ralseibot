@@ -45,7 +45,7 @@ COGS = [
     "cogs.avatar",
     "cogs.tickets",
     "cogs.fun",
-    "cogs.help_menu",
+    "cogs.help",
 ]
 
 async def load_all_extensions():
