@@ -8,7 +8,8 @@ import asyncio
 # Configurações padrão
 DEFAULT_INTERVAL = 100
 DEFAULT_MODE = "messages"
-REWARD_AMOUNT = 2500 
+REWARD_MIN = 1500
+REWARD_MAX = 4000
 CHALLENGE_TIMEOUT = 60  # Segundos
 
 CTRLV_MESSAGES = [
@@ -234,17 +235,19 @@ class Challenges(commands.Cog):
 
             challenge["solved"] = True
 
+            reward = random.randint(REWARD_MIN, REWARD_MAX)
+
             await message.add_reaction("✅")
 
             self.col.update_one(
                 {"_id": message.author.id},
-                {"$inc": {"coins": REWARD_AMOUNT}},
+                {"$inc": {"coins": reward}},
                 upsert=True
             )
 
             await message.channel.send(
                 f"🎉 {message.author.mention} acertou! "
-                f"Você ganhou **{REWARD_AMOUNT} ralcoins!**"
+                f"Você ganhou **{reward} ralcoins!**"
             )
 
             self.active_challenges.pop(guild_id, None)
@@ -302,13 +305,6 @@ def normalize(text: str) -> str:
         .replace("\u200b", "")
         .strip()
     )
-    
-def is_paste_detected(original, user_input, token_positions):
-    for i in token_positions:
-        if i < len(user_input) and user_input[i] == "\u200b":
-            return True
-    return False
-
 
 async def setup(bot):
     await bot.add_cog(Challenges(bot))
