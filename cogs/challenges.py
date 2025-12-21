@@ -50,6 +50,7 @@ class Challenges(commands.Cog):
         name="challengeconfig",
         description="Configura perguntas automáticas no servidor"
     )
+    @app_commands.default_permissions(administrator=True)
     @app_commands.describe(
         channel="Canal onde os desafios serão postados",
         enabled="Ativar ou desativar desafios",
