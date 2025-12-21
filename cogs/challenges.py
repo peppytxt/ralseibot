@@ -12,6 +12,11 @@ REWARD_MIN = 1500
 REWARD_MAX = 4000
 CHALLENGE_TIMEOUT = 60  # Segundos
 
+MIN_MEMBERS = 100
+MIN_MESSAGES_INTERVAL = 50
+MIN_TIME_INTERVAL = 180  # 3 minutos
+
+
 CTRLV_MESSAGES = [
     "👀 Ei… isso aí foi Ctrl+C + Ctrl+V, né?",
     "⌨️ Digita aí, campeão. Copiar não vale 😜",
@@ -66,14 +71,44 @@ class Challenges(commands.Cog):
         mode: str,
         interval: int
     ):
-        if mode not in ("messages", "time"):
+        guild = interaction.guild
+
+        if not guild:
             return await interaction.response.send_message(
-                "❌ Modo inválido! Use `messages` ou `time`",
+                "❌ Este comando só pode ser usado em servidores.",
                 ephemeral=True
             )
 
+        # 🔒 FILTRO DE MEMBROS
+        if guild.member_count < MIN_MEMBERS:
+            return await interaction.response.send_message(
+                f"❌ Este servidor precisa ter pelo menos **{MIN_MEMBERS} membros** "
+                "para ativar os desafios.",
+                ephemeral=True
+            )
+
+        if mode not in ("messages", "time"):
+            return await interaction.response.send_message(
+                "❌ Modo inválido! Use `messages` ou `time`.",
+                ephemeral=True
+            )
+
+        # 🔒 FILTRO POR MODO
+        if mode == "messages" and interval < MIN_MESSAGES_INTERVAL:
+            return await interaction.response.send_message(
+                f"❌ O intervalo mínimo é **{MIN_MESSAGES_INTERVAL} mensagens**.",
+                ephemeral=True
+            )
+
+        if mode == "time" and interval < MIN_TIME_INTERVAL:
+            return await interaction.response.send_message(
+                f"❌ O intervalo mínimo é **{MIN_TIME_INTERVAL // 60} minutos**.",
+                ephemeral=True
+            )
+
+        # ✅ SALVAR CONFIG
         self.col.update_one(
-            {"_id": interaction.guild.id},
+            {"_id": guild.id},
             {"$set": {
                 "challenge_enabled": enabled,
                 "challenge_channel": channel.id,
@@ -85,13 +120,14 @@ class Challenges(commands.Cog):
         )
 
         await interaction.response.send_message(
-            f"Configuração atualizada!\n"
+            "✅ **Configuração aplicada com sucesso!**\n"
             f"🔹 Canal: {channel.mention}\n"
-            f"🔹 Ativado: {enabled}\n"
             f"🔹 Modo: {mode}\n"
-            f"🔹 Intervalo: {interval}",
+            f"🔹 Intervalo: {interval}\n"
+            f"🔹 Membros: {guild.member_count}",
             ephemeral=True
         )
+
 
     # ------------- ON MESSAGE ---------------------
 
