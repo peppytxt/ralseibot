@@ -259,11 +259,34 @@ class Challenges(commands.Cog):
         typ = random.choice(["math", "rewrite"])
 
         if typ == "math":
-            a = random.randint(1, 50)
-            b = random.randint(1, 50)
+            math_type = random.choice(["add", "sub", "mul"])
+
+            # ➕ SOMA
+            if math_type == "add":
+                a = random.randint(1, 50)
+                b = random.randint(1, 50)
+                question = f"Quanto é **{a} + {b}**?"
+                answer = str(a + b)
+
+            # ➖ SUBTRAÇÃO (nunca negativa)
+            elif math_type == "sub":
+                a = random.randint(1, 50)
+                b = random.randint(1, 50)
+                maior = max(a, b)
+                menor = min(a, b)
+                question = f"Quanto é **{maior} - {menor}**?"
+                answer = str(maior - menor)
+
+            # ✖️ MULTIPLICAÇÃO SIMPLES
+            else:
+                a = random.randint(2, 9)
+                b = random.randint(2, 9)
+                question = f"Quanto é **{a} × {b}**?"
+                answer = str(a * b)
+
             return {
-                "question": f"Quanto é **{a} + {b}**?",
-                "answer": str(a + b)
+                "question": question,
+                "answer": answer
             }
 
         else:
@@ -285,6 +308,7 @@ class Challenges(commands.Cog):
                 "answer": phrase,
                 "token_positions": token_positions
             }
+
 
 def add_invisible_chars(text: str):
     ZERO_WIDTH = "\u200b"
