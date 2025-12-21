@@ -3,12 +3,22 @@ from discord import app_commands
 from discord.ext import commands, tasks
 import random
 import time
+import asyncio
 
 # Configurações padrão
 DEFAULT_INTERVAL = 100
 DEFAULT_MODE = "messages"
 REWARD_AMOUNT = 2500 
 CHALLENGE_TIMEOUT = 60  # Segundos
+
+CTRLV_MESSAGES = [
+    "👀 Ei… isso aí foi Ctrl+C + Ctrl+V, né?",
+    "⌨️ Digita aí, campeão. Copiar não vale 😜",
+    "🤖 Meus sensores detectaram um Ctrl+V suspeito…",
+    "📋 Cola aqui não, escreve com o coração ❤️",
+    "🚫 Ctrl+C + Ctrl+V não aumenta QI, só digita 😉",
+]
+
 
 class Challenges(commands.Cog):
     def __init__(self, bot):
@@ -18,6 +28,8 @@ class Challenges(commands.Cog):
         self.message_counters = {}
         # em memória -> desafios ativos por servidor
         self.active_challenges = {}
+        
+        self.warned_users = {}
         
         # timer loop (1 vez por minuto)
         self.challenge_timer.start()
@@ -201,6 +213,18 @@ class Challenges(commands.Cog):
 
         # anti ctrl+c ctrl+v
         if "\u200b" in message.content:
+            key = (guild_id, message.author.id)
+
+            if not self.warned_users.get(key):
+                self.warned_users[key] = True
+
+                warning = random.choice(CTRLV_MESSAGES)
+                msg = await message.reply(warning, mention_author=False)
+
+                # apagar depois de 5 segundos
+                await asyncio.sleep(5)
+                await msg.delete()
+
             return
 
         if normalize(message.content) == normalize(challenge["answer"]):
@@ -223,9 +247,7 @@ class Challenges(commands.Cog):
             )
 
             self.active_challenges.pop(guild_id, None)
-
-
-
+            self.warned_users.clear()  # limpar avisos do desafio
 
     # ------------- GENERATE CHALLENGE -------------
 
