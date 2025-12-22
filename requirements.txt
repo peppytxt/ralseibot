@@ -3,4 +3,5 @@ pymongo
 dnspython
 Pillow
 aiohttp
+requests
 python-dotenv
