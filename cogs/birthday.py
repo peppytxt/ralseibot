@@ -204,27 +204,6 @@ class Birthday(commands.Cog):
         )
 
     # -------------------------
-    # /birthday dm
-    # -------------------------
-    @birthday.command(name="dm", description="Configurar DMs de aniversário")
-    async def birthday_dm(self, interaction: discord.Interaction):
-        view = BirthdayDMView(self, interaction.user.id)
-
-        await interaction.response.send_message(
-            "📬 **Deseja receber mensagens de aniversário por DM?**",
-            view=view,
-            ephemeral=True
-        )
-
-
-    @birthday_dm.autocomplete("status")
-    async def dm_autocomplete(self, interaction: discord.Interaction, current: str):
-        return [
-            app_commands.Choice(name="Ativar", value="on"),
-            app_commands.Choice(name="Desativar", value="off")
-        ]
-
-    # -------------------------
     # /birthday config (ADMIN)
     # -------------------------
     @birthday.command(name="config", description="Configurar sistema de aniversário")
