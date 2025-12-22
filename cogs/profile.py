@@ -36,6 +36,11 @@ class Profile(commands.Cog):
         
         # Fundo com imagem externa
         BASE = os.path.dirname(__file__)
+        FONT_PATH = os.path.join(BASE, "fonts", "DejaVuSans.ttf")
+
+        font_big = ImageFont.truetype(FONT_PATH, 32)
+        font_small = ImageFont.truetype(FONT_PATH, 18)
+
         bg_path = os.path.join(BASE, "ProfileV1.png")
 
         background = Image.open(bg_path).convert("RGBA")
@@ -43,11 +48,6 @@ class Profile(commands.Cog):
 
         img = background.copy()
         draw = ImageDraw.Draw(img)
-
-
-        # Fonte
-        font_big = ImageFont.truetype("arial.ttf", 32)
-        font_small = ImageFont.truetype("arial.ttf", 18)
         
         draw = ImageDraw.Draw(img)
         
