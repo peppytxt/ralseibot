@@ -15,8 +15,6 @@ class Profile(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as r:
                 return Image.open(BytesIO(await r.read())).convert("RGBA")
-    
-    # ------------ REMOVER DEPOIS ------------------- 
 
     @app_commands.command(name="perfil")
     async def perfil(self, interaction: discord.Interaction, member: discord.Member = None):
