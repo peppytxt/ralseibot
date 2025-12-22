@@ -15,15 +15,8 @@ class Profile(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as r:
                 return Image.open(BytesIO(await r.read())).convert("RGBA")
-    
-    # ------------ REMOVER DEPOIS -------------------        
-    def is_owner():
-        async def predicate(interaction: discord.Interaction):
-            return interaction.user.id == 274645285634834434
-        return app_commands.check(predicate)
 
     @app_commands.command(name="perfil")
-    @is_owner()  # REMOVER DEPOIS
     async def perfil(self, interaction: discord.Interaction, member: discord.Member = None):
         member = member or interaction.user
 
