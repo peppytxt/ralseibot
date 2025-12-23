@@ -433,6 +433,49 @@ class XP(commands.Cog):
             f"🧪 XP de **{user.display_name}** aumentado em **{amount}**."
     )
     # -----------------------------------------------------
+    
+    async def build_rank_embed(self, interaction, page, page_size):
+        skip = page * page_size
+
+        cursor = (
+            self.col.find()
+            .sort("xp_global", -1)
+            .skip(skip)
+            .limit(page_size)
+        )
+
+        users = list(cursor)
+        if not users:
+            return None
+
+        desc = ""
+        start_pos = skip + 1
+
+        for i, user in enumerate(users):
+            pos = start_pos + i
+            uid = user["_id"]
+            xp = user.get("xp_global", 0)
+
+            try:
+                discord_user = interaction.client.get_user(uid) or await interaction.client.fetch_user(uid)
+                name = discord_user.display_name
+            except:
+                name = f"Usuário ({uid})"
+
+            if uid == interaction.user.id:
+                desc += f"## ⭐ **#{pos} - {name.upper()}** • {xp} XP\n"
+            else:
+                desc += f"**#{pos} - {name}** • {xp} XP\n"
+
+        embed = discord.Embed(
+            title="🌍 Ranking Global de XP",
+            description=desc,
+            color=discord.Color.gold()
+        )
+
+        embed.set_footer(text=f"Página {page + 1}")
+        return embed
+
 
     async def build_local_rank_embed(self, interaction, page, page_size):
         guild_id = str(interaction.guild.id)
