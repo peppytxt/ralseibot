@@ -119,6 +119,20 @@ class Economy(commands.Cog):
 
         embed.set_footer(text=f"Página {page + 1}")
         return embed
+    
+    
+    def get_coin_rank(self, user_id: int) -> int | None:
+        cursor = self.col.find(
+            {"coins": {"$exists": True}},
+            {"_id": 1}
+        ).sort("coins", -1)
+
+        for index, user in enumerate(cursor, start=1):
+            if user["_id"] == user_id:
+                return index
+
+        return None
+
 
       # ------------------ RANK GLOBAL ------------------
     @app_commands.command(name="rankcoins", description="Ranking global de ralcoins")
