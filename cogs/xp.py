@@ -47,20 +47,8 @@ class RankView(discord.ui.View):
         self.page -= 1
         embed = await self.build_func(interaction, self.page, self.page_size)
         await interaction.response.edit_message(embed=embed, view=self)
-
-    @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
-    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.page += 1
-        embed = await self.build_func(interaction, self.page, self.page_size)
-
-        if embed is None:
-            self.page -= 1
-            await interaction.response.defer()
-            return
-
-        await interaction.response.edit_message(embed=embed, view=self)
         
-    @discord.ui.button(label="📍 Minha posição", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="📍", style=discord.ButtonStyle.primary)
     async def my_position(
         self,
         interaction: discord.Interaction,
@@ -91,6 +79,19 @@ class RankView(discord.ui.View):
         )
 
         await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
+    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.page += 1
+        embed = await self.build_func(interaction, self.page, self.page_size)
+
+        if embed is None:
+            self.page -= 1
+            await interaction.response.defer()
+            return
+
+        await interaction.response.edit_message(embed=embed, view=self)
+        
         
     async def get_user_rank(self, user: discord.Member):
         # RANK GLOBAL
