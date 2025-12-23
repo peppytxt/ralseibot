@@ -5,58 +5,63 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import asyncio
 
-class BirthdayListView(discord.ui.View):
-    def __init__(self, cog, interaction, month, page, page_size):
+BIRTHDAY_PAGE_SIZE = 10
+
+class BirthdayView(discord.ui.View):
+    def __init__(self, cog, interaction, month, page):
         super().__init__(timeout=60)
         self.cog = cog
         self.interaction = interaction
         self.month = month
         self.page = page
-        self.page_size = page_size
         self.author_id = interaction.user.id
         self.message = None
 
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def interaction_check(self, interaction):
         if interaction.user.id != self.author_id:
             await interaction.response.send_message(
-                "❌ Apenas quem usou o comando pode interagir.",
+                "❌ Apenas quem executou o comando pode usar.",
                 ephemeral=True
             )
             return False
         return True
 
-    async def on_timeout(self):
-        for item in self.children:
-            item.disabled = True
-        if self.message:
-            await self.message.edit(view=self)
+    async def update(self, interaction):
+        embed = await self.cog.build_birthday_embed(
+            interaction,
+            self.month,
+            self.page,
+            BIRTHDAY_PAGE_SIZE
+        )
+        await interaction.response.edit_message(embed=embed, view=self)
 
+    # ⬅️ Página anterior
     @discord.ui.button(label="⬅️", style=discord.ButtonStyle.secondary)
-    async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.page <= 0:
-            await interaction.response.defer()
-            return
-
-        self.page -= 1
-        embed = await self.cog.build_birthday_embed(
-            interaction, self.month, self.page, self.page_size
-        )
-        await interaction.response.edit_message(embed=embed, view=self)
-
-    @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
-    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.page += 1
-
-        embed = await self.cog.build_birthday_embed(
-            interaction, self.month, self.page, self.page_size
-        )
-
-        if embed is None:
+    async def previous(self, interaction, button):
+        if self.page > 0:
             self.page -= 1
-            await interaction.response.defer()
-            return
+        await self.update(interaction)
 
-        await interaction.response.edit_message(embed=embed, view=self)
+    # ➡️ Próxima página
+    @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
+    async def next(self, interaction, button):
+        self.page += 1
+        await self.update(interaction)
+
+    # 📅 Dropdown de meses
+    @discord.ui.select(
+        placeholder="📅 Escolha um mês",
+        options=[
+            discord.SelectOption(label=f"{i:02d}", value=str(i))
+            for i in range(1, 13)
+        ]
+    )
+    async def select_month(self, interaction, select):
+        self.month = int(select.values[0])
+        self.page = 0
+        await self.update(interaction)
+
+
 
 
 class BirthdayDMView(discord.ui.View):
@@ -219,30 +224,26 @@ class Birthday(commands.Cog):
     # /birthday list
     # -------------------------
     @birthday.command(name="list", description="Listar aniversariantes de um mês")
+    @app_commands.describe(month="Mês do aniversário (1–12)")
     async def birthday_list(
         self,
         interaction: discord.Interaction,
         month: app_commands.Range[int, 1, 12]
     ):
-        page_size = 5
         page = 0
 
         embed = await self.build_birthday_embed(
-            interaction, month, page, page_size
+            interaction,
+            month,
+            page,
+            BIRTHDAY_PAGE_SIZE
         )
 
-        if embed is None:
-            return await interaction.response.send_message(
-                "❌ Nenhum aniversário encontrado para este mês.",
-                ephemeral=True
-            )
-
-        view = BirthdayListView(
+        view = BirthdayView(
             cog=self,
             interaction=interaction,
             month=month,
-            page=page,
-            page_size=page_size
+            page=page
         )
 
         await interaction.response.send_message(
@@ -252,7 +253,7 @@ class Birthday(commands.Cog):
 
         view.message = await interaction.original_response()
 
-        
+
     async def build_birthday_embed(
         self,
         interaction: discord.Interaction,
@@ -260,9 +261,6 @@ class Birthday(commands.Cog):
         page: int,
         page_size: int
     ):
-        if page < 0:
-            page = 0
-
         skip = page * page_size
 
         users = list(
@@ -272,27 +270,27 @@ class Birthday(commands.Cog):
             .limit(page_size)
         )
 
-        if not users:
-            return None
-
         embed = discord.Embed(
             title=f"🎂 Aniversariantes do mês {month:02d}",
             color=discord.Color.pink()
         )
 
+        if not users:
+            embed.description = "❌ Nenhum aniversário encontrado para este mês."
+            return embed
+
         for u in users:
             member = interaction.guild.get_member(u["_id"])
-            if not member:
-                continue
+            if member:
+                embed.add_field(
+                    name=member.display_name,
+                    value=f"📅 {u['birthday']['day']:02d}/{month:02d}",
+                    inline=False
+                )
 
-            embed.add_field(
-                name=member.display_name,
-                value=f"📅 {u['birthday']['day']:02d}/{month:02d}",
-                inline=False
-            )
-
-        embed.set_footer(text=f"Página {page + 1} • Use /birthday set para definir o seu 🎉")
+        embed.set_footer(text=f"Página {page + 1}")
         return embed
+
 
 
 
