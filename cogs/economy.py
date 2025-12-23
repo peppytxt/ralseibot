@@ -82,9 +82,8 @@ class Economy(commands.Cog):
             f"🏆 **Rank global:** #{rank}"
         )
 
-        
-        # ------------------ RANK GLOBAL ------------------
-    async def build_coin_rank_embed(
+               
+    async def build_rankcoins_embed(
         self,
         interaction: discord.Interaction,
         page: int,
@@ -103,20 +102,22 @@ class Economy(commands.Cog):
         )
 
         if not users:
-            return discord.Embed(
-                title="🏦 Rank Global de Ralcoins",
-                description="❌ Nenhum dado para esta página.",
-                color=discord.Color.gold()
-            )
+            return None
 
         desc = ""
+
         for i, u in enumerate(users, start=skip + 1):
             user = interaction.client.get_user(u["_id"])
             name = user.display_name if user else f"Usuário {u['_id']}"
-            desc += f"**#{i} {name}** — 💰 {u.get('coins', 0)} ralcoins\n"
+            coins = u.get("coins", 0)
+
+            if u["_id"] == interaction.user.id:
+                desc += f"## ⭐ **#{i} - {name.upper()}** • {coins} ralcoins\n"
+            else:
+                desc += f"**#{i} - {name}** • {coins} ralcoins\n"
 
         embed = discord.Embed(
-            title="🏦 Rank Global de Ralcoins",
+            title="🏦 Ranking Global de Ralcoins",
             description=desc,
             color=discord.Color.gold()
         )
@@ -124,46 +125,6 @@ class Economy(commands.Cog):
         embed.set_footer(text=f"Página {page}")
         return embed
 
-
-    async def build_coin_rank_embed(
-        self,
-        interaction: discord.Interaction,
-        page: int,
-        page_size: int
-    ):
-        skip = (page - 1) * page_size
-
-        users = list(
-            self.col.find(
-                {"coins": {"$exists": True}},
-                {"coins": 1}
-            )
-            .sort("coins", -1)
-            .skip(skip)
-            .limit(page_size)
-        )
-
-        if not users:
-            return discord.Embed(
-                title="🏦 Rank Global de Ralcoins",
-                description="❌ Nenhum dado para esta página.",
-                color=discord.Color.gold()
-            )
-
-        desc = ""
-        for i, u in enumerate(users, start=skip + 1):
-            user = interaction.client.get_user(u["_id"])
-            name = user.display_name if user else f"Usuário {u['_id']}"
-            desc += f"**#{i} {name}** — 💰 {u.get('coins', 0)} ralcoins\n"
-
-        embed = discord.Embed(
-            title="🏦 Rank Global de Ralcoins",
-            description=desc,
-            color=discord.Color.gold()
-        )
-
-        embed.set_footer(text=f"Página {page}")
-        return embed
     
     async def get_coin_position(self, user_id: int) -> int | None:
         cursor = self.col.find(
