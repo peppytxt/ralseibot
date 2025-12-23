@@ -136,7 +136,17 @@ class RankView(discord.ui.View):
             return self.cog.col.count_documents({
                 f"xp_local.{guild_id}.xp": {"$gt": xp}
             }) + 1
+            
+        # RANK COINS
+        if self.build_func == self.cog.build_rankcoins_embed:
+            data = self.cog.col.find_one({"_id": user.id})
+            if not data:
+                return None
 
+            coins = data.get("coins", 0)
+            return self.cog.col.count_documents(
+                {"coins": {"$gt": coins}}
+            ) + 1
         return None
 
 class XP(commands.Cog):
