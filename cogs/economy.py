@@ -83,13 +83,11 @@ class Economy(commands.Cog):
         )
 
                
-    async def build_rankcoins_embed(
-        self,
-        interaction: discord.Interaction,
-        page: int,
-        page_size: int
-    ):
-        skip = (page - 1) * page_size
+    async def build_rankcoins_embed(self, interaction, page: int, page_size: int):
+        if page < 0:
+            page = 0
+
+        skip = page * page_size
 
         users = list(
             self.col.find(
@@ -105,40 +103,22 @@ class Economy(commands.Cog):
             return None
 
         desc = ""
+        start_pos = skip + 1
 
-        for i, u in enumerate(users, start=skip + 1):
+        for i, u in enumerate(users):
+            pos = start_pos + i
             user = interaction.client.get_user(u["_id"])
             name = user.display_name if user else f"Usuário {u['_id']}"
-            coins = u.get("coins", 0)
-
-            if u["_id"] == interaction.user.id:
-                desc += f"## ⭐ **#{i} - {name.upper()}** • {coins} ralcoins\n"
-            else:
-                desc += f"**#{i} - {name}** • {coins} ralcoins\n"
+            desc += f"**#{pos} {name}** — 💰 {u.get('coins', 0)} ralcoins\n"
 
         embed = discord.Embed(
-            title="🏦 Ranking Global de Ralcoins",
+            title="🏦 Rank Global de Ralcoins",
             description=desc,
             color=discord.Color.gold()
         )
 
-        embed.set_footer(text=f"Página {page}")
+        embed.set_footer(text=f"Página {page + 1}")
         return embed
-
-    
-    def get_coin_position(self, user_id: int) -> int | None:
-        users = list(
-            self.col.find(
-                {"coins": {"$exists": True}}
-            ).sort("coins", -1)
-        )
-
-        for index, user in enumerate(users, start=1):
-            if user["_id"] == user_id:
-                return index
-
-        return None
-
 
       # ------------------ RANK GLOBAL ------------------
     @app_commands.command(name="rankcoins", description="Ranking global de ralcoins")
