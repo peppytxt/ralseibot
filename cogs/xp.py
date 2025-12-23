@@ -72,7 +72,7 @@ class RankView(discord.ui.View):
                 ephemeral=True
             )
 
-        rank = await self.get_rank_func(interaction.user.id)
+        rank = self.get_rank_func(interaction.user.id)
 
         if rank is None:
             return await interaction.response.send_message(
@@ -84,11 +84,12 @@ class RankView(discord.ui.View):
 
         embed = await self.build_func(
             interaction,
-            self.page + 1,
+            self.page,
             self.page_size
         )
 
         await interaction.response.edit_message(embed=embed, view=self)
+
 
 
 
