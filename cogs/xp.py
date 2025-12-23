@@ -9,6 +9,36 @@ import os
 XP_PER_LEVEL = 1000
 LEVEL_REWARD = 5000
 
+RANK_PAGE_SIZE = 10
+MAX_RANK_PAGE = 50
+
+class RankView(discord.ui.View):
+    def __init__(self, cog, interaction, page, page_size=10, timeout=60):
+        super().__init__(timeout=timeout)
+        self.cog = cog
+        self.author_id = interaction.user.id
+        self.page = page
+        self.page_size = page_size
+        self.message = None
+        self.build_func = cog.build_rank_embed
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message(
+                "❌ Apenas quem executou o comando pode usar esses botões.",
+                ephemeral=True
+            )
+            return False
+        return True
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+
+        if self.message:
+            await self.message.edit(view=self)
+
+
 
 class XP(commands.Cog):
     def __init__(self, bot):
@@ -164,96 +194,90 @@ class XP(commands.Cog):
 
 
     # ------------------------------
-    # /rank global — top 10
+    # /rank global
     # ------------------------------
+
+
     @rank_group.command(
-    name="global",
-    description="Mostra o ranking de XP global."
+        name="global",
+        description="Mostra o ranking global de XP."
     )
-    async def rank_global(self, interaction: discord.Interaction):
-        top = list(self.col.find().sort("xp_global", -1).limit(10))
+    async def rank_global(
+        self,
+        interaction: discord.Interaction
+    ):
+        await interaction.response.defer()
 
-        if not top:
-            return await interaction.response.send_message(
-                "Ainda não há usuários com XP registrado."
-            )
+        page_size = 10
+        page = 0
 
-        desc = ""
-
-        for pos, user in enumerate(top, start=1):
-            uid = user["_id"]
-            xp = user.get("xp_global", 0)
-
-            # nome
-            try:
-                discord_user = interaction.client.get_user(uid) or await interaction.client.fetch_user(uid)
-                name = discord_user.name
-            except:
-                name = f"Usuário desconhecido ({uid})"
-
-            desc += f"**#{pos} - {name}** - {xp} XP\n"
-
-        embed = discord.Embed(
-            title="🌎 Ranking Global - Top 10",
-            description=desc,
-            color=discord.Color.gold()
+        embed = await self.build_rank_embed(
+            interaction,
+            page,
+            page_size
         )
 
-        await interaction.response.send_message(embed=embed)
-        
-        
+        if embed is None:
+            return await interaction.followup.send(
+                "❌ Não há usuários no ranking.",
+                ephemeral=True
+            )
+
+        view = RankView(
+            cog=self,
+            interaction=interaction,
+            page=page,
+            page_size=page_size,
+            timeout=60
+        )
+
+        message = await interaction.followup.send(
+            embed=embed,
+            view=view
+        )
+
+        view.message = message
+
     # ------------------------------
-    # /rank local — top 10
+    # /rank local 
     # ------------------------------
         
-    @rank_group.command(
-        name="local",
-        description="Mostra o ranking de XP apenas deste servidor."
-    )
+    @rank_group.command(name="local", description="Mostra o ranking de XP deste servidor.")
     async def rank_local(self, interaction: discord.Interaction):
+        await interaction.response.defer()
 
-        guild_id = str(interaction.guild.id)
+        page = 0
+        page_size = 10
 
-        cursor = self.col.find(
-            {f"xp_local.{guild_id}.xp": {"$exists": True}}
-        ).sort(
-            [(f"xp_local.{guild_id}.xp", -1)]
-        ).limit(10)
-
-        top = list(cursor)
-
-        if not top:
-            return await interaction.response.send_message(
-                "Ainda não há usuários com XP local neste servidor."
-            )
-
-        desc = ""
-
-        for pos, user in enumerate(top, start=1):
-            uid = user["_id"]
-
-            xp = user.get("xp_local", {}).get(guild_id, {}).get("xp", 0)
-
-            member = interaction.guild.get_member(uid)
-
-            if member:
-                name = member.display_name
-            else:
-                try:
-                    fetched = await interaction.client.fetch_user(uid)
-                    name = fetched.name
-                except:
-                    name = f"Usuário desconhecido ({uid})"
-
-            desc += f"**#{pos} - {name}** - {xp} XP\n"
-
-        embed = discord.Embed(
-            title=f"🏠 Ranking Local - {interaction.guild.name}",
-            description=desc,
-            color=discord.Color.green()
+        embed = await self.build_local_rank_embed(
+            interaction,
+            page,
+            page_size
         )
 
-        await interaction.response.send_message(embed=embed)
+        if embed is None:
+            return await interaction.followup.send(
+                "❌ Não há XP registrado neste servidor.",
+                ephemeral=True
+            )
+
+        view = RankView(
+            cog=self,
+            interaction=interaction,
+            page=page,
+            page_size=page_size,
+            timeout=60
+        )
+
+        view.build_func = self.build_local_rank_embed
+
+        message = await interaction.followup.send(
+            embed=embed,
+            view=view
+        )
+
+        view.message = message
+
 
 
     async def add_xp(self, user: discord.Member, amount: int):
@@ -389,6 +413,98 @@ class XP(commands.Cog):
             f"🧪 XP de **{user.display_name}** aumentado em **{amount}**."
     )
     # -----------------------------------------------------
+
+    async def build_rank_embed(self, interaction, page, page_size):
+        skip = page * page_size
+
+        cursor = (
+            self.col.find({"xp_global": {"$gt": 0}})
+            .sort("xp_global", -1)
+            .skip(skip)
+            .limit(page_size)
+        )
+
+        users = list(cursor)
+
+        if not users:
+            return None
+
+        desc = ""
+        start_pos = skip + 1
+
+        for i, user in enumerate(users):
+            pos = start_pos + i
+            uid = user["_id"]
+            xp = user.get("xp_global", 0)
+
+            try:
+                discord_user = (
+                    interaction.client.get_user(uid)
+                    or await interaction.client.fetch_user(uid)
+                )
+                name = discord_user.name
+            except:
+                name = f"Usuário ({uid})"
+                
+            if uid == interaction.user.id:
+                name = f"# {name.upper()}"
+                desc += f"⭐ **#{pos} — {name}** • {xp} XP\n"
+            else:
+                desc += f"**#{pos} — {name}** • {xp} XP\n"
+
+
+        embed = discord.Embed(
+            title="🌍 Ranking Global de XP",
+            description=desc,
+            color=discord.Color.gold()
+        )
+
+        embed.set_footer(
+            text=f"Página {page + 1}"
+        )
+
+        return embed
+    
+    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.secondary)
+    async def previous(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        if self.page <= 0:
+            await interaction.response.defer()
+            return
+
+        self.page -= 1
+        embed = await self.build_func(
+            interaction,
+            self.page,
+            self.page_size
+        )
+
+        await interaction.response.edit_message(embed=embed, view=self)
+
+
+        @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
+        async def next(
+            self,
+            interaction: discord.Interaction,
+            button: discord.ui.Button
+        ):
+            self.page += 1
+            embed = await self.build_func(
+                interaction,
+                self.page,
+                self.page_size
+            )
+
+            if embed is None:
+                self.page -= 1
+                await interaction.response.defer()
+                return
+
+            await interaction.response.edit_message(embed=embed, view=self)
+
 
 async def setup(bot):
     await bot.add_cog(XP(bot))
