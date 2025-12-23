@@ -5,6 +5,60 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import asyncio
 
+class BirthdayListView(discord.ui.View):
+    def __init__(self, cog, interaction, month, page, page_size):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.interaction = interaction
+        self.month = month
+        self.page = page
+        self.page_size = page_size
+        self.author_id = interaction.user.id
+        self.message = None
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message(
+                "❌ Apenas quem usou o comando pode interagir.",
+                ephemeral=True
+            )
+            return False
+        return True
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+        if self.message:
+            await self.message.edit(view=self)
+
+    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.secondary)
+    async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.page <= 0:
+            await interaction.response.defer()
+            return
+
+        self.page -= 1
+        embed = await self.cog.build_birthday_embed(
+            interaction, self.month, self.page, self.page_size
+        )
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
+    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.page += 1
+
+        embed = await self.cog.build_birthday_embed(
+            interaction, self.month, self.page, self.page_size
+        )
+
+        if embed is None:
+            self.page -= 1
+            await interaction.response.defer()
+            return
+
+        await interaction.response.edit_message(embed=embed, view=self)
+
+
 class BirthdayDMView(discord.ui.View):
     def __init__(self, cog, user_id):
         super().__init__(timeout=60)
@@ -170,30 +224,76 @@ class Birthday(commands.Cog):
         interaction: discord.Interaction,
         month: app_commands.Range[int, 1, 12]
     ):
-        users = self.col.find({"birthday.month": month})
+        page_size = 5
+        page = 0
+
+        embed = await self.build_birthday_embed(
+            interaction, month, page, page_size
+        )
+
+        if embed is None:
+            return await interaction.response.send_message(
+                "❌ Nenhum aniversário encontrado para este mês.",
+                ephemeral=True
+            )
+
+        view = BirthdayListView(
+            cog=self,
+            interaction=interaction,
+            month=month,
+            page=page,
+            page_size=page_size
+        )
+
+        await interaction.response.send_message(
+            embed=embed,
+            view=view
+        )
+
+        view.message = await interaction.original_response()
+
+        
+    async def build_birthday_embed(
+        self,
+        interaction: discord.Interaction,
+        month: int,
+        page: int,
+        page_size: int
+    ):
+        if page < 0:
+            page = 0
+
+        skip = page * page_size
+
+        users = list(
+            self.col.find({"birthday.month": month})
+            .sort("birthday.day", 1)
+            .skip(skip)
+            .limit(page_size)
+        )
+
+        if not users:
+            return None
 
         embed = discord.Embed(
             title=f"🎂 Aniversariantes do mês {month:02d}",
             color=discord.Color.pink()
         )
 
-        found = False
         for u in users:
             member = interaction.guild.get_member(u["_id"])
-            if member:
-                embed.add_field(
-                    name=member.display_name,
-                    value=f"📅 {u['birthday']['day']:02d}/{month:02d}",
-                    inline=False
-                )
-                found = True
+            if not member:
+                continue
 
-        if not found:
-            embed.description = "❌ Nenhum aniversário encontrado para este mês."
+            embed.add_field(
+                name=member.display_name,
+                value=f"📅 {u['birthday']['day']:02d}/{month:02d}",
+                inline=False
+            )
 
-        embed.set_footer(text="Use /birthday set para definir o seu 🎉")
+        embed.set_footer(text=f"Página {page + 1} • Use /birthday set para definir o seu 🎉")
+        return embed
 
-        await interaction.response.send_message(embed=embed)
 
 
     # -------------------------
