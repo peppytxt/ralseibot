@@ -38,7 +38,27 @@ class RankView(discord.ui.View):
         if self.message:
             await self.message.edit(view=self)
 
+    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.secondary)
+    async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.page <= 0:
+            await interaction.response.defer()
+            return
 
+        self.page -= 1
+        embed = await self.build_func(interaction, self.page, self.page_size)
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
+    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.page += 1
+        embed = await self.build_func(interaction, self.page, self.page_size)
+
+        if embed is None:
+            self.page -= 1
+            await interaction.response.defer()
+            return
+
+        await interaction.response.edit_message(embed=embed, view=self)
 
 class XP(commands.Cog):
     def __init__(self, bot):
@@ -414,18 +434,18 @@ class XP(commands.Cog):
     )
     # -----------------------------------------------------
 
-    async def build_rank_embed(self, interaction, page, page_size):
+    async def build_local_rank_embed(self, interaction, page, page_size):
+        guild_id = str(interaction.guild.id)
         skip = page * page_size
 
         cursor = (
-            self.col.find({"xp_global": {"$gt": 0}})
-            .sort("xp_global", -1)
+            self.col.find({f"xp_local.{guild_id}.xp": {"$exists": True}})
+            .sort([(f"xp_local.{guild_id}.xp", -1)])
             .skip(skip)
             .limit(page_size)
         )
 
         users = list(cursor)
-
         if not users:
             return None
 
@@ -435,75 +455,24 @@ class XP(commands.Cog):
         for i, user in enumerate(users):
             pos = start_pos + i
             uid = user["_id"]
-            xp = user.get("xp_global", 0)
+            xp = user["xp_local"][guild_id]["xp"]
 
-            try:
-                discord_user = (
-                    interaction.client.get_user(uid)
-                    or await interaction.client.fetch_user(uid)
-                )
-                name = discord_user.name
-            except:
-                name = f"Usuário ({uid})"
-                
+            member = interaction.guild.get_member(uid)
+            name = member.display_name if member else f"Usuário ({uid})"
+
             if uid == interaction.user.id:
-                name = f" {name.upper()}"
-                desc += f"## ⭐ **#{pos} - {name}** • {xp} XP\n"
+                desc += f"## ⭐ **#{pos} - {name.upper()}** • {xp} XP\n"
             else:
                 desc += f"**#{pos} - {name}** • {xp} XP\n"
 
-
         embed = discord.Embed(
-            title="🌍 Ranking Global de XP",
+            title=f"🏠 Ranking Local - {interaction.guild.name}",
             description=desc,
-            color=discord.Color.gold()
+            color=discord.Color.green()
         )
 
-        embed.set_footer(
-            text=f"Página {page + 1}"
-        )
-
+        embed.set_footer(text=f"Página {page + 1}")
         return embed
-    
-    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.secondary)
-    async def previous(
-        self,
-        interaction: discord.Interaction,
-        button: discord.ui.Button
-    ):
-        if self.page <= 0:
-            await interaction.response.defer()
-            return
-
-        self.page -= 1
-        embed = await self.build_func(
-            interaction,
-            self.page,
-            self.page_size
-        )
-
-        await interaction.response.edit_message(embed=embed, view=self)
-
-
-        @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
-        async def next(
-            self,
-            interaction: discord.Interaction,
-            button: discord.ui.Button
-        ):
-            self.page += 1
-            embed = await self.build_func(
-                interaction,
-                self.page,
-                self.page_size
-            )
-
-            if embed is None:
-                self.page -= 1
-                await interaction.response.defer()
-                return
-
-            await interaction.response.edit_message(embed=embed, view=self)
 
 
 async def setup(bot):
