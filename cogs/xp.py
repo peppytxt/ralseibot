@@ -448,9 +448,9 @@ class XP(commands.Cog):
                 
             if uid == interaction.user.id:
                 name = f"# {name.upper()}"
-                desc += f"⭐ **#{pos} — {name}** • {xp} XP\n"
+                desc += f"# ⭐ **#{pos} - {name}** • {xp} XP\n"
             else:
-                desc += f"**#{pos} — {name}** • {xp} XP\n"
+                desc += f"**#{pos} - {name}** • {xp} XP\n"
 
 
         embed = discord.Embed(
