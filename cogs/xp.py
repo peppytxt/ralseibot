@@ -203,7 +203,7 @@ class XP(commands.Cog):
             view=view
         )
 
-
+        view.message = await interaction.original_response()
 
     # ------------------------------
     # /rank local 

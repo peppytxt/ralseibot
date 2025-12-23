@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
 import random
+from views.rank_view import RankView 
 
 BR_TZ = timezone(timedelta(hours=-3))
 
@@ -176,6 +177,80 @@ class Economy(commands.Cog):
 
         return None
 
+    async def build_rankcoins_embed(self, interaction, page: int, page_size: int = 5):
+        skip = (page - 1) * page_size
+
+        cursor = (
+            self.col.find(
+                {"coins": {"$exists": True}},
+                {"coins": 1}
+            )
+            .sort("coins", -1)
+            .skip(skip)
+            .limit(page_size)
+        )
+
+        users = list(cursor)
+
+        if not users:
+            return None
+
+        description = ""
+
+        for i, user_data in enumerate(users, start=skip + 1):
+            user_id = user_data["_id"]
+            coins = user_data.get("coins", 0)
+
+            user = self.bot.get_user(user_id)
+            name = user.display_name if user else f"Usuário {user_id}"
+
+            medal = ""
+            if i == 1:
+                medal = "🥇"
+            elif i == 2:
+                medal = "🥈"
+            elif i == 3:
+                medal = "🥉"
+
+            description += f"**{i}. {medal} {name}** ➜ {coins} ralcoins\n"
+
+        embed = discord.Embed(
+            title="🏆 Rank Global de Ralcoins",
+            description=description,
+            color=discord.Color.gold()
+        )
+
+        embed.set_footer(text=f"Página {page}")
+
+        return embed
+
+      # ------------------ RANK GLOBAL ------------------
+    @app_commands.command(name="rankcoins", description="Rank global de ralcoins")
+    async def rank(self, interaction: discord.Interaction, page: int = 1):
+        page_size = 5
+
+        embed = await self.build_rankcoins_embed(
+            interaction=interaction,
+            page=page,
+            page_size=page_size
+        )
+
+        if not embed:
+            return await interaction.response.send_message(
+                "Ainda não há dados de economia 😢",
+                ephemeral=True
+            )
+
+        view = RankView(
+            cog=self,
+            interaction=interaction,
+            page=page,
+            page_size=page_size,
+            build_func=self.build_rankcoins_embed
+        )
+
+        await interaction.response.send_message(embed=embed, view=view)
+        view.message = await interaction.original_response()
 
 
 async def setup(bot):
