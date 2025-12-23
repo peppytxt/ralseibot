@@ -126,17 +126,19 @@ class Economy(commands.Cog):
         return embed
 
     
-    async def get_coin_position(self, user_id: int) -> int | None:
-        cursor = self.col.find(
-            {"coins": {"$exists": True}},
-            {"_id": 1}
-        ).sort("coins", -1)
+    def get_coin_position(self, user_id: int) -> int | None:
+        users = list(
+            self.col.find(
+                {"coins": {"$exists": True}}
+            ).sort("coins", -1)
+        )
 
-        for index, user in enumerate(cursor, start=1):
+        for index, user in enumerate(users, start=1):
             if user["_id"] == user_id:
                 return index
 
         return None
+
 
       # ------------------ RANK GLOBAL ------------------
     @app_commands.command(name="rankcoins", description="Ranking global de ralcoins")
