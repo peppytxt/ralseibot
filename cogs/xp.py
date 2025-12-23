@@ -61,14 +61,18 @@ class RankView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
         
     @discord.ui.button(label="📍", style=discord.ButtonStyle.primary)
-    async def my_position(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def my_position(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
         if interaction.user.id != self.author_id:
             return await interaction.response.send_message(
                 "❌ Apenas quem executou o comando pode usar.",
                 ephemeral=True
             )
 
-        rank = await self.get_rank_func(interaction.user)
+        rank = await self.get_rank_func(interaction.user.id)
 
         if rank is None:
             return await interaction.response.send_message(
@@ -85,6 +89,7 @@ class RankView(discord.ui.View):
         )
 
         await interaction.response.edit_message(embed=embed, view=self)
+
 
 
     @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
