@@ -51,6 +51,7 @@ class BirthdayView(discord.ui.View):
     # 📅 Dropdown de meses
     @discord.ui.select(
         placeholder="📅 Escolha um mês",
+        row=1,
         options=[
             discord.SelectOption(label=f"{i:02d}", value=str(i))
             for i in range(1, 13)
@@ -60,9 +61,7 @@ class BirthdayView(discord.ui.View):
         self.month = int(select.values[0])
         self.page = 0
         await self.update(interaction)
-
-
-
+        
 
 class BirthdayDMView(discord.ui.View):
     def __init__(self, cog, user_id):
