@@ -217,73 +217,44 @@ class XP(commands.Cog):
     # /rank global
     # ------------------------------
 
-
     @rank_group.command(
         name="global",
         description="Mostra o ranking global de XP."
     )
-    @app_commands.describe(page="Página do ranking (padrão: 1, máximo: 50)")
-    async def rank_global(
-        self,
-        interaction: discord.Interaction,
-        page: int = 1
-    ):
-        # ---------- validação ----------
-        if page < 1:
-            page = 1
-        if page > 50:
-            page = 50
+    async def rank_global(self, interaction: discord.Interaction):
+        await interaction.response.defer()
 
-        PER_PAGE = 10
-        skip = (page - 1) * PER_PAGE
+        page = 0
+        page_size = 10
 
-        # ---------- busca no banco ----------
-        users = list(
-            self.col.find()
-            .sort("xp_global", -1)
-            .skip(skip)
-            .limit(PER_PAGE)
+        embed = await self.build_rank_embed(
+            interaction,
+            page,
+            page_size
         )
 
-        if not users:
-            return await interaction.response.send_message(
-                "❌ Não há usuários suficientes para essa página.",
+        if embed is None:
+            return await interaction.followup.send(
+                "❌ Não há usuários suficientes para o ranking.",
                 ephemeral=True
             )
 
-        desc = ""
-        start_pos = skip + 1
-
-        for i, user in enumerate(users):
-            pos = start_pos + i
-            uid = user["_id"]
-            xp = user.get("xp_global", 0)
-
-            # tenta pegar nome
-            try:
-                discord_user = (
-                    interaction.client.get_user(uid)
-                    or await interaction.client.fetch_user(uid)
-                )
-                name = discord_user.name
-            except:
-                name = f"Usuário ({uid})"
-
-            # destaque para quem executou
-            if uid == interaction.user.id:
-                desc += f"⭐ **#{pos} — {name.upper()}** • {xp} XP\n"
-            else:
-                desc += f"**#{pos} — {name}** • {xp} XP\n"
-
-        embed = discord.Embed(
-            title="🌍 Ranking Global de XP",
-            description=desc,
-            color=discord.Color.gold()
+        view = RankView(
+            cog=self,
+            interaction=interaction,
+            page=page,
+            page_size=page_size,
+            timeout=60
         )
 
-        embed.set_footer(text=f"Página {page}")
+        view.build_func = self.build_rank_embed
 
-        await interaction.response.send_message(embed=embed)
+        message = await interaction.followup.send(
+            embed=embed,
+            view=view
+        )
+
+        view.message = message
 
 
     # ------------------------------
@@ -408,7 +379,7 @@ class XP(commands.Cog):
         try:
             await user.send(embed=embed)
         except discord.Forbidden:
-            pass  # usuário com DM fechada
+            pass
         
         
     @app_commands.command(name="leveldm", description="Ativar ou desativar DM ao subir de nível")
@@ -465,7 +436,7 @@ class XP(commands.Cog):
                 name = f"Usuário ({uid})"
 
             if uid == interaction.user.id:
-                desc += f"# ⭐ **#{pos} - {name.upper()}** • {xp} XP\n"
+                desc += f"## ⭐ **#{pos} - {name.upper()}** • {xp} XP\n"
             else:
                 desc += f"**#{pos} - {name}** • {xp} XP\n"
 
