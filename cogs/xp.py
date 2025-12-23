@@ -14,7 +14,6 @@ class XP(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        # --- Pega a URL do Mongo do ambiente (Railway ou .env) ---
         MONGO_URL = os.getenv("MONGO_URL")
         if not MONGO_URL:
             raise ValueError("❌ ERRO: Variável de ambiente MONGO_URL não encontrada!")
