@@ -447,8 +447,8 @@ class XP(commands.Cog):
                 name = f"Usuário ({uid})"
                 
             if uid == interaction.user.id:
-                name = f"# {name.upper()}"
-                desc += f"# ⭐ **#{pos} - {name}** • {xp} XP\n"
+                name = f" {name.upper()}"
+                desc += f"## ⭐ **#{pos} - {name}** • {xp} XP\n"
             else:
                 desc += f"**#{pos} - {name}** • {xp} XP\n"
 
