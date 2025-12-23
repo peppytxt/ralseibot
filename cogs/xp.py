@@ -59,6 +59,67 @@ class RankView(discord.ui.View):
             return
 
         await interaction.response.edit_message(embed=embed, view=self)
+        
+    @discord.ui.button(label="📍 Minha posição", style=discord.ButtonStyle.primary)
+    async def my_position(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        if interaction.user.id != self.author_id:
+            return await interaction.response.send_message(
+                "❌ Apenas quem executou o comando pode usar.",
+                ephemeral=True
+            )
+
+        # Descobre o rank do usuário
+        rank = await self.get_user_rank(interaction.user)
+
+        if rank is None:
+            return await interaction.response.send_message(
+                "❌ Você não está no ranking.",
+                ephemeral=True
+            )
+
+        # Calcula a página
+        self.page = (rank - 1) // self.page_size
+
+        embed = await self.build_func(
+            interaction,
+            self.page,
+            self.page_size
+        )
+
+        await interaction.response.edit_message(embed=embed, view=self)
+        
+    async def get_user_rank(self, user: discord.Member):
+        # RANK GLOBAL
+        if self.build_func == self.cog.build_rank_embed:
+            data = self.cog.col.find_one({"_id": user.id})
+            if not data:
+                return None
+
+            xp = data.get("xp_global", 0)
+            return self.cog.col.count_documents(
+                {"xp_global": {"$gt": xp}}
+            ) + 1
+
+        # RANK LOCAL
+        if self.build_func == self.cog.build_local_rank_embed:
+            guild_id = str(self.interaction.guild.id)
+
+            data = self.cog.col.find_one({"_id": user.id})
+            if not data:
+                return None
+
+            xp = data.get("xp_local", {}).get(guild_id, {}).get("xp", 0)
+
+            return self.cog.col.count_documents({
+                f"xp_local.{guild_id}.xp": {"$gt": xp}
+            }) + 1
+
+        return None
+
 
 class XP(commands.Cog):
     def __init__(self, bot):
@@ -79,6 +140,7 @@ class XP(commands.Cog):
         print("Conectado ao MongoDB com sucesso!")
         
     rank_group = app_commands.Group(name="rank", description="Comandos de ranking de XP.")
+    
     # ------------------------------
     # Ganha XP ao mandar mensagem
     # ------------------------------
@@ -166,7 +228,7 @@ class XP(commands.Cog):
         await self.bot.process_commands(message)
 
     # ------------------------------
-    # /xp — mostra XP do usuário
+    # /xp - mostra XP do usuário
     # ------------------------------
     @app_commands.command(name="xp", description="Mostra seu XP global e do servidor.")
     async def xp_command(self, interaction: discord.Interaction, user: discord.Member = None):
@@ -261,33 +323,42 @@ class XP(commands.Cog):
     # /rank local 
     # ------------------------------
         
-    @rank_group.command(name="local", description="Mostra o ranking de XP deste servidor.")
-    async def rank_local(self, interaction: discord.Interaction):
+    @rank_group.command(
+        name="local",
+        description="Mostra o ranking de XP deste servidor."
+    )
+    @app_commands.describe(page="Página do ranking (padrão: 1)")
+    async def rank_local(
+        self,
+        interaction: discord.Interaction,
+        page: app_commands.Range[int, 1, 50] = 1
+    ):
         await interaction.response.defer()
 
-        page = 0
         page_size = 10
+        page_index = page - 1  # converte pra base 0
 
         embed = await self.build_local_rank_embed(
             interaction,
-            page,
+            page_index,
             page_size
         )
 
         if embed is None:
             return await interaction.followup.send(
-                "❌ Não há XP registrado neste servidor.",
+                "❌ Não há usuários suficientes para essa página.",
                 ephemeral=True
             )
 
         view = RankView(
             cog=self,
             interaction=interaction,
-            page=page,
+            page=page_index,
             page_size=page_size,
             timeout=60
         )
 
+        # 🔗 liga a função correta (LOCAL)
         view.build_func = self.build_local_rank_embed
 
         message = await interaction.followup.send(
