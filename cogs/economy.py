@@ -208,14 +208,21 @@ class Economy(commands.Cog):
     )
     @app_commands.describe(
         user="Usuário que receberá as ralcoins",
-        quantidade="Quantidade de ralcoins"
+        quantidade="Quantidade de ralcoins",
+        tempo="Tempo limite para confirmação (em minutos, padrão 15)"
     )
     async def pay(
         self,
         interaction: discord.Interaction,
         user: discord.Member,
-        quantidade: app_commands.Range[int, 1, 1_000_000]
+        quantidade: app_commands.Range[int, 1, 1_000_000],
+        tempo: app_commands.Range[int, 1, 60] | None = None
     ):
+
+
+        timeout_minutes = tempo if tempo is not None else 15
+        timeout_seconds = timeout_minutes * 60
+
         sender = interaction.user
         receiver = user
 
@@ -251,7 +258,14 @@ class Economy(commands.Cog):
             color=discord.Color.orange()
         )
 
-        view = PayConfirmView(self, sender, receiver, quantidade)
+        view = PayConfirmView(
+            cog=self,
+            sender=sender,
+            receiver=receiver,
+            amount=quantidade,
+            timeout_seconds=timeout_seconds
+        )
+
 
         await interaction.response.send_message(embed=embed, view=view)
         view.message = await interaction.original_response()

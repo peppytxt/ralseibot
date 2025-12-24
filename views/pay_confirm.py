@@ -1,8 +1,8 @@
 import discord
 
 class PayConfirmView(discord.ui.View):
-    def __init__(self, cog, sender, receiver, amount):
-        super().__init__(timeout=60)
+    def __init__(self, cog, sender, receiver, amount, timeout_seconds: int = 900):
+        super().__init__(timeout=timeout_seconds)
 
         self.cog = cog
         self.sender = sender
@@ -84,7 +84,9 @@ class PayConfirmView(discord.ui.View):
 
     async def on_timeout(self):
         if self.message:
-            await self.message.edit(
-                content="⏰ Tempo esgotado. Transferência cancelada.",
-                view=None
+            embed = discord.Embed(
+                title="⏰ Transferência expirada",
+                description="O tempo para confirmação acabou. Nenhuma ralcoin foi transferida.",
+                color=discord.Color.red()
             )
+            await self.message.send(embed=embed, view=None)
