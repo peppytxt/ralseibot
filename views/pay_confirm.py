@@ -45,7 +45,7 @@ class PayConfirmView(discord.ui.View):
             color=discord.Color.green()
         )
 
-        await interaction.response.channel.send(embed=embed)
+        await self.message.channel.send(embed=embed)
         self.stop()
 
     @discord.ui.button(label="✅ Confirmar", style=discord.ButtonStyle.success)
@@ -94,4 +94,6 @@ class PayConfirmView(discord.ui.View):
                 description="O tempo para confirmação acabou. Nenhuma ralcoin foi transferida.",
                 color=discord.Color.red()
             )
-            await self.message.send(embed=embed, view=None)
+            await self.message.channel.send(embed=embed)
+            await self.message.edit(view=None)
+
