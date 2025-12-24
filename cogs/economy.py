@@ -94,13 +94,17 @@ class Economy(commands.Cog):
 
         users = list(
             self.col.find(
-                {"coins": {"$exists": True}},
+                {
+                    "coins": {"$exists": True},
+                    "_id": {"$ne": BOT_ECONOMY_ID}
+                },
                 {"coins": 1}
             )
             .sort("coins", -1)
             .skip(skip)
             .limit(page_size)
         )
+
 
         if not users:
             return None
@@ -134,9 +138,13 @@ class Economy(commands.Cog):
     
     def get_coin_rank(self, user_id: int) -> int | None:
         cursor = self.col.find(
-            {"coins": {"$exists": True}},
+            {
+                "coins": {"$exists": True},
+                "_id": {"$ne": BOT_ECONOMY_ID}
+            },
             {"_id": 1}
         ).sort("coins", -1)
+
 
         for index, user in enumerate(cursor, start=1):
             if user["_id"] == user_id:
