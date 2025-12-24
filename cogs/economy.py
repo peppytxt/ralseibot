@@ -199,6 +199,74 @@ class Economy(commands.Cog):
         description="Sistema de apostas"
     )
     
+    # ------------------ PAY ------------------
+    
+    @app_commands.command(
+        name="pay",
+        description="Pague ralcoins para outro usuário"
+    )
+    @app_commands.describe(
+        user="Usuário que receberá as ralcoins",
+        quantidade="Quantidade de ralcoins"
+    )
+    async def pay(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member,
+        quantidade: app_commands.Range[int, 1, 1_000_000]
+    ):
+        sender_id = interaction.user.id
+        receiver_id = user.id
+
+        # ❌ Não pode pagar a si mesmo
+        if sender_id == receiver_id:
+            return await interaction.response.send_message(
+                "❌ Você não pode pagar a si mesmo.",
+                ephemeral=True
+            )
+
+        # ❌ Não pode pagar bots
+        if user.bot:
+            return await interaction.response.send_message(
+                "❌ Você não pode pagar ralcoins para bots.",
+                ephemeral=True
+            )
+
+        # Busca saldo do pagador
+        sender_data = self.col.find_one({"_id": sender_id}) or {}
+        sender_coins = sender_data.get("coins", 0)
+
+        if sender_coins < quantidade:
+            return await interaction.response.send_message(
+                "❌ Você não tem ralcoins suficientes.",
+                ephemeral=True
+            )
+
+        # 💸 Debita quem paga
+        self.col.update_one(
+            {"_id": sender_id},
+            {"$inc": {"coins": -quantidade}}
+        )
+
+        # 💰 Credita quem recebe
+        self.col.update_one(
+            {"_id": receiver_id},
+            {"$inc": {"coins": quantidade}},
+            upsert=True
+        )
+
+        embed = discord.Embed(
+            title="💸 Pagamento realizado!",
+            description=(
+                f"**{interaction.user.display_name}** pagou "
+                f"**{quantidade} ralcoins** para **{user.display_name}** 💰"
+            ),
+            color=discord.Color.green()
+        )
+
+        await interaction.response.send_message(embed=embed)
+
+    
     @bet.command(name="coinflip", description="Aposte no cara ou coroa")
     @app_commands.describe(
         side="Escolha cara ou coroa",
@@ -266,8 +334,6 @@ class Economy(commands.Cog):
             )
 
             return await interaction.response.send_message(embed=embed)
-
-
 
         # Vitória inicial
         embed = discord.Embed(
