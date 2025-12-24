@@ -273,47 +273,28 @@ class Economy(commands.Cog):
 
         view.message = await interaction.original_response()
 
+    @commands.is_owner()
     @app_commands.command(
-        name="add_ralcoin",
-        description="(Owner) Adiciona ralcoins a um usuário"
+        name="bank_add",
+        description="Adicionar ralcoins ao banco do bot"
     )
-    @app_commands.describe(
-        user="Usuário que receberá as moedas",
-        quantidade="Quantidade de ralcoins"
-    )
-    async def add_ralcoin(
+    @app_commands.describe(quantidade="Quantidade de ralcoins")
+    async def bank_add(
         self,
         interaction: discord.Interaction,
-        user: discord.Member,
-        quantidade: app_commands.Range[int, 1, 1_000_000]
+        quantidade: app_commands.Range[int, 1, 10_000_000]
     ):
-        # 🔒 Permissão
-        if interaction.user.id != BOT_OWNER_ID:
-            return await interaction.response.send_message(
-                "❌ Você não tem permissão para usar este comando.",
-                ephemeral=True
-            )
-
-        # Atualiza saldo
         self.col.update_one(
-            {"_id": user.id},
+            {"_id": BOT_ECONOMY_ID},
             {"$inc": {"coins": quantidade}},
             upsert=True
         )
 
-        embed = discord.Embed(
-            title="🪙 Ralcoins adicionados",
-            description=(
-                f"👤 Usuário: {user.mention}\n"
-                f"💰 Quantidade: **{quantidade} ralcoins**"
-            ),
-            color=discord.Color.green()
-        )
-
         await interaction.response.send_message(
-            embed=embed,
+            f"🏦 Banco do bot recebeu **{quantidade} ralcoins**.",
             ephemeral=True
         )
+
 
 async def setup(bot):
     await bot.add_cog(Economy(bot))
