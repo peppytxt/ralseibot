@@ -11,6 +11,12 @@ BR_TZ = timezone(timedelta(hours=-3))
 BOT_ECONOMY_ID = 0
 
 class Economy(commands.Cog):
+    
+    bet = app_commands.Group(
+        name="bet",
+        description="Sistema de apostas"
+    )
+
     def __init__(self, bot):
         self.bot = bot
         self.col = bot.get_cog("XP").col
@@ -182,11 +188,6 @@ class Economy(commands.Cog):
         )
 
         view.message = await interaction.original_response()
-        
-    bet = app_commands.Group(
-        name="bet",
-        description="Sistema de apostas"
-    )
     
     @bet.command(name="coinflip", description="Aposte no cara ou coroa")
     @app_commands.describe(
