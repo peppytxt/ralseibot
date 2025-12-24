@@ -241,6 +241,12 @@ class Economy(commands.Cog):
                 "❌ Você não tem ralcoins suficientes.",
                 ephemeral=True
             )
+            
+        # Bot entra na aposta inicial
+        self.col.update_one(
+            {"_id": BOT_ECONOMY_ID},
+            {"$inc": {"coins": -quantidade}}
+        )
 
         # Debita aposta inicial
         self.col.update_one(
