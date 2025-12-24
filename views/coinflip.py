@@ -43,7 +43,7 @@ class CoinflipView(discord.ui.View):
                 button.disabled = True
 
             embed = discord.Embed(
-                title="🪙 Coinflip — Vitória!",
+                title="🪙 Coinflip - Vitória!",
                 description=(
                     f"Você ganhou!\n\n"
                     f"💰 Valor atual: **{self.amount} ralcoins**\n"
@@ -52,11 +52,11 @@ class CoinflipView(discord.ui.View):
                 color=discord.Color.green()
             )
 
-            await interaction.response.edit_message(embed=embed, view=self)
+            await interaction.response.send_message(embed=embed)
 
         else:
             embed = discord.Embed(
-                title="💥 Coinflip — Derrota!",
+                title="💥 Coinflip - Derrota!",
                 description="Você perdeu **tudo** 😢",
                 color=discord.Color.red()
             )
@@ -85,7 +85,7 @@ class CoinflipView(discord.ui.View):
             color=discord.Color.gold()
         )
 
-        await interaction.response.edit_message(embed=embed, view=None)
+        await interaction.response.send_message(embed=embed)
         self.stop()
 
     async def on_timeout(self):

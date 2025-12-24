@@ -204,6 +204,12 @@ class Economy(commands.Cog):
         side: app_commands.Choice[str],
         quantidade: app_commands.Range[int, 100, 100_000]
     ):
+        if quantidade < 100:
+            return await interaction.response.send_message(
+                "❌ A aposta mínima é de **100 ralcoins**.",
+                ephemeral=True
+            )
+
         bot_data = self.col.find_one({"_id": BOT_ECONOMY_ID}) or {}
         bot_coins = bot_data.get("coins", 0)
 
