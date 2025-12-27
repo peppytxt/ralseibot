@@ -337,7 +337,7 @@ class Challenges(commands.Cog):
 
 
         embed = discord.Embed(
-            title="🧠 Desafio!",
+            title="📺 IT'S TV TIME!!",
             description=challenge["question"],
             color=discord.Color.blue()
         )
