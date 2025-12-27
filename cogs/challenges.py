@@ -129,7 +129,7 @@ class Challenges(commands.Cog):
         )
 
     @app_commands.command(
-        name="challenge_rank",
+        name="challengerank",
         description="Ranking dos usuários que mais venceram desafios"
     )
     async def challenge_rank(self, interaction: discord.Interaction):
