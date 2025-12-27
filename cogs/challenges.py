@@ -167,11 +167,9 @@ class Challenges(commands.Cog):
         
     @app_commands.command(
         name="challengestats",
-        description="Veja estatísticas de desafios suas ou de outro usuário"
+        description="Veja estatísticas de desafios"
     )
-    @app_commands.describe(
-        user="Usuário para ver as estatísticas (opcional)"
-    )
+    @app_commands.describe(user="Usuário para ver as estatísticas (opcional)")
     async def challenge_stats(
         self,
         interaction: discord.Interaction,
@@ -186,26 +184,27 @@ class Challenges(commands.Cog):
             )
 
         data = self.col.find_one({"_id": target.id}) or {}
-        wins = data.get("challenge_wins", 0)
 
-        # Rank global de desafios (ignora bots)
+        wins = data.get("challenge_wins", 0)
+        earnings = data.get("challenge_earnings", 0)
+
         rank = self.col.count_documents({
             "challenge_wins": {"$gt": wins},
-            "_id": {"$ne": 0}  # caso use BOT_ECONOMY_ID
+            "_id": {"$ne": 0}
         }) + 1
 
         embed = discord.Embed(
             title="🧠 Estatísticas de Desafios",
             description=(
                 f"👤 {target.mention}\n\n"
-                f"🧠 **Desafios vencidos:** {wins}\n"
-                f"🏆 **Rank de desafios:** #{rank}"
+                f"🧠 **Vitórias:** {wins}\n"
+                f"💰 **Ralcoins ganhos:** {earnings}\n"
+                f"🏆 **Rank de vitórias:** #{rank}"
             ),
             color=discord.Color.blurple()
         )
 
         await interaction.response.send_message(embed=embed)
-
 
 
     # ------------- ON MESSAGE ---------------------
@@ -363,15 +362,16 @@ class Challenges(commands.Cog):
             await message.add_reaction("✅")
 
             self.col.update_one(
-                {"_id": message.author.id},
+                {"_id": message.user_id},
                 {
                     "$inc": {
-                        "coins": reward,
-                        "challenge_wins": 1
+                        "challenge_wins": 1,
+                        "challenge_earnings": reward
                     }
                 },
                 upsert=True
             )
+
 
 
             await message.channel.send(
