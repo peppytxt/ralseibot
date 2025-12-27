@@ -155,7 +155,7 @@ class Challenges(commands.Cog):
             name = user.display_name if user else f"Usuário {u['_id']}"
             wins = u.get("challenge_wins", 0)
 
-            desc += f"**#{i} — {name}** • 🧠 {wins} desafios\n"
+            desc += f"**#{i} - {name}** • 🧠 {wins} desafios\n"
 
         embed = discord.Embed(
             title="🏆 Ranking de Desafios",
