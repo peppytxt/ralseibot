@@ -166,7 +166,7 @@ class Challenges(commands.Cog):
         await interaction.response.send_message(embed=embed)
         
     @app_commands.command(
-        name="challenge_stats",
+        name="challengestats",
         description="Veja estatísticas de desafios suas ou de outro usuário"
     )
     @app_commands.describe(
