@@ -204,7 +204,7 @@ class Challenges(commands.Cog):
         }) + 1
 
         embed = discord.Embed(
-            title="🧠 Estatísticas de Desafios",
+            title="📺 Estatísticas de Desafios",
             description=(
                 f"👤 {target.mention}\n\n"
                 f"🧠 **Vitórias:** {wins}\n"
