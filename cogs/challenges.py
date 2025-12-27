@@ -362,7 +362,7 @@ class Challenges(commands.Cog):
             await message.add_reaction("✅")
 
             self.col.update_one(
-                {"_id": message.user_id},
+                {"_id": message.author.id},
                 {
                     "$inc": {
                         "challenge_wins": 1,
