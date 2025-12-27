@@ -128,6 +128,85 @@ class Challenges(commands.Cog):
             ephemeral=True
         )
 
+    @app_commands.command(
+        name="challenge_rank",
+        description="Ranking dos usuários que mais venceram desafios"
+    )
+    async def challenge_rank(self, interaction: discord.Interaction):
+
+        users = list(
+            self.col.find(
+                {"challenge_wins": {"$gt": 0}},
+                {"challenge_wins": 1}
+            )
+            .sort("challenge_wins", -1)
+            .limit(10)
+        )
+
+        if not users:
+            return await interaction.response.send_message(
+                "❌ Ainda ninguém completou desafios.",
+                ephemeral=True
+            )
+
+        desc = ""
+        for i, u in enumerate(users, start=1):
+            user = interaction.client.get_user(u["_id"])
+            name = user.display_name if user else f"Usuário {u['_id']}"
+            wins = u.get("challenge_wins", 0)
+
+            desc += f"**#{i} — {name}** • 🧠 {wins} desafios\n"
+
+        embed = discord.Embed(
+            title="🏆 Ranking de Desafios",
+            description=desc,
+            color=discord.Color.purple()
+        )
+
+        await interaction.response.send_message(embed=embed)
+        
+    @app_commands.command(
+        name="challenge_stats",
+        description="Veja estatísticas de desafios suas ou de outro usuário"
+    )
+    @app_commands.describe(
+        user="Usuário para ver as estatísticas (opcional)"
+    )
+    async def challenge_stats(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member | None = None
+    ):
+        target = user or interaction.user
+
+        if target.bot:
+            return await interaction.response.send_message(
+                "❌ Bots não participam de desafios.",
+                ephemeral=True
+            )
+
+        data = self.col.find_one({"_id": target.id}) or {}
+        wins = data.get("challenge_wins", 0)
+
+        # Rank global de desafios (ignora bots)
+        rank = self.col.count_documents({
+            "challenge_wins": {"$gt": wins},
+            "_id": {"$ne": 0}  # caso use BOT_ECONOMY_ID
+        }) + 1
+
+        embed = discord.Embed(
+            title="🧠 Estatísticas de Desafios",
+            description=(
+                f"👤 {target.mention}\n\n"
+                f"🧠 **Desafios vencidos:** {wins}\n"
+                f"🏆 **Rank de desafios:** #{rank}"
+            ),
+            color=discord.Color.blurple()
+        )
+
+        await interaction.response.send_message(embed=embed)
+
+
 
     # ------------- ON MESSAGE ---------------------
 
@@ -285,9 +364,15 @@ class Challenges(commands.Cog):
 
             self.col.update_one(
                 {"_id": message.author.id},
-                {"$inc": {"coins": reward}},
+                {
+                    "$inc": {
+                        "coins": reward,
+                        "challenge_wins": 1
+                    }
+                },
                 upsert=True
             )
+
 
             await message.channel.send(
                 f"🎉 {message.author.mention} acertou! "
