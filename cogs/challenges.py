@@ -242,6 +242,11 @@ class Challenges(commands.Cog):
                 self.message_counters[key] = 0
                 await self.spawn_challenge(message.guild, config)
 
+                self.col.update_one(
+                    {"_id": message.guild.id},
+                    {"$set": {"challenge_last": time.time()}}
+                )
+
         # ********** CHECAR RESPOSTAS **********
         await self.check_answer(message)
 
