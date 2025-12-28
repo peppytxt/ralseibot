@@ -50,7 +50,7 @@ class Challenges(commands.Cog):
 
         await channel.send(
             f"💡 **Você sabia?**\n"
-            f"O {user.mention} respondeu corretamente em "
+            f"{user.mention} respondeu corretamente em "
             f"**{response_time:.2f} segundos** ⌨️⚡"
         )
     
