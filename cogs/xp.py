@@ -90,9 +90,6 @@ class RankView(discord.ui.View):
 
         await interaction.response.edit_message(embed=embed, view=self)
 
-
-
-
     @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
     async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.interaction.user.id:
@@ -151,6 +148,57 @@ class RankView(discord.ui.View):
             ) + 1
         return None
 
+class VoiceXP(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.voice_join_times = {}
+
+    @property
+    def col(self):
+        return self.bot.get_cog("XP").col
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        if member.bot:
+            return
+
+        user_id = member.id
+
+        def is_counted(state):
+            return not (state.self_mute or state.self_deaf or state.mute or state.deaf)
+
+        if before.channel and not after.channel:
+            join_time = self.voice_join_times.pop(user_id, None)
+            if join_time:
+                elapsed = time.time() - join_time
+                if is_counted(before) and is_counted(after):
+                    await self._process_voice_time(member, elapsed)
+
+        elif before.channel and after.channel:
+            join_time = self.voice_join_times.pop(user_id, None)
+            if join_time and is_counted(before):
+                elapsed = time.time() - join_time
+                await self._process_voice_time(member, elapsed)
+
+            if is_counted(after):
+                self.voice_join_times[user_id] = time.time()
+
+
+        elif not before.channel and after.channel:
+            if is_counted(after):
+                self.voice_join_times[user_id] = time.time()
+
+    async def _process_voice_time(self, member, elapsed_seconds):
+        earned_xp = int(elapsed_seconds / 60)
+        if earned_xp <= 0:
+            return
+
+        self.col.update_one(
+            {"_id": member.id},
+            {"$inc": {"xp_voice": earned_xp}},
+            upsert=True
+        )
+
 class XP(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -159,12 +207,10 @@ class XP(commands.Cog):
         if not MONGO_URL:
             raise ValueError("❌ ERRO: Variável de ambiente MONGO_URL não encontrada!")
 
-        # Conexão com MongoDB
         self.client = MongoClient(MONGO_URL)
         self.db = self.client["ralsei_bot"]
         self.col = self.db["users"]
 
-        # Index para ranking (sem erro)
         self.col.create_index("xp_global")
 
         print("Conectado ao MongoDB com sucesso!")
@@ -199,7 +245,6 @@ class XP(commands.Cog):
             self.col.insert_one(user)
         updated = False
 
-        # Caso era o formato antigo: "xp"
         if "xp_global" not in user:
             user["xp_global"] = user.get("xp", 0)
             updated = True
@@ -212,14 +257,12 @@ class XP(commands.Cog):
             user["xp_local"] = {}
             updated = True
 
-        # Se algo foi alterado, salva no banco
         if updated:
             self.col.update_one(
                 {"_id": user_id},
                 {"$set": user}
             )
 
-        # Atualiza variáveis após migração
         xp_global = user["xp_global"]
         last_global = user["last_xp_global"]
         local_data = user["xp_local"]
@@ -231,7 +274,6 @@ class XP(commands.Cog):
             gained = random.randint(5, 15)
             await self.add_xp(message.author, gained)
 
-            # atualiza apenas o cooldown
             self.col.update_one(
                 {"_id": user_id},
                 {"$set": {"last_xp_global": now}}
@@ -247,7 +289,6 @@ class XP(commands.Cog):
             local["xp"] += gained
             local["last_xp"] = now
 
-            # salva no dict e depois no Mongo
             local_data[guild_id] = local
 
             self.col.update_one(
@@ -256,12 +297,17 @@ class XP(commands.Cog):
             )
 
         await self.bot.process_commands(message)
+        
+    xp_group = app_commands.Group(
+        name="xp",
+        description="Comandos relacionados a XP"
+    )
 
     # ------------------------------
     # /xp - mostra XP do usuário
     # ------------------------------
-    @app_commands.command(name="xp", description="Mostra seu XP global e do servidor.")
-    async def xp_command(self, interaction: discord.Interaction, user: discord.Member = None):
+    @xp_group.command(name="view", description="Mostra seu XP global e do servidor")
+    async def xp_info(self, interaction: discord.Interaction, user: discord.Member = None):
         user = user or interaction.user
         guild_id = str(interaction.guild.id)
 
@@ -272,15 +318,12 @@ class XP(commands.Cog):
                 f"{user.mention} ainda não possui XP registrado."
             )
 
-        ### ===== GLOBAL =====
         xp_global = data.get("xp_global", 0)
         rank_global = self.col.count_documents({"xp_global": {"$gt": xp_global}}) + 1
 
-        ### ===== LOCAL =====
         local_data = data.get("xp_local", {})
         xp_local = local_data.get(guild_id, {}).get("xp", 0)
 
-        # rank local (puxar apenas desse servidor!)
         rank_local = self.col.count_documents({
             f"xp_local.{guild_id}.xp": {"$gt": xp_local}
         }) + 1
@@ -303,7 +346,24 @@ class XP(commands.Cog):
         )
 
         await interaction.response.send_message(embed=embed)
+    
+    # ------------------------------
+    # /xp voice
+    # ------------------------------
+    @xp_group.command(name="voice", description="Veja seu XP de voz")
+    async def xp_voice(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member | None = None
+    ):
+        target = user or interaction.user
+        data = self.col.find_one({"_id": target.id}) or {}
+        xp_voice = data.get("xp_voice", 0)
 
+        await interaction.response.send_message(
+            f"🎧 **XP de Voz de {target.display_name}:** {xp_voice}",
+            ephemeral=True
+        )
 
     # ------------------------------
     # /rank global
@@ -362,7 +422,7 @@ class XP(commands.Cog):
         await interaction.response.defer()
 
         page_size = 10
-        page_index = page - 1  # converte pra base 0
+        page_index = page - 1
 
         embed = await self.build_local_rank_embed(
             interaction,

@@ -10,7 +10,6 @@ from views.pay_confirm import PayConfirmView
 BR_TZ = timezone(timedelta(hours=-3))
 
 BOT_ECONOMY_ID = 0
-BOT_OWNER_ID = 274645285634834434
 
 
 class Economy(commands.Cog):
