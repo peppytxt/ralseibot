@@ -159,6 +159,11 @@ class VoiceXP(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
+        print(
+            f"[VOICE] {member} | "
+            f"{before.channel} -> {after.channel} | "
+            f"mute={after.self_mute} deaf={after.self_deaf}"
+        )
         if member.bot:
             return
 
