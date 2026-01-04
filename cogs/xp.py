@@ -169,10 +169,9 @@ class VoiceXP(commands.Cog):
 
         if before.channel and not after.channel:
             join_time = self.voice_join_times.pop(user_id, None)
-            if join_time:
+            if join_time and is_counted(before):
                 elapsed = time.time() - join_time
-                if is_counted(before) and is_counted(after):
-                    await self._process_voice_time(member, elapsed)
+                await self._process_voice_time(member, elapsed)
 
         elif before.channel and after.channel:
             join_time = self.voice_join_times.pop(user_id, None)
@@ -183,10 +182,10 @@ class VoiceXP(commands.Cog):
             if is_counted(after):
                 self.voice_join_times[user_id] = time.time()
 
-
         elif not before.channel and after.channel:
             if is_counted(after):
                 self.voice_join_times[user_id] = time.time()
+
 
     async def _process_voice_time(self, member, elapsed_seconds):
         earned_xp = int(elapsed_seconds / 60)
