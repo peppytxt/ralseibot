@@ -362,7 +362,7 @@ class XP(commands.Cog):
 
         await interaction.response.send_message(
             f"🎧 **XP de Voz de {target.display_name}:** {xp_voice}",
-            ephemeral=True
+            ephemeral=False
         )
 
     # ------------------------------
