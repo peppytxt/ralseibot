@@ -647,3 +647,4 @@ class XP(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(XP(bot))
+    await bot.add_cog(VoiceXP(bot))
