@@ -149,14 +149,49 @@ class RankView(discord.ui.View):
         return None
 
 class VoiceXP(commands.Cog):
+    XP_INTERVAL = 30        
+    XP_PER_TICK = 1        
+
     def __init__(self, bot):
         self.bot = bot
-        self.voice_join_times = {}
+        self.voice_sessions = {}
+        self.voice_xp_loop.start()
+
+    def cog_unload(self):
+        self.voice_xp_loop.cancel()
 
     @property
     def col(self):
         return self.bot.get_cog("XP").col
 
+    # ------------------------------
+    # UTIL
+    # ------------------------------
+    def is_valid_member(self, member: discord.Member) -> bool:
+        if member.bot:
+            return False
+
+        voice = member.voice
+        if not voice or not voice.channel:
+            return False
+
+        return not (
+            voice.self_mute or
+            voice.self_deaf or
+            voice.mute or
+            voice.deaf
+        )
+
+    def has_enough_people(self, channel: discord.VoiceChannel) -> bool:
+        humans = [
+            m for m in channel.members
+            if not m.bot
+        ]
+        return len(humans) >= 2
+
+    # ------------------------------
+    # VOICE STATE
+    # ------------------------------
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if member.bot:
@@ -164,39 +199,62 @@ class VoiceXP(commands.Cog):
 
         user_id = member.id
 
-        def is_counted(state):
-            return not (state.self_mute or state.self_deaf or state.mute or state.deaf)
-
+        # Saiu da call
         if before.channel and not after.channel:
-            join_time = self.voice_join_times.pop(user_id, None)
-            if join_time and is_counted(before):
-                elapsed = time.time() - join_time
-                await self._process_voice_time(member, elapsed)
-
-        elif before.channel and after.channel:
-            join_time = self.voice_join_times.pop(user_id, None)
-            if join_time and is_counted(before):
-                elapsed = time.time() - join_time
-                await self._process_voice_time(member, elapsed)
-
-            if is_counted(after):
-                self.voice_join_times[user_id] = time.time()
-
-        elif not before.channel and after.channel:
-            if is_counted(after):
-                self.voice_join_times[user_id] = time.time()
-
-
-    async def _process_voice_time(self, member, elapsed_seconds):
-        earned_xp = int(elapsed_seconds / 30)
-        if earned_xp <= 0:
+            self.voice_sessions.pop(user_id, None)
             return
 
-        self.col.update_one(
-            {"_id": member.id},
-            {"$inc": {"xp_voice": earned_xp}},
-            upsert=True
-        )
+        # Entrou ou mudou estado
+        if after.channel:
+            if self.is_valid_member(member) and self.has_enough_people(after.channel):
+                self.voice_sessions[user_id] = {
+                    "last_tick": time.time()
+                }
+            else:
+                self.voice_sessions.pop(user_id, None)
+
+    # ------------------------------
+    # LOOP DE XP
+    # ------------------------------
+    @tasks.loop(seconds=30)
+    async def voice_xp_loop(self):
+        now = time.time()
+
+        for user_id, session in list(self.voice_sessions.items()):
+            member = self.bot.get_user(user_id)
+            if not member:
+                self.voice_sessions.pop(user_id, None)
+                continue
+
+            guilds = [g for g in self.bot.guilds if g.get_member(user_id)]
+            if not guilds:
+                self.voice_sessions.pop(user_id, None)
+                continue
+
+            guild = guilds[0]
+            member = guild.get_member(user_id)
+
+            if not member or not self.is_valid_member(member):
+                self.voice_sessions.pop(user_id, None)
+                continue
+
+            channel = member.voice.channel
+            if not self.has_enough_people(channel):
+                continue
+
+            elapsed = now - session["last_tick"]
+            if elapsed >= self.XP_INTERVAL:
+                ticks = int(elapsed // self.XP_INTERVAL)
+                xp = ticks * self.XP_PER_TICK
+
+                self.col.update_one(
+                    {"_id": user_id},
+                    {"$inc": {"xp_voice": xp}},
+                    upsert=True
+                )
+
+                session["last_tick"] = now
+
 
 class XP(commands.Cog):
     def __init__(self, bot):
@@ -363,6 +421,59 @@ class XP(commands.Cog):
             f"🎧 **XP de Voz de {target.display_name}:** {xp_voice}",
             ephemeral=False
         )
+    
+    def get_voice_rank(self, user_id: int):
+        users = list(
+            self.col.find({"xp_voice": {"$exists": True}})
+            .sort("xp_voice", -1)
+        )
+
+        for i, u in enumerate(users, start=1):
+            if u["_id"] == user_id:
+                return i
+
+        return 
+    
+    async def build_voice_rank_embed(self, interaction, page, page_size):
+        skip = page * page_size
+
+        cursor = (
+            self.col.find({"xp_voice": {"$exists": True}})
+            .sort("xp_voice", -1)
+            .skip(skip)
+            .limit(page_size)
+        )
+
+        users = list(cursor)
+        if not users:
+            return None
+
+        desc = ""
+        start_pos = skip + 1
+
+        for i, user in enumerate(users):
+            pos = start_pos + i
+            uid = user["_id"]
+            xp_voice = user.get("xp_voice", 0)
+
+            member = interaction.guild.get_member(uid)
+            name = member.display_name if member else f"Usuário ({uid})"
+
+            if uid == interaction.user.id:
+                desc += f"## 🎧 **#{pos} - {name.upper()}** • {xp_voice} XP\n"
+            else:
+                desc += f"**#{pos} - {name}** • {xp_voice} XP\n"
+
+        embed = discord.Embed(
+            title="🎧 Ranking de XP em Call",
+            description=desc,
+            color=discord.Color.purple()
+        )
+
+        embed.set_footer(text=f"Página {page + 1}")
+        return embed
+
+
 
     # ------------------------------
     # /rank global
@@ -442,6 +553,49 @@ class XP(commands.Cog):
             page_size=page_size,
             build_func=self.build_local_rank_embed,
             get_rank_func=self.get_xp_rank
+        )
+
+        message = await interaction.followup.send(
+            embed=embed,
+            view=view
+        )
+
+        view.message = message
+
+    @rank_group.command(
+            name="voice",
+            description="Mostra o ranking de XP em call."
+        )
+    @app_commands.describe(page="Página do ranking (padrão: 1)")
+    async def rank_voice(
+        self,
+        interaction: discord.Interaction,
+        page: app_commands.Range[int, 1, 50] = 1
+    ):
+        await interaction.response.defer()
+
+        page_size = 10
+        page_index = page - 1
+
+        embed = await self.build_voice_rank_embed(
+            interaction,
+            page_index,
+            page_size
+        )
+
+        if embed is None:
+            return await interaction.followup.send(
+                "❌ Ainda não há XP de voz suficiente para um ranking.",
+                ephemeral=True
+            )
+
+        view = RankView(
+            cog=self,
+            interaction=interaction,
+            page=page_index,
+            page_size=page_size,
+            build_func=self.build_voice_rank_embed,
+            get_rank_func=self.get_voice_rank
         )
 
         message = await interaction.followup.send(
