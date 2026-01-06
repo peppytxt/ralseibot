@@ -159,11 +159,6 @@ class VoiceXP(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        print(
-            f"[VOICE] {member} | "
-            f"{before.channel} -> {after.channel} | "
-            f"mute={after.self_mute} deaf={after.self_deaf}"
-        )
         if member.bot:
             return
 
@@ -193,7 +188,7 @@ class VoiceXP(commands.Cog):
 
 
     async def _process_voice_time(self, member, elapsed_seconds):
-        earned_xp = int(elapsed_seconds / 60)
+        earned_xp = int(elapsed_seconds / 30)
         if earned_xp <= 0:
             return
 
