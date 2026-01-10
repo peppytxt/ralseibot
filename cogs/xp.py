@@ -206,12 +206,18 @@ class VoiceXP(commands.Cog):
 
         # Entrou ou mudou estado
         if after.channel:
-            if self.is_valid_member(member) and self.has_enough_people(after.channel):
-                self.voice_sessions[user_id] = {
-                    "last_tick": time.time()
-                }
+            channel = after.channel
+
+            if self.has_enough_people(channel):
+                for m in channel.members:
+                    if self.is_valid_member(m):
+                        self.voice_sessions.setdefault(
+                            m.id,
+                            {"last_tick": time.time()}
+                        )
             else:
                 self.voice_sessions.pop(user_id, None)
+
 
     # ------------------------------
     # LOOP DE XP
@@ -281,6 +287,9 @@ class XP(commands.Cog):
     async def on_message(self, message):
 
         if message.author.bot:
+            return
+        
+        if message.guild is None:
             return
 
         guild_id = str(message.guild.id)  
