@@ -29,7 +29,7 @@ class Economy(commands.Cog):
         coins = user_data.get("coins", 0)
 
         # Pegamos a Cog de conquistas
-        ach_cog = self.bot.get_cog("cogs.achievements")
+        ach_cog = self.bot.get_cog("AchievementsCog")
         if ach_cog:
             if coins >= 100000:
                 await ach_cog.give_achievement(user_id, "coins_100000")
