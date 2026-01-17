@@ -8,14 +8,14 @@ ACHIEVEMENTS = {
     "messages_1000": {"title": "📨 Comunicador", "description": "Você enviou 1.000 mensagens."},
     "voice_10h": {"title": "🎧 Morador da Call", "description": "Você ficou 10 horas em call."},
     "challenge_first_win": {"title": "🏅 Primeira Vitória", "description": "Você venceu seu primeiro challenge."},
-    "coins_10000": {"title": "💰 Rico", "description": "Acumulou 10k coins."} 
+    "coins_100000": {"title": "💰 Rico", "description": "Acumulou 100k de ralcoins."} 
 }
 
 ACHIEVEMENTS_BY_CATEGORY = {
-    "all": ["voice_10h", "challenge_first_win", "coins_10000"],
+    "all": ["voice_10h", "challenge_first_win", "coins_100000"],
     "voice": ["voice_10h"],
     "challenge": ["challenge_first_win"],
-    "eco": ["coins_10000"],
+    "eco": ["coins_100000"],
 }
 
 # --- VIEW V2 (LAYOUT) ---
