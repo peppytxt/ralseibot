@@ -153,10 +153,10 @@ class AchievementsCog(commands.Cog):
         await self.give_achievement(message.author.id, "first_message")
             
     @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author.bot: return
+    async def on_message(self, message: discord.Message):
+        if message.author.bot or not message.guild:
+            return
 
-        # 1. Incrementa o contador de mensagens do usuário no banco
         user_doc = self.col.find_one_and_update(
             {"_id": message.author.id},
             {"$inc": {"message_count": 1}},
@@ -164,11 +164,12 @@ class AchievementsCog(commands.Cog):
             return_document=True
         )
 
-        # 2. Verifica se atingiu a marca
         count = user_doc.get("message_count", 0)
+
         if count >= 1000:
             await self.give_achievement(message.author.id, "messages_1000")
-        elif count >= 1:
+        
+        if count >= 1:
             await self.give_achievement(message.author.id, "first_message")
             
     @commands.Cog.listener()
