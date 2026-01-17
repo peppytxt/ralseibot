@@ -5,6 +5,7 @@ from functools import partial
 
 # --- DADOS ---
 ACHIEVEMENTS = {
+    "first_message": {"title": "💬 Primeira mensagem!", "description": "Você enviou sua primeira mensagem."},
     "messages_1000": {"title": "📨 Comunicador", "description": "Você enviou 1.000 mensagens."},
     "voice_10h": {"title": "🎧 Morador da Call", "description": "Você ficou 10 horas em call."},
     "challenge_first_win": {"title": "🏅 Primeira Vitória", "description": "Você venceu seu primeiro challenge."},
@@ -12,7 +13,8 @@ ACHIEVEMENTS = {
 }
 
 ACHIEVEMENTS_BY_CATEGORY = {
-    "all": ["voice_10h", "challenge_first_win", "coins_100000"],
+    "all": ["first_message", "voice_10h", "challenge_first_win", "coins_10000"],
+    "xp": ["first_message"],
     "voice": ["voice_10h"],
     "challenge": ["challenge_first_win"],
     "eco": ["coins_100000"],
@@ -126,17 +128,25 @@ class AchievementsCog(commands.Cog):
             print("AVISO: Conexão com o banco de dados não encontrada no objeto 'bot'.")
             
     async def give_achievement(self, user_id: int, achievement_key: str):
-        if self.col is None: return
+        """Função central para registrar a conquista no banco de dados."""
+        if self.col is None:
+            return
 
         result = self.col.update_one(
             {"_id": user_id},
             {"$addToSet": {"achievements": achievement_key}},
             upsert=True
         )
-        
-        if result.modified_count > 0:
-            # Opcional: Enviar uma mensagem de parabéns no canal ou DM
-            print(f"DEBUG: Usuário {user_id} desbloqueou {achievement_key}!")
+
+        if result.modified_count > 0 or result.upserted_id is not None:
+            print(f"DEBUG: {user_id} ganhou a conquista: {achievement_key}")
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author.bot:
+            return
+
+        await self.give_achievement(message.author.id, "first_message")
             
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -154,7 +164,7 @@ class AchievementsCog(commands.Cog):
         count = user_doc.get("message_count", 0)
         if count >= 1000:
             await self.give_achievement(message.author.id, "messages_1000")
-        elif count >= 1: # Exemplo: Primeira mensagem
+        elif count >= 1:
             await self.give_achievement(message.author.id, "first_message")
             
     @commands.Cog.listener()
