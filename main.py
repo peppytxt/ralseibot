@@ -49,7 +49,7 @@ COGS = [
     "cogs.tickets",
     "cogs.fun",
     "cogs.achievements",
-    "cogs.welcome"
+    "cogs.welcome",
     "cogs.help",
 ]
 
