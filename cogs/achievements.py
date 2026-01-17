@@ -8,7 +8,7 @@ class AchievementsV2(ui.LayoutView):
         
         container = ui.Container()
         container.add_item(ui.TextDisplay(f"🏆 **Conquistas de {user.display_name}**"))
-        container.add_item(ui.TextDisplay("Seu progresso (Modo V2 Layout)"))
+        container.add_item(ui.TextDisplay("Seu progresso de conquistas"))
         
         self.add_item(container)
 
@@ -16,30 +16,19 @@ class Achievements(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="conquistas", description="Teste de Components V2")
+    @app_commands.command(name="conquistas", description="Conquistas atingidas pelo usuário")
     async def conquistas(self, interaction: discord.Interaction):
         view = AchievementsV2(interaction.user)
-        
-        # Como o send_message não aceita 'flags' diretamente:
-        # 1. Criamos o objeto de flags
+
         flags = discord.MessageFlags()
         flags.components_v2 = True
         
-        # 2. Em vez de passar no send_message, usamos o 'interaction.response.send_message'
-        # MAS, para contornar a limitação da biblioteca que você está usando,
-        # vamos usar o parâmetro de 'ephemeral' (se quiser) OU 
-        # apenas a view, pois LayoutViews recentes tentam setar a flag automaticamente.
         
         try:
-            # Tente enviar apenas com a view. 
-            # Se a sua versão do discord.py suporta LayoutView, 
-            # ela deve tentar anexar a flag sozinha.
             await interaction.response.send_message(view=view)
         except Exception:
-            # Se falhar, o discord.py ainda não permite essa flag via InteractionResponse
-            # de forma simples sem editar o corpo da requisição manualmente.
             await interaction.response.send_message(
-                "Infelizmente sua versão do discord.py reconhece as classes, mas o método de resposta ainda não aceita as flags necessárias para o V2.",
+                "Erro",
                 ephemeral=True
             )
 
