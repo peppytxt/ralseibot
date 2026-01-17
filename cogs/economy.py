@@ -378,7 +378,7 @@ class Economy(commands.Cog):
             view=view
         )
         
-        await self.cog.check_economy_achievements(self.interaction.user.id)
+        await self.check_economy_achievements(self.interaction.user.id)
 
         view.message = await interaction.original_response()
 
