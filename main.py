@@ -49,6 +49,7 @@ COGS = [
     "cogs.tickets",
     "cogs.fun",
     "cogs.achievements",
+    "cogs.achievements_v2",
     "cogs.help",
 ]
 
