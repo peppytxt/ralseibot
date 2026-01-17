@@ -61,6 +61,8 @@ class WelcomeConfigView(ui.LayoutView):
     def build_ui(self):
         self.clear_items()
         
+        use_container = self.current_config.get("use_container", True)
+        
         active = self.current_config.get("active", False)
         channel_id = self.current_config.get("channel_id")
         msg_text = self.current_config.get("message", "Não configurada")
@@ -81,6 +83,8 @@ class WelcomeConfigView(ui.LayoutView):
 
         msg_container = ui.Container()
         msg_container.accent_color = discord.Color.blurple()
+        estilo = "📦 Painel (Container V2)" if use_container else "📝 Texto Simples"
+        msg_container.add_item(ui.TextDisplay(f"🎨 **Estilo Atual:** {estilo}\n\n**Mensagem:**\n_{msg_text}_"))
         msg_container.add_item(ui.TextDisplay(f"📝 **Mensagem Atual:**\n_{msg_text}_"))
         self.add_item(msg_container)
 
@@ -101,13 +105,26 @@ class WelcomeConfigView(ui.LayoutView):
         btn_edit = ui.Button(label="Editar Texto", style=discord.ButtonStyle.primary, emoji="✏️")
         btn_edit.callback = self.open_edit_modal
         row.add_item(btn_edit)
+        
+        btn_style = ui.Button(label="Mudar para Texto" if use_container else "Mudar para Painel", style=discord.ButtonStyle.secondary, emoji="🖼️" if use_container else "📜")
+        btn_style.callback = self.toggle_style
+        row.add_item(btn_style)
 
         btn_test = ui.Button(label="Testar", style=discord.ButtonStyle.secondary, emoji="📨")
         btn_test.callback = self.test_message
         row.add_item(btn_test)
 
         self.add_item(row)
-
+        
+    async def toggle_style(self, interaction: discord.Interaction):
+        current_style = self.current_config.get("use_container", True)
+        self.cog.col.update_one(
+            {"_id": self.guild_id},
+            {"$set": {"use_container": not current_style}},
+            upsert=True
+        )
+        await self.refresh_data_and_ui(interaction)
+        
     async def refresh_data_and_ui(self, interaction: discord.Interaction):
         self.refresh_data()
         self.build_ui()
@@ -166,8 +183,6 @@ class WelcomeCog(commands.Cog):
             return
 
         channel_id = data.get("channel_id")
-        if not channel_id: return
-
         channel = member.guild.get_channel(channel_id)
         if not channel: return
 
@@ -176,14 +191,18 @@ class WelcomeCog(commands.Cog):
                              .replace("{server}", member.guild.name)\
                              .replace("{count}", str(member.guild.member_count))
 
-        welcome_container = ui.Container()
-        welcome_container.accent_color = discord.Color.teal()
-        welcome_container.add_item(ui.TextDisplay(final_text))
-        
-        view = ui.LayoutView()
-        view.add_item(welcome_container)
-        
-        await channel.send(view=view)
+        use_container = data.get("use_container", True)
+
+        if use_container:
+            welcome_container = ui.Container()
+            welcome_container.accent_color = discord.Color.teal()
+            welcome_container.add_item(ui.TextDisplay(final_text))
+            
+            view = ui.LayoutView()
+            view.add_item(welcome_container)
+            await channel.send(view=view)
+        else:
+            await channel.send(final_text)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
