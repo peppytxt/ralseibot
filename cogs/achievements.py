@@ -31,7 +31,7 @@ class AchievementsView(discord.ui.View):
             "all": {"label": "Todas", "emoji": "🏆"},
             "xp": {"label": "XP", "emoji": "💬"},
             "voice": {"label": "Voz", "emoji": "🎧"},
-            "challenge": {"label": "Games", "emoji": "🧠"},
+            "challenge": {"label": "Games", "emoji": "📺"},
             "eco": {"label": "Eco", "emoji": "💰"}
         }
         self.create_tab_buttons()
