@@ -25,7 +25,7 @@ class WelcomeMessageModal(ui.Modal, title="Editar Mensagem de Boas-vindas"):
             upsert=True
         )
         await self.view.refresh_data_and_ui(interaction)
-        await interaction.response.send_message("✅ Mensagem atualizada!", ephemeral=True)
+        await interaction.followup.send("✅ Mensagem atualizada!", ephemeral=True)
 
 # --- VIEW DO SELETOR DE CANAL ---
 class ChannelSelectView(ui.View):
