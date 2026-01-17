@@ -119,6 +119,10 @@ class AchievementsView(ui.LayoutView):
 class AchievementsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        
+        if not hasattr(bot, 'voice_times'):
+            bot.voice_times = {}
+            
         database = getattr(bot, "db", None)
         
         if database is not None:
