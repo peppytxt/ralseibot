@@ -48,7 +48,7 @@ COGS = [
     "cogs.birthday",
     "cogs.tickets",
     "cogs.fun",
-    "cogs.achievements"
+    "cogs.achievements",
     "cogs.help",
 ]
 
