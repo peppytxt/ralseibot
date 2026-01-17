@@ -85,7 +85,6 @@ class WelcomeConfigView(ui.LayoutView):
         msg_container.accent_color = discord.Color.blurple()
         estilo = "📦 Painel (Container V2)" if use_container else "📝 Texto Simples"
         msg_container.add_item(ui.TextDisplay(f"🎨 **Estilo Atual:** {estilo}\n\n**Mensagem:**\n_{msg_text}_"))
-        msg_container.add_item(ui.TextDisplay(f"📝 **Mensagem Atual:**\n_{msg_text}_"))
         self.add_item(msg_container)
 
         row = ui.ActionRow()
