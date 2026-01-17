@@ -21,7 +21,7 @@ ACHIEVEMENTS_BY_CATEGORY = {
 }
 
 # --- VIEW V2 (LAYOUT) ---
-class AchievementsView(ui.LayoutView): # Mudança para LayoutView
+class AchievementsView(ui.LayoutView):
     def __init__(self, cog, user):
         super().__init__(timeout=120)
         self.cog = cog

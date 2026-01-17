@@ -406,7 +406,7 @@ class Challenges(commands.Cog):
                 )
             )
 
-            achievements_cog = self.bot.get_cog("Achievements") 
+            achievements_cog = self.bot.get_cog("AchievementsCog") 
             if achievements_cog:
                 await achievements_cog.give_achievement(self.author.id, "challenge_first_win")
             self.active_challenges.pop(guild_id, None)
