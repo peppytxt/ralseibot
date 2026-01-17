@@ -22,6 +22,18 @@ class Economy(commands.Cog):
             {"$setOnInsert": {"coins": 0}},
             upsert=True
         )
+        
+    async def check_economy_achievements(self, user_id: int):
+        """Verifica se o usuário atingiu metas de moedas para conquistas."""
+        user_data = self.col.find_one({"_id": user_id}) or {}
+        coins = user_data.get("coins", 0)
+
+        # Pegamos a Cog de conquistas
+        ach_cog = self.bot.get_cog("Achievements") # Use o nome exato da classe na Cog
+        if ach_cog:
+            if coins >= 10000:
+                # Chama a função que criamos no arquivo achievements.py
+                await ach_cog.give_achievement(user_id, "coins_10000")
 
     # ------------------ DAILY ------------------
     @app_commands.command(name="daily", description="Colete suas moedas diárias")
@@ -49,6 +61,8 @@ class Economy(commands.Cog):
             },
             upsert=True
         )
+        
+        await self.check_economy_achievements(user_id)
 
         await interaction.response.send_message(
             f"<:ralsei_love:1410029625358417952> Você coletou **{coins} ralcoins** no daily!"
@@ -359,12 +373,12 @@ class Economy(commands.Cog):
             amount=quantidade
         )
 
-
-
         await interaction.response.send_message(
             embed=embed,
             view=view
         )
+        
+        await self.cog.check_economy_achievements(self.interaction.user.id)
 
         view.message = await interaction.original_response()
 
