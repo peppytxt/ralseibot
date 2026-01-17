@@ -46,12 +46,16 @@ class AchievementsView(ui.LayoutView): # Mudança para LayoutView
         """Reconstrói todos os componentes da View V2"""
         self.clear_items()
         
-        # 1. Container de Cabeçalho (Substitui o topo do Embed)
+        # Pegamos as informações da aba ativa
         info = self.tabs.get(self.active_tab, {"label": "Todas", "emoji": "🏆"})
-        header = ui.Container(
-            title=f"{info['emoji']} Categoria: {info['label']}",
-            accent_color=discord.Color.gold()
-        )
+
+        # Criamos o container "vazio" primeiro
+        header = ui.Container()
+        
+        # E definimos as propriedades manualmente
+        header.title = f"{info['emoji']} Categoria: {info['label']}"
+        header.accent_color = discord.Color.gold()
+        
         header.add_item(ui.TextDisplay(f"Olá {self.user.display_name}, veja seu progresso abaixo:"))
         self.add_item(header)
 
