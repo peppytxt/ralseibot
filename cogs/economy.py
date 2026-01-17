@@ -31,8 +31,8 @@ class Economy(commands.Cog):
         # Pegamos a Cog de conquistas
         ach_cog = self.bot.get_cog("achievements")
         if ach_cog:
-            if coins >= 10000:
-                await ach_cog.give_achievement(user_id, "coins_10000")
+            if coins >= 100000:
+                await ach_cog.give_achievement(user_id, "coins_100000")
 
     # ------------------ DAILY ------------------
     @app_commands.command(name="daily", description="Colete suas moedas diárias")
