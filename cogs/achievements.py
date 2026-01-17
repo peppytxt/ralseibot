@@ -43,16 +43,12 @@ class AchievementsView(ui.LayoutView): # Mudança para LayoutView
         return {"achievements": []}
 
     def refresh_interface(self):
-        """Reconstrói todos os componentes da View V2"""
         self.clear_items()
-        
-        # Pegamos as informações da aba ativa
+
         info = self.tabs.get(self.active_tab, {"label": "Todas", "emoji": "🏆"})
 
-        # Criamos o container "vazio" primeiro
         header = ui.Container()
-        
-        # E definimos as propriedades manualmente
+
         header.title = f"{info['emoji']} Categoria: {info['label']}"
         header.accent_color = discord.Color.gold()
         
@@ -132,7 +128,6 @@ class AchievementsCog(commands.Cog):
     @app_commands.command(name="conquistas", description="Conquistas feitas pelo usuário")
     async def conquistas(self, interaction: discord.Interaction):
         view = AchievementsView(cog=self, user=interaction.user)
-        # No V2, não enviamos mais Embed, enviamos apenas a View que contém os Containers
         await interaction.response.send_message(view=view)
 
 async def setup(bot):
