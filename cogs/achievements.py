@@ -118,7 +118,7 @@ class AchievementsView(discord.ui.View):
 class AchievementsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.col = None
+        self.col = bot.db.achievements
 
     @app_commands.command(name="conquistas", description="Exibe suas conquistas e medalhas.")
     async def conquistas(self, interaction: discord.Interaction):
