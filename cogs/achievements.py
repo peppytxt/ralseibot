@@ -37,7 +37,8 @@ class AchievementsView(ui.LayoutView): # Mudança para LayoutView
         self.refresh_interface()
 
     def get_user_data(self):
-        if hasattr(self.cog, 'col') and self.cog.col:
+        # Comparação explícita com 'is not None'
+        if hasattr(self.cog, 'col') and self.cog.col is not None:
             return self.cog.col.find_one({"_id": self.user.id}) or {}
         return {"achievements": []}
 
