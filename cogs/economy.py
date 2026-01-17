@@ -47,7 +47,7 @@ class Economy(commands.Cog):
         if user and "last_daily" in user:
             last_daily = user["last_daily"].astimezone(BR_TZ).date()
             if last_daily == today:
-                await self.check_economy_achievements(self.interaction.user.id)
+                await self.check_economy_achievements(user_id)
                 return await interaction.response.send_message(
                     "❌ Você já coletou seu daily hoje!", ephemeral=True
                 )
