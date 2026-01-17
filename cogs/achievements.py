@@ -31,7 +31,7 @@ class AchievementsView(ui.LayoutView): # Mudança para LayoutView
             "all": {"label": "Todas", "emoji": "🏆"},
             "voice": {"label": "Voz", "emoji": "🎧"},
             "challenge": {"label": "Games", "emoji": "📺"},
-            "eco": {"label": "Eco", "emoji": "💰"}
+            "eco": {"label": "Economia", "emoji": "💰"}
         }
         
         self.refresh_interface()
