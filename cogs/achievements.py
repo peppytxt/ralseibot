@@ -13,7 +13,7 @@ ACHIEVEMENTS = {
 }
 
 ACHIEVEMENTS_BY_CATEGORY = {
-    "all": ["first_message", "voice_10h", "challenge_first_win", "coins_10000"],
+    "all": ["first_message", "messages_1000", "voice_10h", "challenge_first_win", "coins_100000"],
     "xp": ["first_message"],
     "voice": ["voice_10h"],
     "challenge": ["challenge_first_win"],
