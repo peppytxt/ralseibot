@@ -29,10 +29,9 @@ class Economy(commands.Cog):
         coins = user_data.get("coins", 0)
 
         # Pegamos a Cog de conquistas
-        ach_cog = self.bot.get_cog("Achievements") # Use o nome exato da classe na Cog
+        ach_cog = self.bot.get_cog("achievements")
         if ach_cog:
             if coins >= 10000:
-                # Chama a função que criamos no arquivo achievements.py
                 await ach_cog.give_achievement(user_id, "coins_10000")
 
     # ------------------ DAILY ------------------
