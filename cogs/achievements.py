@@ -8,20 +8,18 @@ class AchievementsV2(ui.LayoutView):
         self.user = user
         self.user_data = user_data
 
-        # NO V2, as configurações visuais ficam no objeto ContainerConfig
-        config = ui.ContainerConfig(
-            title=f"🏆 Conquistas de {user.display_name}",
-            accent_color=discord.Color.gold()
-        )
-
-        # Agora você passa essa config para o Container
-        container = ui.Container(config=config)
-        
-        # Adiciona o texto dentro do container
-        container.add_item(ui.TextDisplay("Aqui estão suas medalhas e marcos no servidor!"))
-        
-        # Adiciona o container à View
-        self.add_item(container)
+        # Tentativa 1: Container simples sem argumentos extras
+        # Se isso falhar, sua biblioteca ainda não suporta LayoutView plenamente
+        try:
+            container = ui.Container()
+            
+            # Adicionando o conteúdo
+            container.add_item(ui.TextDisplay(f"🏆 **Conquistas de {user.display_name}**"))
+            container.add_item(ui.TextDisplay("Aqui estão suas medalhas e marcos feitos!"))
+            
+            self.add_item(container)
+        except Exception as e:
+            print(f"Erro ao criar container: {e}")
 
 class Achievements(commands.Cog):
     def __init__(self, bot):
