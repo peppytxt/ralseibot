@@ -124,6 +124,60 @@ class AchievementsCog(commands.Cog):
         else:
             self.col = None
             print("AVISO: Conexão com o banco de dados não encontrada no objeto 'bot'.")
+            
+    async def give_achievement(self, user_id: int, achievement_key: str):
+        if self.col is None: return
+
+        result = self.col.update_one(
+            {"_id": user_id},
+            {"$addToSet": {"achievements": achievement_key}},
+            upsert=True
+        )
+        
+        if result.modified_count > 0:
+            # Opcional: Enviar uma mensagem de parabéns no canal ou DM
+            print(f"DEBUG: Usuário {user_id} desbloqueou {achievement_key}!")
+            
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot: return
+
+        # 1. Incrementa o contador de mensagens do usuário no banco
+        user_doc = self.col.find_one_and_update(
+            {"_id": message.author.id},
+            {"$inc": {"message_count": 1}},
+            upsert=True,
+            return_document=True
+        )
+
+        # 2. Verifica se atingiu a marca
+        count = user_doc.get("message_count", 0)
+        if count >= 1000:
+            await self.give_achievement(message.author.id, "messages_1000")
+        elif count >= 1: # Exemplo: Primeira mensagem
+            await self.give_achievement(message.author.id, "first_message")
+            
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        if before.channel is None and after.channel is not None:
+            self.bot.voice_times[member.id] = discord.utils.utcnow()
+
+        elif before.channel is not None and after.channel is None:
+            join_time = self.bot.voice_times.pop(member.id, None)
+            if join_time:
+                duration = discord.utils.utcnow() - join_time
+                seconds = duration.total_seconds()
+                hours = seconds / 3600
+                
+                doc = self.col.find_one_and_update(
+                    {"_id": member.id},
+                    {"$inc": {"voice_hours": hours}},
+                    upsert=True,
+                    return_document=True
+                )
+                
+                if doc.get("voice_hours", 0) >= 10:
+                    await self.give_achievement(member.id, "voice_10h")
 
     @app_commands.command(name="conquistas", description="Conquistas feitas pelo usuário")
     async def conquistas(self, interaction: discord.Interaction):

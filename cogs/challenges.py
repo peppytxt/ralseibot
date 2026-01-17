@@ -363,8 +363,8 @@ class Challenges(commands.Cog):
                 warning = random.choice(CTRLV_MESSAGES)
                 msg = await message.reply(warning, mention_author=False)
 
-                # apagar depois de 5 segundos
-                await asyncio.sleep(5)
+                # apagar depois de 7 segundos
+                await asyncio.sleep(7)
                 await msg.delete()
 
             return
@@ -406,9 +406,11 @@ class Challenges(commands.Cog):
                 )
             )
 
-            
+            achievements_cog = self.bot.get_cog("Achievements") 
+            if achievements_cog:
+                await achievements_cog.give_achievement(self.author.id, "challenge_first_win")
             self.active_challenges.pop(guild_id, None)
-            self.warned_users.clear()  # limpar avisos do desafio
+            self.warned_users.clear()
 
     # ------------- GENERATE CHALLENGE -------------
 
