@@ -189,9 +189,13 @@ class AchievementsCog(commands.Cog):
                 if doc.get("voice_hours", 0) >= 10:
                     await self.give_achievement(member.id, "voice_10h")
 
-    @app_commands.command(name="conquistas", description="Conquistas feitas pelo usuário")
-    async def conquistas(self, interaction: discord.Interaction):
-        view = AchievementsView(cog=self, user=interaction.user)
+    @app_commands.command(name="conquistas", description="Veja as conquistas de um usuário.")
+    @app_commands.describe(usuario="O usuário que você deseja ver as conquistas")
+    async def conquistas(self, interaction: discord.Interaction, usuario: discord.Member = None):
+        alvo = usuario or interaction.user
+
+        view = AchievementsView(cog=self, user=alvo)
+        
         await interaction.response.send_message(view=view)
 
 async def setup(bot):
