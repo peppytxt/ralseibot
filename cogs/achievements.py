@@ -116,10 +116,13 @@ class AchievementsView(ui.LayoutView): # Mudança para LayoutView
 class AchievementsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # Certifique-se que o bot.db.achievements esteja disponível
-        self.col = getattr(bot, "db", None)
-        if self.col:
-            self.col = self.col.achievements
+        database = getattr(bot, "db", None)
+        
+        if database is not None:
+            self.col = database.achievements
+        else:
+            self.col = None
+            print("AVISO: Conexão com o banco de dados não encontrada no objeto 'bot'.")
 
     @app_commands.command(name="conquistas", description="Conquistas feitas pelo usuário")
     async def conquistas(self, interaction: discord.Interaction):
