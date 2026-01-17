@@ -8,14 +8,19 @@ class AchievementsV2(ui.LayoutView):
         self.user = user
         self.user_data = user_data
 
-        # Criando o container (Layout V2)
-        container = ui.Container(
+        # NO V2, as configurações visuais ficam no objeto ContainerConfig
+        config = ui.ContainerConfig(
             title=f"🏆 Conquistas de {user.display_name}",
             accent_color=discord.Color.gold()
         )
+
+        # Agora você passa essa config para o Container
+        container = ui.Container(config=config)
         
-        # Exemplo de conteúdo do container
+        # Adiciona o texto dentro do container
         container.add_item(ui.TextDisplay("Aqui estão suas medalhas e marcos no servidor!"))
+        
+        # Adiciona o container à View
         self.add_item(container)
 
 class Achievements(commands.Cog):
