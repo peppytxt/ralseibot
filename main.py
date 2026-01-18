@@ -5,6 +5,7 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from cogs.moeda import setup as economia_setup
+from motor.motor_asyncio import AsyncIOMotorClient
 
 load_dotenv()
 
@@ -27,7 +28,7 @@ os.makedirs(DATA_DIR, exist_ok=True)
 #      MongoDB
 # ================================
 try:
-    mongo_client = MongoClient(MONGO_URL)
+    mongo_client = AsyncIOMotorClient(MONGO_URL) 
     bot.db = mongo_client["ralsei_bot"]
     print("MongoDB conectado com sucesso!")
 except Exception as e:
