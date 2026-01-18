@@ -136,11 +136,11 @@ class AchievementsCog(commands.Cog):
         if self.col is None:
             return
 
-        result = self.col.update_one(
-            {"_id": user_id},
-            {"$addToSet": {"achievements": achievement_key}},
-            upsert=True
-        )
+        result = await self.col.update_one(
+                {"_id": user_id},
+                {"$addToSet": {"achievements": achievement_key}},
+                upsert=True
+            )
 
         if result.modified_count > 0 or result.upserted_id is not None:
             print(f"DEBUG: {user_id} ganhou a conquista: {achievement_key}")
@@ -157,7 +157,8 @@ class AchievementsCog(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
-        user_doc = self.col.find_one_and_update(
+        # Adicione o AWAIT aqui no início
+        user_doc = await self.col.find_one_and_update(
             {"_id": message.author.id},
             {"$inc": {"message_count": 1}},
             upsert=True,
