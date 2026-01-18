@@ -175,7 +175,7 @@ class WelcomeCog(commands.Cog):
     async def send_welcome_message(self, member, is_test=False):
         if self.col is None: return
 
-        data = self.col.find_one({"_id": member.guild.id})
+        data = await self.col.find_one({"_id": member.guild.id})
         if not data: return
 
         if not is_test and not data.get("active", False):
