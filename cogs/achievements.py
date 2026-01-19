@@ -185,7 +185,7 @@ class AchievementsCog(commands.Cog):
                 seconds = duration.total_seconds()
                 hours = seconds / 3600
                 
-                doc = self.col.find_one_and_update(
+                doc = await self.col.find_one_and_update(
                     {"_id": member.id},
                     {"$inc": {"voice_hours": hours}},
                     upsert=True,
