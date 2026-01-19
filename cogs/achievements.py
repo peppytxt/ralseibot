@@ -28,6 +28,13 @@ class AchievementsView(ui.LayoutView):
         self.user = user
         self.active_tab = "all"
         self.user_data = {}
+        
+        self.tabs = {
+            "all": {"label": "Todas", "emoji": "🏆"},
+            "voice": {"label": "Voz", "emoji": "🎧"},
+            "challenge": {"label": "Games", "emoji": "📺"},
+            "eco": {"label": "Economia", "emoji": "💰"}
+        }
 
     async def load_initial_data(self):
         if hasattr(self.cog, 'col') and self.cog.col is not None:
@@ -35,13 +42,6 @@ class AchievementsView(ui.LayoutView):
         else:
             self.user_data = {"achievements": []}
         self.refresh_interface()
-
-        self.tabs = {
-            "all": {"label": "Todas", "emoji": "🏆"},
-            "voice": {"label": "Voz", "emoji": "🎧"},
-            "challenge": {"label": "Games", "emoji": "📺"},
-            "eco": {"label": "Economia", "emoji": "💰"}
-        }
 
     def get_user_data(self):
         if hasattr(self.cog, 'col') and self.cog.col is not None:
