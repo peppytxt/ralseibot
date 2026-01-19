@@ -27,7 +27,14 @@ class AchievementsView(ui.LayoutView):
         self.cog = cog
         self.user = user
         self.active_tab = "all"
-        self.user_data = self.get_user_data()
+        self.user_data = {}
+
+    async def load_initial_data(self):
+        if hasattr(self.cog, 'col') and self.cog.col is not None:
+            self.user_data = await self.cog.col.find_one({"_id": self.user.id}) or {}
+        else:
+            self.user_data = {"achievements": []}
+        self.refresh_interface()
 
         self.tabs = {
             "all": {"label": "Todas", "emoji": "🏆"},
@@ -35,11 +42,8 @@ class AchievementsView(ui.LayoutView):
             "challenge": {"label": "Games", "emoji": "📺"},
             "eco": {"label": "Economia", "emoji": "💰"}
         }
-        
-        self.refresh_interface()
 
     def get_user_data(self):
-        # Comparação explícita com 'is not None'
         if hasattr(self.cog, 'col') and self.cog.col is not None:
             return self.cog.col.find_one({"_id": self.user.id}) or {}
         return {"achievements": []}
@@ -105,7 +109,7 @@ class AchievementsView(ui.LayoutView):
         await interaction.response.edit_message(view=self)
 
     async def refresh_button(self, interaction: discord.Interaction):
-        self.user_data = self.get_user_data()
+        self.user_data = await self.cog.col.find_one({"_id": self.user.id}) or {}
         self.refresh_interface()
         await interaction.response.edit_message(view=self)
 
@@ -201,6 +205,8 @@ class AchievementsCog(commands.Cog):
         alvo = usuario or interaction.user
 
         view = AchievementsView(cog=self, user=alvo)
+        
+        await view.load_initial_data()
         
         await interaction.response.send_message(view=view)
 
