@@ -255,7 +255,9 @@ class Challenges(commands.Cog):
     @tasks.loop(seconds=60)
     async def challenge_timer(self):
         try: 
-            async for config in self.col.find({"challenge_enabled": True}):
+            # O Motor permite usar async for diretamente no cursor retornado pelo find
+            cursor = self.col.find({"challenge_enabled": True})
+            async for config in cursor:
                 guild = self.bot.get_guild(config["_id"])
                 if not guild:
                     continue
@@ -270,7 +272,8 @@ class Challenges(commands.Cog):
 
                 if now - last >= interval:
                     await self.spawn_challenge(guild, config)
-                    self.col.update_one(
+                    # Use AWAIT aqui também, pois agora o banco é async!
+                    await self.col.update_one(
                         {"_id": config["_id"]},
                         {"$set": {"challenge_last": now}}
                     )
@@ -282,18 +285,17 @@ class Challenges(commands.Cog):
     async def challenge_timeout_checker(self):
         try:
             now = time.time()
-
             to_remove = []
 
             for guild_id, challenge in self.active_challenges.items():
                 if challenge.get("solved"):
                     continue
-                    
                 if now - challenge["spawned_at"] >= CHALLENGE_TIMEOUT:
                     to_remove.append(guild_id)
 
             for guild_id in to_remove:
-                config = self.col.find_one({"_id": guild_id})
+                # ADICIONE AWAIT AQUI
+                config = await self.col.find_one({"_id": guild_id})
                 if not config:
                     continue
 
