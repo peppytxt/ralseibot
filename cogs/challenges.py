@@ -249,13 +249,13 @@ class Challenges(commands.Cog):
 
         # ********** CHECAR RESPOSTAS **********
         await self.check_answer(message)
-
+###
     # ------------- TIMER LOOP ---------------------
 
     @tasks.loop(seconds=60)
     async def challenge_timer(self):
         try: 
-            for config in self.col.find({"challenge_enabled": True}):
+            async for config in self.col.find({"challenge_enabled": True}):
                 guild = self.bot.get_guild(config["_id"])
                 if not guild:
                     continue

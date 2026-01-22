@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 from cogs.moeda import setup as economia_setup
 from motor.motor_asyncio import AsyncIOMotorClient
+from discord.ext import tasks
 
 load_dotenv()
 
@@ -21,7 +22,6 @@ intents.members = True
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)
 
-# Criar pasta data
 os.makedirs(DATA_DIR, exist_ok=True)
 
 # ================================
@@ -99,8 +99,6 @@ async def on_command_error(ctx, error):
     if hasattr(ctx.cog, "on_command_error"):
         return
     print("Erro tratado (main)", error)
-    
-from discord.ext import tasks
 
 @tasks.loop(seconds=30)
 async def status_task():
