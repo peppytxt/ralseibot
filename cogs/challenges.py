@@ -159,19 +159,19 @@ class Challenges(commands.Cog):
         
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    @app_commands.command(
+@app_commands.command(
         name="challengerank",
         description="Ranking dos usuários que mais venceram desafios"
     )
     async def challenge_rank(self, interaction: discord.Interaction):
-        if self.col is None: return
+        if self.col is None: 
+            return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
 
+        # 1. Busca os dados (Note o users.challenge_wins)
         cursor = self.col.find(
             {"users.challenge_wins": {"$gt": 0}},
-            {"users.challenge_wins": 1}
+            {"_id": 1, "users.challenge_wins": 1}
         ).sort("users.challenge_wins", -1).limit(10)
-
-        wins = data.get("users", {}).get("challenge_wins", 0)
         
         data_list = await cursor.to_list(length=10)
 
@@ -181,25 +181,33 @@ class Challenges(commands.Cog):
                 ephemeral=True
             )
         
+        # Deferir pois a busca de usuários (fetch_user) pode levar tempo
         await interaction.response.defer()
 
         desc = ""
-        for i, data in enumerate(data_list, start=1):
-            user_id = data["_id"]
-            wins = data.get("challenge_wins", 0)
+        rank_count = 1
+        
+        for entry in data_list:
+            user_id = entry["_id"]
             
+            # Extrai as vitórias de dentro do objeto 'users'
+            user_data = entry.get("users", {})
+            wins = user_data.get("challenge_wins", 0)
+            
+            # Tenta encontrar o usuário para exibir o nome
             user = self.bot.get_user(user_id)
             if not user:
                 try:
                     user = await self.bot.fetch_user(user_id)
                 except:
-                    user = None
+                    continue # Se não encontrar o usuário, pula para o próximo
 
-            if not user or user.bot:
+            if user.bot:
                 continue
 
             name = user.display_name
-            desc += f"**#{i} - {name}** • 📺 {wins} vitórias\n"
+            desc += f"**#{rank_count} - {name}** • 📺 {wins} vitórias\n"
+            rank_count += 1
 
         if not desc:
             desc = "Nenhum usuário encontrado no ranking."
@@ -216,7 +224,7 @@ class Challenges(commands.Cog):
         name="challengestats",
         description="Veja estatísticas de desafios"
     )
-    @app_commands.describe(user="Usuário para ver as estatísticas (opcional)")
+    @app_commands.describe(user="Usuário para ver as estatísticas")
     async def challenge_stats(
         self,
         interaction: discord.Interaction,
@@ -233,8 +241,9 @@ class Challenges(commands.Cog):
 
         data = await self.col.find_one({"_id": target.id}) or {}
 
-        wins = data.get("challenge_wins", 0)
-        earnings = data.get("challenge_earnings", 0)
+        user_data = data.get("users", {})
+        wins = user_data.get("challenge_wins", 0)
+        earnings = user_data.get("challenge_earnings", 0)
 
         rank = await self.col.count_documents({
             "challenge_wins": {"$gt": wins},
