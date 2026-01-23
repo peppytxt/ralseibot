@@ -30,14 +30,12 @@ class Challenges(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         
-        # em memória -> contador de mensagens
         self.message_counters = {}
-        # em memória -> desafios ativos por servidor
+
         self.active_challenges = {}
         
         self.warned_users = {}
         
-        # timer loop (1 vez por minuto)
         self.challenge_timer.start()
         self.challenge_timeout_checker.start()
 
@@ -56,13 +54,9 @@ class Challenges(commands.Cog):
     
     @property
     def col(self):
-        # --- CORREÇÃO CRÍTICA ---
-        # Pegamos direto do bot.db (que é Motor/Async)
-        # em vez de depender da Cog XP que pode estar antiga
         database = getattr(self.bot, "db", None)
         if database is not None:
-            # Use o nome correto da coleção que você quer usar
-            return database.xp  # Ou database.challenges, dependendo de onde salvava antes
+            return database.xp
         return None
 
     # ------------- CONFIG COMMAND ------------------
@@ -153,8 +147,6 @@ class Challenges(commands.Cog):
     async def challenge_rank(self, interaction: discord.Interaction):
         if self.col is None: return
 
-        # --- CORREÇÃO PARA MOTOR ---
-        # Motor não suporta list() direto. Usamos to_list()
         cursor = self.col.find(
                 {"challenge_wins": {"$gt": 0}},
                 {"challenge_wins": 1}
@@ -203,13 +195,11 @@ class Challenges(commands.Cog):
                 ephemeral=True
             )
 
-        # Adicionado AWAIT
         data = await self.col.find_one({"_id": target.id}) or {}
 
         wins = data.get("challenge_wins", 0)
         earnings = data.get("challenge_earnings", 0)
 
-        # Adicionado AWAIT no count_documents
         rank = await self.col.count_documents({
             "challenge_wins": {"$gt": wins},
             "_id": {"$ne": 0}
@@ -236,7 +226,6 @@ class Challenges(commands.Cog):
         if message.author.bot or not message.guild or self.col is None:
             return
 
-        # Adicionado AWAIT
         config = await self.col.find_one({"_id": message.guild.id})
         if not config or not config.get("challenge_enabled"):
             return
@@ -263,14 +252,12 @@ class Challenges(commands.Cog):
 
         # ********** CHECAR RESPOSTAS **********
         await self.check_answer(message)
-###
     # ------------- TIMER LOOP ---------------------
 
     @tasks.loop(seconds=60)
     async def challenge_timer(self):
         if self.col is None: return
         try: 
-            # AGORA VAI FUNCIONAR: self.col é Motor, então o cursor aceita async for
             async for config in self.col.find({"challenge_enabled": True}):
                 guild = self.bot.get_guild(config["_id"])
                 if not guild:
@@ -287,7 +274,6 @@ class Challenges(commands.Cog):
                 if now - last >= interval:
                     await self.spawn_challenge(guild, config)
                     
-                    # Adicionado AWAIT
                     await self.col.update_one(
                         {"_id": config["_id"]},
                         {"$set": {"challenge_last": now}}
@@ -310,7 +296,6 @@ class Challenges(commands.Cog):
                     to_remove.append(guild_id)
 
             for guild_id in to_remove:
-                # Adicionado AWAIT
                 config = await self.col.find_one({"_id": guild_id})
                 if not config:
                     continue
