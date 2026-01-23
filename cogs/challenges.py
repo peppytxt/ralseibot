@@ -106,11 +106,11 @@ class Challenges(commands.Cog):
             )
 
         # 🔒 FILTRO POR MODO
-        # if mode == "messages" and interval < MIN_MESSAGES_INTERVAL:
-        #     return await interaction.response.send_message(
-        #         f"❌ O intervalo mínimo é **{MIN_MESSAGES_INTERVAL} mensagens**.",
-        #         ephemeral=True
-        #     )
+        if mode == "messages" and interval < MIN_MESSAGES_INTERVAL:
+            return await interaction.response.send_message(
+                f"❌ O intervalo mínimo é **{MIN_MESSAGES_INTERVAL} mensagens**.",
+                ephemeral=True
+            )
 
         if mode == "time" and interval < MIN_TIME_INTERVAL:
             return await interaction.response.send_message(
