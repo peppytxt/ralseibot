@@ -53,14 +53,12 @@ class ChallengeConfigView(ui.View):
         super().__init__(timeout=300)
         self.cog = cog
         self.guild = guild
-        # Garante que existam valores padrão se a config for nova
         self.config = config or {
             "challenge_enabled": False, 
             "challenge_interval": 100
         }
 
     def build_interface(self):
-        # Limpa os itens antes de reconstruir (importante para o refresh)
         self.clear_items()
         
         enabled = self.config.get("challenge_enabled", False)
@@ -83,7 +81,7 @@ class ChallengeConfigView(ui.View):
             emoji="🔌"
         )
         btn_toggle.callback = self.toggle_enabled
-        self.add_item(btn_toggle) # Adicionamos direto na View!
+        self.add_item(btn_toggle)
 
         # Botão Intervalo
         btn_int = ui.Button(
@@ -222,9 +220,7 @@ class Challenges(commands.Cog):
         wins = data.get("challenge_wins", 0)
         earnings = data.get("challenge_earnings", 0)
 
-        rank = await self.col.count_documents({
-            "challenge_wins": {"$gt": wins}
-        }) + 1
+        rank = await self.col.count_documents({"challenge_wins": {"$gt": wins}}) + 1
 
         embed = discord.Embed(
             title="📺 Estatísticas de Desafios",
@@ -412,7 +408,7 @@ class Challenges(commands.Cog):
             # SE FOR LISTA (ARRAY):
             await self.col.update_one(
                 {"_id": message.author.id},
-                {"$inc": {"users.0.challenge_wins": 1, "users.0.challenge_earnings": reward}},
+                {"$inc": {"challenge_wins": 1, "challenge_earnings": reward}},
                 upsert=True
             )
 
