@@ -203,7 +203,6 @@ class Challenges(commands.Cog):
             description=desc, 
             color=0x5865F2
         )
-        embed.set_footer(text="Apenas os 10 melhores digitadores!")
         
         await interaction.followup.send(embed=embed)
         
