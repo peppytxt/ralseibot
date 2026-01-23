@@ -118,7 +118,6 @@ class Challenges(commands.Cog):
                 ephemeral=True
             )
 
-        # ✅ SALVAR CONFIG (Adicionado AWAIT)
         await self.col.update_one(
             {"_id": guild.id},
             {"$set": {
@@ -256,14 +255,24 @@ class Challenges(commands.Cog):
 
     @tasks.loop(seconds=60)
     async def challenge_timer(self):
-        if self.col is None: return
+        if self.col is None: 
+            print("DEBUG: Banco de dados não encontrado na Cog de Challenges")
+            return
         try: 
-            async for config in self.col.find({"challenge_enabled": True}):
+            print("DEBUG: Verificando desafios pendentes...")
+            cursor = self.col.find({"challenge_enabled": True})
+            
+            count = 0
+            async for config in cursor:
+                count += 1
                 guild = self.bot.get_guild(config["_id"])
                 if not guild:
+                    print(f"DEBUG: Servidor {config['_id']} não encontrado.")
                     continue
 
                 mode = config.get("challenge_mode", DEFAULT_MODE)
+                print(f"DEBUG: Servidor {guild.name} em modo {mode}")
+                
                 if mode != "time":
                     continue
 
@@ -272,12 +281,15 @@ class Challenges(commands.Cog):
                 now = time.time()
 
                 if now - last >= interval:
+                    print(f"DEBUG: Spawning challenge em {guild.name}")
                     await self.spawn_challenge(guild, config)
-                    
                     await self.col.update_one(
                         {"_id": config["_id"]},
                         {"$set": {"challenge_last": now}}
                     )
+            
+            if count == 0:
+                print("DEBUG: Nenhum servidor com challenge_enabled=True no banco.")
                     
         except Exception as e:
             print("❌ ERRO NO challenge_timer:", e)
