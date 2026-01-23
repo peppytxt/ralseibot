@@ -162,14 +162,14 @@ class Challenges(commands.Cog):
         if self.col is None: return
         await interaction.response.defer()
 
-        cursor = self.col.find({"users.challenge_wins": {"$gt": 0}}).sort("users.challenge_wins", -1).limit(10)
+        cursor = self.col.find({"challenge_wins": {"$gt": 0}}).sort("challenge_wins", -1).limit(10)
         data_list = await cursor.to_list(length=10)
         if not data_list:
             cursor = self.col.find({"challenge_wins": {"$gt": 0}}).sort("challenge_wins", -1).limit(10)
             data_list = await cursor.to_list(length=10)
 
         if not data_list:
-            cursor = self.col.find({"users.0.challenge_wins": {"$gt": 0}}).sort("users.0.challenge_wins", -1).limit(10)
+            cursor = self.col.find({"challenge_wins": {"$gt": 0}}).sort("challenge_wins", -1).limit(10)
             data_list = await cursor.to_list(length=10)
 
         if not data_list:
