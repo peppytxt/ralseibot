@@ -52,6 +52,7 @@ COGS = [
     "cogs.achievements",
     "cogs.welcome",
     "cogs.help",
+    "cogs.admin",
 ]
 
 async def load_all_extensions():

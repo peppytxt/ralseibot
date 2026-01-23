@@ -1,6 +1,5 @@
 from discord import app_commands, ui
 import discord
-from discord.ext import commands
 
 class EmbedEditorModal(ui.Modal, title="📝 Criar/Editar Embed"):
     embed_title = ui.TextInput(
