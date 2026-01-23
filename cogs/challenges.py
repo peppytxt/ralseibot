@@ -162,39 +162,45 @@ class Challenges(commands.Cog):
     @app_commands.command(name="challengerank", description="Ranking de desafios")
     async def challenge_rank(self, interaction: discord.Interaction):
         if self.col is None: return
-        
-        # Procuramos documentos onde 'users' é um objeto e tem vitórias
-        cursor = self.col.find(
-            {"users.challenge_wins": {"$gt": 0}}
-        ).sort("users.challenge_wins", -1).limit(10)
-        
+        await interaction.response.defer()
+
+        # TENTATIVA 1: Busca no formato users.challenge_wins (Objeto)
+        cursor = self.col.find({"users.challenge_wins": {"$gt": 0}}).sort("users.challenge_wins", -1).limit(10)
         data_list = await cursor.to_list(length=10)
 
+        # TENTATIVA 2: Se a 1 falhar, busca na Raiz (Caso tenha voltado ao antigo)
         if not data_list:
-            # Se cair aqui, vamos testar se o campo está na raiz por segurança
-            return await interaction.response.send_message(
-                "❌ Não encontrei dados no formato 'users.challenge_wins'.", 
-                ephemeral=True
-            )
-        
-        await interaction.response.defer()
-        desc = ""
-        rank = 1
+            cursor = self.col.find({"challenge_wins": {"$gt": 0}}).sort("challenge_wins", -1).limit(10)
+            data_list = await cursor.to_list(length=10)
 
-        for data in data_list:
+        # TENTATIVA 3: Se ainda falhar, busca se 'users' for uma Lista/Array
+        if not data_list:
+            # Isso busca o primeiro elemento de uma lista chamada users
+            cursor = self.col.find({"users.0.challenge_wins": {"$gt": 0}}).sort("users.0.challenge_wins", -1).limit(10)
+            data_list = await cursor.to_list(length=10)
+
+        if not data_list:
+            return await interaction.followup.send("❌ Nenhum dado encontrado em nenhum dos formatos conhecidos.")
+
+        desc = ""
+        for i, data in enumerate(data_list, start=1):
             user_id = data["_id"]
             
-            # Pega o objeto 'users' e depois a vitória
-            # Se 'users' for uma lista em vez de um objeto, o código muda!
-            user_obj = data.get("users", {})
-            wins = user_obj.get("challenge_wins", 0)
+            # Lógica inteligente para pegar a vitória independente de onde ela esteja
+            wins = 0
+            if "users" in data:
+                if isinstance(data["users"], list) and len(data["users"]) > 0:
+                    wins = data["users"][0].get("challenge_wins", 0) 
+                elif isinstance(data["users"], dict):
+                    wins = data["users"].get("challenge_wins", 0)
+            else:
+                wins = data.get("challenge_wins", 0)
 
             user = self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
-            if user and not user.bot:
-                desc += f"**#{rank} - {user.display_name}** • 📺 {wins} vitórias\n"
-                rank += 1
+            name = user.display_name if user else f"Usuário {user_id}"
+            desc += f"**#{i} - {name}** • 📺 {wins} vitórias\n"
 
-        embed = discord.Embed(title="🏆 Ranking", description=desc, color=0x5865F2)
+        embed = discord.Embed(title="🏆 Ranking de Desafios", description=desc, color=0x5865F2)
         await interaction.followup.send(embed=embed)
         
     @app_commands.command(
@@ -411,9 +417,10 @@ class Challenges(commands.Cog):
 
             await message.add_reaction("✅")
 
+            # SE FOR LISTA (ARRAY):
             await self.col.update_one(
                 {"_id": message.author.id},
-                {"$inc": {"users.challenge_wins": 1, "users.challenge_earnings": reward}},
+                {"$inc": {"users.0.challenge_wins": 1, "users.0.challenge_earnings": reward}},
                 upsert=True
             )
 
