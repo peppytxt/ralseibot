@@ -10,11 +10,11 @@ DEFAULT_INTERVAL = 100
 DEFAULT_MODE = "messages"
 REWARD_MIN = 1500
 REWARD_MAX = 4000
-CHALLENGE_TIMEOUT = 60  # Segundos
+CHALLENGE_TIMEOUT = 60
 
 MIN_MEMBERS = 100
 MIN_MESSAGES_INTERVAL = 50
-MIN_TIME_INTERVAL = 600  # 10 minutos
+MIN_TIME_INTERVAL = 600 
 
 
 CTRLV_MESSAGES = [
@@ -27,8 +27,8 @@ CTRLV_MESSAGES = [
 
 class IntervalModal(ui.Modal, title="Configurar Intervalo"):
     interval = ui.TextInput(
-        label="Valor do Intervalo",
-        placeholder="Ex: 50 para mensagens ou 600 para tempo...",
+        label="Quantidade de Mensagens",
+        placeholder="Ex: 50, 100, 200...",
         min_length=1,
         max_length=5
     )
@@ -40,11 +40,8 @@ class IntervalModal(ui.Modal, title="Configurar Intervalo"):
     async def on_submit(self, interaction: discord.Interaction):
         try:
             val = int(self.interval.value)
-            # Validação básica baseada no modo atual da view
-            if self.view.config.get("challenge_mode") == "messages" and val < 50:
-                return await interaction.response.send_message("❌ Mínimo de 50 mensagens.", ephemeral=True)
-            if self.view.config.get("challenge_mode") == "time" and val < 600:
-                return await interaction.response.send_message("❌ Mínimo de 600 segundos (10min).", ephemeral=True)
+            if val < MIN_MESSAGES_INTERVAL:
+                return await interaction.response.send_message(f"❌ Mínimo de {MIN_MESSAGES_INTERVAL} mensagens.", ephemeral=True)
             
             self.view.config["challenge_interval"] = val
             await self.view.save_and_refresh(interaction)
@@ -56,24 +53,23 @@ class ChallengeConfigView(ui.LayoutView):
         super().__init__(timeout=300)
         self.cog = cog
         self.guild = guild
-        self.config = config or {"challenge_enabled": False, "challenge_mode": "messages", "challenge_interval": 100}
+        self.config = config or {"challenge_enabled": False, "challenge_interval": 100}
 
     def build_interface(self):
         self.clear_items()
         enabled = self.config.get("challenge_enabled", False)
-        mode = self.config.get("challenge_mode", "messages")
         
         status_card = ui.Container()
         status_card.title = "⚙️ Painel de Desafios"
         status_card.accent_color = discord.Color.green() if enabled else discord.Color.red()
         status_card.add_item(ui.TextDisplay(
             f"**Status:** {'✅ Ativo' if enabled else '❌ Desativado'}\n"
-            f"**Modo:** {mode} | **Intervalo:** {self.config.get('challenge_interval')}"
+            f"**Intervalo:** `{self.config.get('challenge_interval', 100)}` mensagens"
         ))
         self.add_item(status_card)
 
-        controls = ui.ActionRow()
-        btn_toggle = ui.Button(label="Ligar/Desligar", style=discord.ButtonStyle.grey)
+        controls = ui.Action_row() # Corrigido para ActionRow
+        btn_toggle = ui.Button(label="Ligar/Desligar", style=discord.ButtonStyle.secondary)
         btn_toggle.callback = self.toggle_enabled
         controls.add_item(btn_toggle)
 
@@ -94,22 +90,15 @@ class ChallengeConfigView(ui.LayoutView):
     async def open_interval_modal(self, interaction: discord.Interaction):
         await interaction.response.send_modal(IntervalModal(self))
 
-
 class Challenges(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        
         self.message_counters = {}
-
         self.active_challenges = {}
-        
         self.warned_users = {}
-        
-        self.challenge_timer.start()
         self.challenge_timeout_checker.start()
 
     def cog_unload(self):
-        self.challenge_timer.cancel()
         self.challenge_timeout_checker.cancel()
         
     async def send_speed_message(self, channel, user, response_time):
@@ -124,9 +113,7 @@ class Challenges(commands.Cog):
     @property
     def col(self):
         database = getattr(self.bot, "db", None)
-        if database is not None:
-            return database.xp
-        return None
+        return database.xp if database is not None else None
 
     # ------------- CONFIG COMMAND ------------------
 
@@ -236,30 +223,27 @@ class Challenges(commands.Cog):
     async def on_message(self, message):
         if message.author.bot or not message.guild or self.col is None:
             return
-
+        
         config = await self.col.find_one({"_id": message.guild.id})
         if not config or not config.get("challenge_enabled"):
             return
 
-        mode = config.get("challenge_mode", DEFAULT_MODE)
+        # ********** MODO POR MENSAGENS **********
+        key = str(message.guild.id)
         interval = config.get("challenge_interval", DEFAULT_INTERVAL)
 
-        # ********** MODO POR MENSAGENS **********
-        if mode == "messages":
-            key = str(message.guild.id)
+        self.message_counters[key] = self.message_counters.get(key, 0) + 1
+        current = self.message_counters[key]
 
-            self.message_counters[key] = self.message_counters.get(key, 0) + 1
-            current = self.message_counters[key]
+        if self.message_counters[key] >= interval:
+            self.message_counters[key] = 0
+            await self.spawn_challenge(message.guild, config)
 
-            if current >= interval:
-                self.message_counters[key] = 0
-                await self.spawn_challenge(message.guild, config)
-
-                # Adicionado AWAIT
-                await self.col.update_one(
-                    {"_id": message.guild.id},
-                    {"$set": {"challenge_last": time.time()}}
-                )
+            # Adicionado AWAIT
+            await self.col.update_one(
+                {"_id": message.guild.id},
+                {"$set": {"challenge_last": time.time()}}
+            )
 
         # ********** CHECAR RESPOSTAS **********
         await self.check_answer(message)
