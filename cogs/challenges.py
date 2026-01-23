@@ -164,18 +164,13 @@ class Challenges(commands.Cog):
         if self.col is None: return
         await interaction.response.defer()
 
-        # TENTATIVA 1: Busca no formato users.challenge_wins (Objeto)
         cursor = self.col.find({"users.challenge_wins": {"$gt": 0}}).sort("users.challenge_wins", -1).limit(10)
         data_list = await cursor.to_list(length=10)
-
-        # TENTATIVA 2: Se a 1 falhar, busca na Raiz (Caso tenha voltado ao antigo)
         if not data_list:
             cursor = self.col.find({"challenge_wins": {"$gt": 0}}).sort("challenge_wins", -1).limit(10)
             data_list = await cursor.to_list(length=10)
 
-        # TENTATIVA 3: Se ainda falhar, busca se 'users' for uma Lista/Array
         if not data_list:
-            # Isso busca o primeiro elemento de uma lista chamada users
             cursor = self.col.find({"users.0.challenge_wins": {"$gt": 0}}).sort("users.0.challenge_wins", -1).limit(10)
             data_list = await cursor.to_list(length=10)
 
@@ -185,8 +180,6 @@ class Challenges(commands.Cog):
         desc = ""
         for i, data in enumerate(data_list, start=1):
             user_id = data["_id"]
-            
-            # Lógica inteligente para pegar a vitória independente de onde ela esteja
             wins = 0
             if "users" in data:
                 if isinstance(data["users"], list) and len(data["users"]) > 0:
@@ -213,7 +206,9 @@ class Challenges(commands.Cog):
         interaction: discord.Interaction,
         user: discord.Member | None = None
     ):
-        if self.col is None: return
+        if self.col is None: 
+            return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
+            
         target = user or interaction.user
 
         if target.bot:
@@ -224,13 +219,11 @@ class Challenges(commands.Cog):
 
         data = await self.col.find_one({"_id": target.id}) or {}
 
-        user_data = data.get("users", {})
-        wins = user_data.get("challenge_wins", 0)
-        earnings = user_data.get("challenge_earnings", 0)
+        wins = data.get("challenge_wins", 0)
+        earnings = data.get("challenge_earnings", 0)
 
         rank = await self.col.count_documents({
-            "challenge_wins": {"$gt": wins},
-            "_id": {"$ne": 0}
+            "challenge_wins": {"$gt": wins}
         }) + 1
 
         embed = discord.Embed(
@@ -245,7 +238,6 @@ class Challenges(commands.Cog):
         )
 
         await interaction.response.send_message(embed=embed)
-
 
     # ------------- ON MESSAGE ---------------------
 
