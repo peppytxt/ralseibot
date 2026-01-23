@@ -167,25 +167,40 @@ class Challenges(commands.Cog):
         if self.col is None: return
 
         cursor = self.col.find(
-                {"challenge_wins": {"$gt": 0}},
-                {"challenge_wins": 1}
-            ).sort("challenge_wins", -1).limit(10)
+            {"challenge_wins": {"$gt": 0}},
+            {"challenge_wins": 1}
+        ).sort("challenge_wins", -1).limit(10)
         
-        users = await cursor.to_list(length=10)
+        data_list = await cursor.to_list(length=10)
 
-        if not users:
+        if not data_list:
             return await interaction.response.send_message(
                 "❌ Ainda ninguém completou desafios.",
                 ephemeral=True
             )
 
-        desc = ""
-        for i, u in enumerate(users, start=1):
-            user = interaction.client.get_user(u["_id"])
-            name = user.display_name if user else f"Usuário {u['_id']}"
-            wins = u.get("challenge_wins", 0)
+        await interaction.response.defer()
 
-            desc += f"**#{i} - {name}** • 📺 {wins} desafios\n"
+        desc = ""
+        for i, data in enumerate(data_list, start=1):
+            user_id = data["_id"]
+            wins = data.get("challenge_wins", 0)
+            
+            user = self.bot.get_user(user_id)
+            if not user:
+                try:
+                    user = await self.bot.fetch_user(user_id)
+                except:
+                    user = None
+
+            if not user or user.bot:
+                continue
+
+            name = user.display_name
+            desc += f"**#{i} - {name}** • 📺 {wins} vitórias\n"
+
+        if not desc:
+            desc = "Nenhum usuário encontrado no ranking."
 
         embed = discord.Embed(
             title="🏆 Ranking de Desafios",
@@ -193,7 +208,7 @@ class Challenges(commands.Cog):
             color=discord.Color.purple()
         )
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
         
     @app_commands.command(
         name="challengestats",
