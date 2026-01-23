@@ -159,39 +159,52 @@ class Challenges(commands.Cog):
 
     @app_commands.command(name="challengerank", description="Ranking de desafios")
     async def challenge_rank(self, interaction: discord.Interaction):
-        if self.col is None: return
+        if self.col is None: 
+            return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
+            
         await interaction.response.defer()
 
-        cursor = self.col.find({"challenge_wins": {"$gt": 0}}).sort("challenge_wins", -1).limit(10)
+        cursor = self.col.find(
+            {"challenge_wins": {"$gt": 0}}
+        ).sort("challenge_wins", -1).limit(10)
+        
         data_list = await cursor.to_list(length=10)
-        if not data_list:
-            cursor = self.col.find({"challenge_wins": {"$gt": 0}}).sort("challenge_wins", -1).limit(10)
-            data_list = await cursor.to_list(length=10)
 
         if not data_list:
-            cursor = self.col.find({"challenge_wins": {"$gt": 0}}).sort("challenge_wins", -1).limit(10)
-            data_list = await cursor.to_list(length=10)
-
-        if not data_list:
-            return await interaction.followup.send("❌ Nenhum dado encontrado em nenhum dos formatos conhecidos.")
+            return await interaction.followup.send("❌ Ainda ninguém completou desafios.")
 
         desc = ""
-        for i, data in enumerate(data_list, start=1):
+        rank_pos = 1
+        
+        for data in data_list:
             user_id = data["_id"]
-            wins = 0
-            if "users" in data:
-                if isinstance(data["users"], list) and len(data["users"]) > 0:
-                    wins = data["users"][0].get("challenge_wins", 0) 
-                elif isinstance(data["users"], dict):
-                    wins = data["users"].get("challenge_wins", 0)
-            else:
-                wins = data.get("challenge_wins", 0)
+            
+            wins = data.get("challenge_wins", 0)
 
-            user = self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
-            name = user.display_name if user else f"Usuário {user_id}"
-            desc += f"**#{i} - {name}** • 📺 {wins} vitórias\n"
+            user = self.bot.get_user(user_id)
+            if not user:
+                try:
+                    user = await self.bot.fetch_user(user_id)
+                except:
+                    continue
 
-        embed = discord.Embed(title="🏆 Ranking de Desafios", description=desc, color=0x5865F2)
+            if user.bot:
+                continue
+
+            name = user.display_name
+            desc += f"**#{rank_pos} - {name}** • 📺 {wins} vitórias\n"
+            rank_pos += 1
+
+        if not desc:
+            return await interaction.followup.send("❌ Nenhum usuário válido encontrado no ranking.")
+
+        embed = discord.Embed(
+            title="🏆 Ranking de Desafios", 
+            description=desc, 
+            color=0x5865F2
+        )
+        embed.set_footer(text="Apenas os 10 melhores digitadores!")
+        
         await interaction.followup.send(embed=embed)
         
     @app_commands.command(
