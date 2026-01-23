@@ -139,7 +139,7 @@ class Challenges(commands.Cog):
     @property
     def col(self):
         database = getattr(self.bot, "db", None)
-        return database.xp if database is not None else None
+        return database.users if database is not None else None
 
     # ------------- CONFIG COMMAND ------------------
 
