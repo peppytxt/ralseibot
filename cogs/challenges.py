@@ -56,78 +56,39 @@ class ChallengeConfigView(ui.LayoutView):
         super().__init__(timeout=300)
         self.cog = cog
         self.guild = guild
-        self.config = config
+        self.config = config or {"challenge_enabled": False, "challenge_mode": "messages", "challenge_interval": 100}
 
     def build_interface(self):
         self.clear_items()
-        
         enabled = self.config.get("challenge_enabled", False)
         mode = self.config.get("challenge_mode", "messages")
-        interval = self.config.get("challenge_interval", 100)
-        channel_id = self.config.get("challenge_channel")
-        channel_mention = f"<#{channel_id}>" if channel_id else "Não definido"
-
+        
         status_card = ui.Container()
         status_card.title = "⚙️ Painel de Desafios"
         status_card.accent_color = discord.Color.green() if enabled else discord.Color.red()
-        
-        status_text = (
-            f"**Status:** {'✅ Ativado' if enabled else '❌ Desativado'}\n"
-            f"**Modo:** {'💬 Mensagens' if mode == 'messages' else '⏰ Tempo'}\n"
-            f"**Intervalo:** `{interval}` {'msgs' if mode == 'messages' else 'segundos'}\n"
-            f"**Canal:** {channel_mention}"
-        )
-        status_card.add_item(ui.TextDisplay(status_text))
+        status_card.add_item(ui.TextDisplay(
+            f"**Status:** {'✅ Ativo' if enabled else '❌ Desativado'}\n"
+            f"**Modo:** {mode} | **Intervalo:** {self.config.get('challenge_interval')}"
+        ))
         self.add_item(status_card)
 
         controls = ui.ActionRow()
-        
-        btn_toggle = ui.Button(
-            label="Ligar" if not enabled else "Desligar",
-            style=discord.ButtonStyle.success if not enabled else discord.ButtonStyle.danger
-        )
+        btn_toggle = ui.Button(label="Ligar/Desligar", style=discord.ButtonStyle.grey)
         btn_toggle.callback = self.toggle_enabled
         controls.add_item(btn_toggle)
 
-        btn_mode = ui.Button(label="Trocar Modo", style=discord.ButtonStyle.secondary, emoji="🔄")
-        btn_mode.callback = self.toggle_mode
-        controls.add_item(btn_mode)
-
-        btn_int = ui.Button(label="Ajustar Intervalo", style=discord.ButtonStyle.secondary, emoji="🔢")
+        btn_int = ui.Button(label="Ajustar Intervalo", emoji="🔢")
         btn_int.callback = self.open_interval_modal
         controls.add_item(btn_int)
-        
         self.add_item(controls)
 
-        select_row = ui.ActionRow()
-        channel_select = ui.ChannelSelect(
-            placeholder="Selecione o canal dos desafios...",
-            channel_types=[discord.ChannelType.text]
-        )
-        channel_select.callback = self.select_channel
-        select_row.add_item(channel_select)
-        self.add_item(select_row)
-
     async def save_and_refresh(self, interaction: discord.Interaction):
-        await self.cog.col.update_one(
-            {"_id": self.guild.id},
-            {"$set": self.config},
-            upsert=True
-        )
+        await self.cog.col.update_one({"_id": self.guild.id}, {"$set": self.config}, upsert=True)
         self.build_interface()
         await interaction.response.edit_message(view=self)
 
     async def toggle_enabled(self, interaction: discord.Interaction):
         self.config["challenge_enabled"] = not self.config.get("challenge_enabled", False)
-        await self.save_and_refresh(interaction)
-
-    async def toggle_mode(self, interaction: discord.Interaction):
-        current = self.config.get("challenge_mode", "messages")
-        self.config["challenge_mode"] = "time" if current == "messages" else "messages"
-        await self.save_and_refresh(interaction)
-
-    async def select_channel(self, interaction: discord.Interaction):
-        self.config["challenge_channel"] = interaction.data['values'][0]
         await self.save_and_refresh(interaction)
 
     async def open_interval_modal(self, interaction: discord.Interaction):
@@ -166,70 +127,6 @@ class Challenges(commands.Cog):
         if database is not None:
             return database.xp
         return None
-
-class ChallengeConfigView(ui.LayoutView):
-    def __init__(self, cog, guild, current_config):
-        super().__init__(timeout=300)
-        self.cog = cog
-        self.guild = guild
-        # Estado local da configuração (começa com o que já tem no banco ou padrão)
-        self.config = current_config or {
-            "challenge_enabled": False,
-            "challenge_channel": None,
-            "challenge_mode": "messages",
-            "challenge_interval": 100
-        }
-
-    def refresh_interface(self):
-        self.clear_items()
-
-        # 1. Header Informativo
-        header = ui.Container()
-        status_emoji = "✅ Ativado" if self.config["challenge_enabled"] else "❌ Desativado"
-        canal_mention = f"<#{self.config['challenge_channel']}>" if self.config['challenge_channel'] else "Não definido"
-        
-        header.add_item(ui.TextDisplay(
-            f"## ⚙️ Configuração de Desafios - {self.guild.name}\n"
-            f"**Status:** {status_emoji}\n"
-            f"**Canal:** {canal_mention}\n"
-            f"**Modo:** `{self.config['challenge_mode']}` | **Intervalo:** `{self.config['challenge_interval']}`"
-        ))
-        self.add_item(header)
-
-        # 2. Linha de Botões de Controle
-        action_row = ui.ActionRow()
-        
-        # Botão Ligar/Desligar
-        toggle_style = discord.ButtonStyle.success if not self.config["challenge_enabled"] else discord.ButtonStyle.danger
-        btn_toggle = ui.Button(label="Ligar/Desligar", style=toggle_style, emoji="🔌")
-        btn_toggle.callback = self.toggle_status
-        action_row.add_item(btn_toggle)
-
-        # Menu de Seleção de Canal (Select Menu V2)
-        # Nota: Você pode usar um ChannelSelect para facilitar
-        self.add_item(action_row)
-
-        # 3. Botão para Salvar (Finalizar)
-        save_row = ui.ActionRow()
-        btn_save = ui.Button(label="Salvar Alterações", style=discord.ButtonStyle.primary, emoji="💾")
-        btn_save.callback = self.save_to_db
-        save_row.add_item(btn_save)
-        self.add_item(save_row)
-
-    async def toggle_status(self, interaction: discord.Interaction):
-        self.config["challenge_enabled"] = not self.config["challenge_enabled"]
-        self.refresh_interface()
-        await interaction.response.edit_message(view=self)
-
-    async def save_to_db(self, interaction: discord.Interaction):
-        # Aqui salvamos de fato no MongoDB
-        await self.cog.col.update_one(
-            {"_id": self.guild.id},
-            {"$set": self.config},
-            upsert=True
-        )
-        await interaction.response.send_message("✅ Configurações salvas no banco de dados!", ephemeral=True)
-        self.stop() # Fecha a view
 
     # ------------- CONFIG COMMAND ------------------
 
