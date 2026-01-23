@@ -1,5 +1,5 @@
 import discord
-from discord import app_commands
+from discord import app_commands, ui
 from discord.ext import commands, tasks
 import random
 import time
@@ -24,6 +24,114 @@ CTRLV_MESSAGES = [
     "📋 Cola aqui não, escreve com o coração ❤️",
     "🚫 Ctrl+C + Ctrl+V não aumenta QI, só digita 😉",
 ]
+
+class IntervalModal(ui.Modal, title="Configurar Intervalo"):
+    interval = ui.TextInput(
+        label="Valor do Intervalo",
+        placeholder="Ex: 50 para mensagens ou 600 para tempo...",
+        min_length=1,
+        max_length=5
+    )
+
+    def __init__(self, view):
+        super().__init__()
+        self.view = view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            val = int(self.interval.value)
+            # Validação básica baseada no modo atual da view
+            if self.view.config.get("challenge_mode") == "messages" and val < 50:
+                return await interaction.response.send_message("❌ Mínimo de 50 mensagens.", ephemeral=True)
+            if self.view.config.get("challenge_mode") == "time" and val < 600:
+                return await interaction.response.send_message("❌ Mínimo de 600 segundos (10min).", ephemeral=True)
+            
+            self.view.config["challenge_interval"] = val
+            await self.view.save_and_refresh(interaction)
+        except ValueError:
+            await interaction.response.send_message("❌ Digite apenas números!", ephemeral=True)
+
+class ChallengeConfigView(ui.LayoutView):
+    def __init__(self, cog, guild, config):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.guild = guild
+        self.config = config
+
+    def build_interface(self):
+        self.clear_items()
+        
+        enabled = self.config.get("challenge_enabled", False)
+        mode = self.config.get("challenge_mode", "messages")
+        interval = self.config.get("challenge_interval", 100)
+        channel_id = self.config.get("challenge_channel")
+        channel_mention = f"<#{channel_id}>" if channel_id else "Não definido"
+
+        status_card = ui.Container()
+        status_card.title = "⚙️ Painel de Desafios"
+        status_card.accent_color = discord.Color.green() if enabled else discord.Color.red()
+        
+        status_text = (
+            f"**Status:** {'✅ Ativado' if enabled else '❌ Desativado'}\n"
+            f"**Modo:** {'💬 Mensagens' if mode == 'messages' else '⏰ Tempo'}\n"
+            f"**Intervalo:** `{interval}` {'msgs' if mode == 'messages' else 'segundos'}\n"
+            f"**Canal:** {channel_mention}"
+        )
+        status_card.add_item(ui.TextDisplay(status_text))
+        self.add_item(status_card)
+
+        controls = ui.ActionRow()
+        
+        btn_toggle = ui.Button(
+            label="Ligar" if not enabled else "Desligar",
+            style=discord.ButtonStyle.success if not enabled else discord.ButtonStyle.danger
+        )
+        btn_toggle.callback = self.toggle_enabled
+        controls.add_item(btn_toggle)
+
+        btn_mode = ui.Button(label="Trocar Modo", style=discord.ButtonStyle.secondary, emoji="🔄")
+        btn_mode.callback = self.toggle_mode
+        controls.add_item(btn_mode)
+
+        btn_int = ui.Button(label="Ajustar Intervalo", style=discord.ButtonStyle.secondary, emoji="🔢")
+        btn_int.callback = self.open_interval_modal
+        controls.add_item(btn_int)
+        
+        self.add_item(controls)
+
+        select_row = ui.ActionRow()
+        channel_select = ui.ChannelSelect(
+            placeholder="Selecione o canal dos desafios...",
+            channel_types=[discord.ChannelType.text]
+        )
+        channel_select.callback = self.select_channel
+        select_row.add_item(channel_select)
+        self.add_item(select_row)
+
+    async def save_and_refresh(self, interaction: discord.Interaction):
+        await self.cog.col.update_one(
+            {"_id": self.guild.id},
+            {"$set": self.config},
+            upsert=True
+        )
+        self.build_interface()
+        await interaction.response.edit_message(view=self)
+
+    async def toggle_enabled(self, interaction: discord.Interaction):
+        self.config["challenge_enabled"] = not self.config.get("challenge_enabled", False)
+        await self.save_and_refresh(interaction)
+
+    async def toggle_mode(self, interaction: discord.Interaction):
+        current = self.config.get("challenge_mode", "messages")
+        self.config["challenge_mode"] = "time" if current == "messages" else "messages"
+        await self.save_and_refresh(interaction)
+
+    async def select_channel(self, interaction: discord.Interaction):
+        self.config["challenge_channel"] = interaction.data['values'][0]
+        await self.save_and_refresh(interaction)
+
+    async def open_interval_modal(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(IntervalModal(self))
 
 
 class Challenges(commands.Cog):
@@ -59,85 +167,92 @@ class Challenges(commands.Cog):
             return database.xp
         return None
 
+class ChallengeConfigView(ui.LayoutView):
+    def __init__(self, cog, guild, current_config):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.guild = guild
+        # Estado local da configuração (começa com o que já tem no banco ou padrão)
+        self.config = current_config or {
+            "challenge_enabled": False,
+            "challenge_channel": None,
+            "challenge_mode": "messages",
+            "challenge_interval": 100
+        }
+
+    def refresh_interface(self):
+        self.clear_items()
+
+        # 1. Header Informativo
+        header = ui.Container()
+        status_emoji = "✅ Ativado" if self.config["challenge_enabled"] else "❌ Desativado"
+        canal_mention = f"<#{self.config['challenge_channel']}>" if self.config['challenge_channel'] else "Não definido"
+        
+        header.add_item(ui.TextDisplay(
+            f"## ⚙️ Configuração de Desafios - {self.guild.name}\n"
+            f"**Status:** {status_emoji}\n"
+            f"**Canal:** {canal_mention}\n"
+            f"**Modo:** `{self.config['challenge_mode']}` | **Intervalo:** `{self.config['challenge_interval']}`"
+        ))
+        self.add_item(header)
+
+        # 2. Linha de Botões de Controle
+        action_row = ui.ActionRow()
+        
+        # Botão Ligar/Desligar
+        toggle_style = discord.ButtonStyle.success if not self.config["challenge_enabled"] else discord.ButtonStyle.danger
+        btn_toggle = ui.Button(label="Ligar/Desligar", style=toggle_style, emoji="🔌")
+        btn_toggle.callback = self.toggle_status
+        action_row.add_item(btn_toggle)
+
+        # Menu de Seleção de Canal (Select Menu V2)
+        # Nota: Você pode usar um ChannelSelect para facilitar
+        self.add_item(action_row)
+
+        # 3. Botão para Salvar (Finalizar)
+        save_row = ui.ActionRow()
+        btn_save = ui.Button(label="Salvar Alterações", style=discord.ButtonStyle.primary, emoji="💾")
+        btn_save.callback = self.save_to_db
+        save_row.add_item(btn_save)
+        self.add_item(save_row)
+
+    async def toggle_status(self, interaction: discord.Interaction):
+        self.config["challenge_enabled"] = not self.config["challenge_enabled"]
+        self.refresh_interface()
+        await interaction.response.edit_message(view=self)
+
+    async def save_to_db(self, interaction: discord.Interaction):
+        # Aqui salvamos de fato no MongoDB
+        await self.cog.col.update_one(
+            {"_id": self.guild.id},
+            {"$set": self.config},
+            upsert=True
+        )
+        await interaction.response.send_message("✅ Configurações salvas no banco de dados!", ephemeral=True)
+        self.stop() # Fecha a view
+
     # ------------- CONFIG COMMAND ------------------
 
     @app_commands.command(
         name="challengeconfig",
-        description="Configura perguntas automáticas no servidor"
+        description="Painel visual de configuração dos desafios"
     )
     @app_commands.default_permissions(administrator=True)
-    @app_commands.describe(
-        channel="Canal onde os desafios serão postados",
-        enabled="Ativar ou desativar desafios",
-        mode="Modo de trigger (messages/tempo)",
-        interval="Valores de intervalo (mensagens ou segundos)"
-    )
-    async def challengeconfig(
-        self,
-        interaction: discord.Interaction,
-        channel: discord.TextChannel,
-        enabled: bool,
-        mode: str,
-        interval: int
-    ):
+    async def challengeconfig(self, interaction: discord.Interaction):
         if self.col is None:
             return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
 
-        guild = interaction.guild
-
-        if not guild:
+        if interaction.guild.member_count < MIN_MEMBERS:
             return await interaction.response.send_message(
-                "❌ Este comando só pode ser usado em servidores.",
-                ephemeral=True
+                f"❌ Mínimo de **{MIN_MEMBERS} membros** necessário.", ephemeral=True
             )
 
-        # 🔒 FILTRO DE MEMBROS
-        if guild.member_count < MIN_MEMBERS:
-            return await interaction.response.send_message(
-                f"❌ Este servidor precisa ter pelo menos **{MIN_MEMBERS} membros** "
-                "para ativar os desafios.",
-                ephemeral=True
-            )
-
-        if mode not in ("messages", "time"):
-            return await interaction.response.send_message(
-                "❌ Modo inválido! Use `messages` ou `time`.",
-                ephemeral=True
-            )
-
-        # 🔒 FILTRO POR MODO
-        if mode == "messages" and interval < MIN_MESSAGES_INTERVAL:
-            return await interaction.response.send_message(
-                f"❌ O intervalo mínimo é **{MIN_MESSAGES_INTERVAL} mensagens**.",
-                ephemeral=True
-            )
-
-        if mode == "time" and interval < MIN_TIME_INTERVAL:
-            return await interaction.response.send_message(
-                f"❌ O intervalo mínimo é **{MIN_TIME_INTERVAL // 60} minutos**.",
-                ephemeral=True
-            )
-
-        await self.col.update_one(
-            {"_id": guild.id},
-            {"$set": {
-                "challenge_enabled": enabled,
-                "challenge_channel": channel.id,
-                "challenge_mode": mode,
-                "challenge_interval": interval,
-                "challenge_last": time.time()
-            }},
-            upsert=True
-        )
-
-        await interaction.response.send_message(
-            "✅ **Configuração aplicada com sucesso!**\n"
-            f"🔹 Canal: {channel.mention}\n"
-            f"🔹 Modo: {mode}\n"
-            f"🔹 Intervalo: {interval}\n"
-            f"🔹 Membros: {guild.member_count}",
-            ephemeral=True
-        )
+        config = await self.col.find_one({"_id": interaction.guild.id}) or {}
+        
+        view = ChallengeConfigView(self, interaction.guild, config)
+        view.build_interface() 
+        
+        await interaction.response.send_message(view=view, ephemeral=True)
 
     @app_commands.command(
         name="challengerank",
@@ -256,10 +371,8 @@ class Challenges(commands.Cog):
     @tasks.loop(seconds=60)
     async def challenge_timer(self):
         if self.col is None: 
-            print("DEBUG: Banco de dados não encontrado na Cog de Challenges")
             return
         try: 
-            print("DEBUG: Verificando desafios pendentes...")
             cursor = self.col.find({"challenge_enabled": True})
             
             count = 0
@@ -267,11 +380,9 @@ class Challenges(commands.Cog):
                 count += 1
                 guild = self.bot.get_guild(config["_id"])
                 if not guild:
-                    print(f"DEBUG: Servidor {config['_id']} não encontrado.")
                     continue
 
                 mode = config.get("challenge_mode", DEFAULT_MODE)
-                print(f"DEBUG: Servidor {guild.name} em modo {mode}")
                 
                 if mode != "time":
                     continue
@@ -281,7 +392,6 @@ class Challenges(commands.Cog):
                 now = time.time()
 
                 if now - last >= interval:
-                    print(f"DEBUG: Spawning challenge em {guild.name}")
                     await self.spawn_challenge(guild, config)
                     await self.col.update_one(
                         {"_id": config["_id"]},
