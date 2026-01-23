@@ -126,17 +126,12 @@ class Challenges(commands.Cog):
         if self.col is None:
             return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
 
-        if interaction.guild.member_count < MIN_MEMBERS:
-            return await interaction.response.send_message(
-                f"❌ Mínimo de **{MIN_MEMBERS} membros** necessário.", ephemeral=True
-            )
-
         config = await self.col.find_one({"_id": interaction.guild.id}) or {}
         
         view = ChallengeConfigView(self, interaction.guild, config)
-        view.build_interface() 
+        embed = view.build_interface()
         
-        await interaction.response.send_message(view=view, ephemeral=True)
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
     @app_commands.command(
         name="challengerank",
