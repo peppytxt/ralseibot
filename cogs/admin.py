@@ -65,7 +65,7 @@ class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="embed_panel", description="Abre o painel de criação de embeds (Admin)")
+    @app_commands.command(name="embedpanel", description="Abre o painel de criação de embeds (Admin)")
     @app_commands.default_permissions(administrator=True)
     async def embed_panel(self, interaction: discord.Interaction):
         view = EmbedControlView(interaction.user)
