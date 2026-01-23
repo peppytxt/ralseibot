@@ -68,7 +68,7 @@ class ChallengeConfigView(ui.LayoutView):
         ))
         self.add_item(status_card)
 
-        controls = ui.Action_row() # Corrigido para ActionRow
+        controls = ui.ActionRow
         btn_toggle = ui.Button(label="Ligar/Desligar", style=discord.ButtonStyle.secondary)
         btn_toggle.callback = self.toggle_enabled
         controls.add_item(btn_toggle)
