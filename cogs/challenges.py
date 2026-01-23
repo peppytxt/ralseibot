@@ -159,65 +159,42 @@ class Challenges(commands.Cog):
         
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    @app_commands.command(
-        name="challengerank",
-        description="Ranking dos usuários que mais venceram desafios"
-    )
+    @app_commands.command(name="challengerank", description="Ranking de desafios")
     async def challenge_rank(self, interaction: discord.Interaction):
-        if self.col is None: 
-            return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
-
-        # 1. Busca os dados (Note o users.challenge_wins)
+        if self.col is None: return
+        
+        # Procuramos documentos onde 'users' é um objeto e tem vitórias
         cursor = self.col.find(
-            {"users.challenge_wins": {"$gt": 0}},
-            {"_id": 1, "users.challenge_wins": 1}
+            {"users.challenge_wins": {"$gt": 0}}
         ).sort("users.challenge_wins", -1).limit(10)
         
         data_list = await cursor.to_list(length=10)
 
         if not data_list:
+            # Se cair aqui, vamos testar se o campo está na raiz por segurança
             return await interaction.response.send_message(
-                "❌ Ainda ninguém completou desafios.",
+                "❌ Não encontrei dados no formato 'users.challenge_wins'.", 
                 ephemeral=True
             )
         
-        # Deferir pois a busca de usuários (fetch_user) pode levar tempo
         await interaction.response.defer()
-
         desc = ""
-        rank_count = 1
-        
-        for entry in data_list:
-            user_id = entry["_id"]
+        rank = 1
+
+        for data in data_list:
+            user_id = data["_id"]
             
-            # Extrai as vitórias de dentro do objeto 'users'
-            user_data = entry.get("users", {})
-            wins = user_data.get("challenge_wins", 0)
-            
-            # Tenta encontrar o usuário para exibir o nome
-            user = self.bot.get_user(user_id)
-            if not user:
-                try:
-                    user = await self.bot.fetch_user(user_id)
-                except:
-                    continue # Se não encontrar o usuário, pula para o próximo
+            # Pega o objeto 'users' e depois a vitória
+            # Se 'users' for uma lista em vez de um objeto, o código muda!
+            user_obj = data.get("users", {})
+            wins = user_obj.get("challenge_wins", 0)
 
-            if user.bot:
-                continue
+            user = self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
+            if user and not user.bot:
+                desc += f"**#{rank} - {user.display_name}** • 📺 {wins} vitórias\n"
+                rank += 1
 
-            name = user.display_name
-            desc += f"**#{rank_count} - {name}** • 📺 {wins} vitórias\n"
-            rank_count += 1
-
-        if not desc:
-            desc = "Nenhum usuário encontrado no ranking."
-
-        embed = discord.Embed(
-            title="🏆 Ranking de Desafios",
-            description=desc,
-            color=discord.Color.purple()
-        )
-
+        embed = discord.Embed(title="🏆 Ranking", description=desc, color=0x5865F2)
         await interaction.followup.send(embed=embed)
         
     @app_commands.command(
