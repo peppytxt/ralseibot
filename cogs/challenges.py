@@ -167,9 +167,9 @@ class Challenges(commands.Cog):
         if self.col is None: return
 
         cursor = self.col.find(
-            {"challenge_wins": {"$gt": 0}},
-            {"challenge_wins": 1}
-        ).sort("challenge_wins", -1).limit(10)
+            {"users.challenge_wins": {"$gt": 0}},
+            {"users.challenge_wins": 1}
+        ).sort("users.challenge_wins", -1).limit(10)
         
         data_list = await cursor.to_list(length=10)
 
@@ -178,7 +178,7 @@ class Challenges(commands.Cog):
                 "❌ Ainda ninguém completou desafios.",
                 ephemeral=True
             )
-
+        wins = data.get("users", {}).get("challenge_wins", 0)
         await interaction.response.defer()
 
         desc = ""
@@ -423,18 +423,16 @@ class Challenges(commands.Cog):
 
             await message.add_reaction("✅")
 
-            # Adicionado AWAIT
             await self.col.update_one(
                 {"_id": message.author.id},
                 {
                     "$inc": {
-                        "challenge_wins": 1,
-                        "challenge_earnings": reward
+                        "users.challenge_wins": 1, 
+                        "users.challenge_earnings": reward
                     }
                 },
                 upsert=True
             )
-
 
             await message.channel.send(
                 f"🎉 {message.author.mention} acertou! "
