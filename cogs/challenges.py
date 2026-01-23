@@ -170,6 +170,8 @@ class Challenges(commands.Cog):
             {"users.challenge_wins": {"$gt": 0}},
             {"users.challenge_wins": 1}
         ).sort("users.challenge_wins", -1).limit(10)
+
+        wins = data.get("users", {}).get("challenge_wins", 0)
         
         data_list = await cursor.to_list(length=10)
 
@@ -178,7 +180,7 @@ class Challenges(commands.Cog):
                 "❌ Ainda ninguém completou desafios.",
                 ephemeral=True
             )
-        wins = data.get("users", {}).get("challenge_wins", 0)
+        
         await interaction.response.defer()
 
         desc = ""
