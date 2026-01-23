@@ -48,40 +48,66 @@ class IntervalModal(ui.Modal, title="Configurar Intervalo"):
         except ValueError:
             await interaction.response.send_message("❌ Digite apenas números!", ephemeral=True)
 
-class ChallengeConfigView(ui.LayoutView):
+class ChallengeConfigView(ui.View):
     def __init__(self, cog, guild, config):
         super().__init__(timeout=300)
         self.cog = cog
         self.guild = guild
-        self.config = config or {"challenge_enabled": False, "challenge_interval": 100}
+        # Garante que existam valores padrão se a config for nova
+        self.config = config or {
+            "challenge_enabled": False, 
+            "challenge_interval": 100
+        }
 
     def build_interface(self):
+        # Limpa os itens antes de reconstruir (importante para o refresh)
         self.clear_items()
-        enabled = self.config.get("challenge_enabled", False)
         
-        status_card = ui.Container()
-        status_card.title = "⚙️ Painel de Desafios"
-        status_card.accent_color = discord.Color.green() if enabled else discord.Color.red()
-        status_card.add_item(ui.TextDisplay(
-            f"**Status:** {'✅ Ativo' if enabled else '❌ Desativado'}\n"
-            f"**Intervalo:** `{self.config.get('challenge_interval', 100)}` mensagens"
-        ))
-        self.add_item(status_card)
+        enabled = self.config.get("challenge_enabled", False)
+        interval = self.config.get("challenge_interval", 100)
+        
+        # Criamos um Embed para o status
+        embed = discord.Embed(
+            title="⚙️ Painel de Controle: Desafios",
+            description="Configure a frequência e o estado dos desafios automáticos.",
+            color=discord.Color.green() if enabled else discord.Color.red()
+        )
+        embed.add_field(name="Status", value="✅ Ativado" if enabled else "❌ Desativado", inline=True)
+        embed.add_field(name="Intervalo", value=f"`{interval}` mensagens", inline=True)
+        embed.set_footer(text=f"Servidor: {self.guild.name}")
 
-        controls = ui.ActionRow
-        btn_toggle = ui.Button(label="Ligar/Desligar", style=discord.ButtonStyle.secondary)
+        # Botão Ligar/Desligar
+        btn_toggle = ui.Button(
+            label="Desligar" if enabled else "Ligar",
+            style=discord.ButtonStyle.danger if enabled else discord.ButtonStyle.success,
+            emoji="🔌"
+        )
         btn_toggle.callback = self.toggle_enabled
-        controls.add_item(btn_toggle)
+        self.add_item(btn_toggle) # Adicionamos direto na View!
 
-        btn_int = ui.Button(label="Ajustar Intervalo", emoji="🔢")
+        # Botão Intervalo
+        btn_int = ui.Button(
+            label="Ajustar Mensagens", 
+            style=discord.ButtonStyle.secondary, 
+            emoji="🔢"
+        )
         btn_int.callback = self.open_interval_modal
-        controls.add_item(btn_int)
-        self.add_item(controls)
+        self.add_item(btn_int)
+
+        return embed
 
     async def save_and_refresh(self, interaction: discord.Interaction):
-        await self.cog.col.update_one({"_id": self.guild.id}, {"$set": self.config}, upsert=True)
-        self.build_interface()
-        await interaction.response.edit_message(view=self)
+        # Salva no MongoDB
+        if self.cog.col is not None:
+            await self.cog.col.update_one(
+                {"_id": self.guild.id},
+                {"$set": self.config},
+                upsert=True
+            )
+        
+        # Gera o novo embed e edita a mensagem
+        embed = self.build_interface()
+        await interaction.response.edit_message(embed=embed, view=self)
 
     async def toggle_enabled(self, interaction: discord.Interaction):
         self.config["challenge_enabled"] = not self.config.get("challenge_enabled", False)
