@@ -159,7 +159,7 @@ class Challenges(commands.Cog):
         
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-@app_commands.command(
+    @app_commands.command(
         name="challengerank",
         description="Ranking dos usuários que mais venceram desafios"
     )
