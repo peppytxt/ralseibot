@@ -7,7 +7,7 @@ class EmbedEditorModal(ui.Modal, title="📝 Criar/Editar Embed"):
         label="Título do Embed",
         placeholder="Digite o título aqui...",
         max_length=256,
-        required=True
+        required=False
     )
     embed_desc = ui.TextInput(
         label="Descrição",
@@ -38,7 +38,6 @@ class EmbedEditorModal(ui.Modal, title="📝 Criar/Editar Embed"):
             self.embed_image.default = self.view.current_embed.image.url
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Atualiza texto
         self.view.current_embed.title = self.embed_title.value
         self.view.current_embed.description = self.embed_desc.value
         
