@@ -410,7 +410,7 @@ class Challenges(commands.Cog):
             self.active_challenges.pop(guild_id, None)
             self.warned_users.clear()
 
-    # ------------- GENERATE CHALLENGE -------------
+# ------------- GENERATE CHALLENGE -------------
 
     def generate_challenge(self):
         typ = random.choice(["math", "rewrite"])
@@ -473,30 +473,9 @@ class Challenges(commands.Cog):
                 "token_positions": token_positions
             }
 
+# --- FUNÇÕES FORA DA CLASSE (Sem indentação) ---
 
 def add_invisible_chars(text: str):
-    ZERO_WIDTH = "\u200b"
-    token_positions = set()
-    result = ""
-
-    for i, char in enumerate(text):
-        result += char
-        if char != " " and random.random() < 0.15:
-            result += ZERO_WIDTH
-            token_positions.add(i)
-
-    return result, token_positions
-
-def normalize(text: str) -> str:
-    return (
-        text.lower()
-        .replace("\u200b", "")
-        .strip()
-    )
-
-async def setup(bot):
-    await bot.add_cog(Challenges(bot))
- str):
     ZERO_WIDTH = "\u200b"
     token_positions = set()
     result = ""
