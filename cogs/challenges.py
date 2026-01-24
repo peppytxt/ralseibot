@@ -97,18 +97,17 @@ class ChallengeConfigView(ui.View):
         return embed
 
     async def save_and_refresh(self, interaction: discord.Interaction):
-        # Salva no MongoDB
+        # REMOVIDO AWAIT: PyMongo é síncrono
         if self.cog.col is not None:
-            await self.cog.col.update_one(
+            self.cog.col.update_one(
                 {"_id": self.guild.id},
                 {"$set": self.config},
                 upsert=True
             )
         
-        # Gera o novo embed e edita a mensagem
         embed = self.build_interface()
         await interaction.response.edit_message(embed=embed, view=self)
-
+        
     async def toggle_enabled(self, interaction: discord.Interaction):
         self.config["challenge_enabled"] = not self.config.get("challenge_enabled", False)
         await self.save_and_refresh(interaction)
@@ -154,7 +153,6 @@ class Challenges(commands.Cog):
         return None
 
     # ------------- CONFIG COMMAND ------------------
-
     @app_commands.command(
         name="challengeconfig",
         description="Painel visual de configuração dos desafios"
@@ -164,7 +162,8 @@ class Challenges(commands.Cog):
         if self.col is None:
             return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
 
-        config = await self.col.find_one({"_id": interaction.guild.id})
+        # REMOVIDO AWAIT: PyMongo retorna o dict direto
+        config = self.col.find_one({"_id": interaction.guild.id})
         if config is None:
             config = {}
         
@@ -172,83 +171,55 @@ class Challenges(commands.Cog):
         embed = view.build_interface()
         
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-        
+
     @app_commands.command(
         name="challengerank",
         description="Ranking dos usuários que mais venceram desafios"
     )
     async def challenge_rank(self, interaction: discord.Interaction):
+        # REMOVIDO AWAIT e ajustado para PyMongo
+        cursor = self.col.find(
+            {"challenge_wins": {"$gt": 0}},
+            {"challenge_wins": 1}
+        ).sort("challenge_wins", -1).limit(10)
 
-        users = list(
-            self.col.find(
-                {"challenge_wins": {"$gt": 0}},
-                {"challenge_wins": 1}
-            )
-            .sort("challenge_wins", -1)
-            .limit(10)
-        )
+        users = list(cursor)
 
         if not users:
-            return await interaction.response.send_message(
-                "❌ Ainda ninguém completou desafios.",
-                ephemeral=True
-            )
+            return await interaction.response.send_message("❌ Ainda ninguém completou desafios.", ephemeral=True)
 
         desc = ""
         for i, u in enumerate(users, start=1):
-            user = interaction.client.get_user(u["_id"])
+            user = self.bot.get_user(u["_id"]) or await self.bot.fetch_user(u["_id"])
             name = user.display_name if user else f"Usuário {u['_id']}"
             wins = u.get("challenge_wins", 0)
-
             desc += f"**#{i} - {name}** • 📺 {wins} desafios\n"
 
-        embed = discord.Embed(
-            title="🏆 Ranking de Desafios",
-            description=desc,
-            color=discord.Color.purple()
-        )
-
+        embed = discord.Embed(title="🏆 Ranking de Desafios", description=desc, color=discord.Color.purple())
         await interaction.response.send_message(embed=embed)
-        
+
     @app_commands.command(
         name="challengestats",
         description="Veja estatísticas de desafios"
     )
-    @app_commands.describe(user="Usuário para ver as estatísticas (opcional)")
-    async def challenge_stats(
-        self,
-        interaction: discord.Interaction,
-        user: discord.Member | None = None
-    ):
+    async def challenge_stats(self, interaction: discord.Interaction, user: discord.Member | None = None):
         target = user or interaction.user
-
         if target.bot:
-            return await interaction.response.send_message(
-                "❌ Bots não participam de desafios.",
-                ephemeral=True
-            )
+            return await interaction.response.send_message("❌ Bots não participam.", ephemeral=True)
 
+        # REMOVIDO AWAIT
         data = self.col.find_one({"_id": target.id}) or {}
-
         wins = data.get("challenge_wins", 0)
         earnings = data.get("challenge_earnings", 0)
 
-        rank = self.col.count_documents({
-            "challenge_wins": {"$gt": wins},
-            "_id": {"$ne": 0}
-        }) + 1
+        # REMOVIDO AWAIT
+        rank = self.col.count_documents({"challenge_wins": {"$gt": wins}, "_id": {"$ne": 0}}) + 1
 
         embed = discord.Embed(
-            title="📺 Estatísticas de Desafios",
-            description=(
-                f"👤 {target.mention}\n\n"
-                f"📺 **Vitórias:** {wins}\n"
-                f"💰 **Ralcoins ganhos:** {earnings}\n"
-                f"🏆 **Rank de vitórias:** #{rank}"
-            ),
+            title="📺 Estatísticas",
+            description=f"👤 {target.mention}\n\n📺 **Vitórias:** {wins}\n💰 **Ganhos:** {earnings}\n🏆 **Rank:** #{rank}",
             color=discord.Color.blurple()
         )
-
         await interaction.response.send_message(embed=embed)
 
 
