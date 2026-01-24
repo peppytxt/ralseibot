@@ -11,19 +11,52 @@ class EmbedEditorModal(ui.Modal, title="📝 Criar/Editar Embed"):
     )
     embed_desc = ui.TextInput(
         label="Descrição",
-        placeholder="Use Markdown para formatar (ex: **negrito**)",
+        placeholder="Use Markdown para formatar...",
         style=discord.TextStyle.paragraph,
         max_length=4000,
         required=True
+    )
+    embed_color = ui.TextInput(
+        label="Cor Hex (Ex: #7289DA)",
+        placeholder="Deixe vazio para azul padrão",
+        min_length=7,
+        max_length=7,
+        required=False
+    )
+    embed_image = ui.TextInput(
+        label="Link da Imagem",
+        placeholder="https://exemplo.com/imagem.png",
+        required=False
     )
 
     def __init__(self, view):
         super().__init__()
         self.view = view
+        self.embed_title.default = self.view.current_embed.title
+        self.embed_desc.default = self.view.current_embed.description
+        if self.view.current_embed.image:
+            self.embed_image.default = self.view.current_embed.image.url
 
     async def on_submit(self, interaction: discord.Interaction):
+        # Atualiza texto
         self.view.current_embed.title = self.embed_title.value
         self.view.current_embed.description = self.embed_desc.value
+        
+        if self.embed_color.value:
+            try:
+                hex_value = self.embed_color.value.lstrip('#')
+                self.view.current_embed.color = discord.Color(int(hex_value, 16))
+            except ValueError:
+                return await interaction.response.send_message("❌ Formato de cor inválido! Use #RRGGBB.", ephemeral=True)
+
+        if self.embed_image.value:
+            if self.embed_image.value.startswith(("http://", "https://")):
+                self.view.current_embed.set_image(url=self.embed_image.value)
+            else:
+                return await interaction.response.send_message("❌ Link de imagem inválido!", ephemeral=True)
+        else:
+            self.view.current_embed.set_image(url=None)
+        
         await self.view.update_preview(interaction)
 
 class EmbedControlView(ui.View):
@@ -32,31 +65,26 @@ class EmbedControlView(ui.View):
         self.user = user
         self.current_embed = discord.Embed(
             title="Título Exemplo",
-            description="Esta é uma prévia do seu embed.",
+            description="Use o botão editar para começar.",
             color=discord.Color.blue()
         )
 
     async def update_preview(self, interaction: discord.Interaction):
         await interaction.response.edit_message(embed=self.current_embed, view=self)
 
-    @ui.button(label="Editar Texto", style=discord.ButtonStyle.primary, emoji="✍️")
-    async def edit_text(self, interaction: discord.Interaction, button: ui.Button):
+    @ui.button(label="Configurar Embed", style=discord.ButtonStyle.primary, emoji="⚙️")
+    async def edit_embed(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(EmbedEditorModal(self))
-
-    @ui.button(label="Trocar Cor", style=discord.ButtonStyle.secondary, emoji="🎨")
-    async def change_color(self, interaction: discord.Interaction, button: ui.Button):
-        self.current_embed.color = discord.Color.random()
-        await self.update_preview(interaction)
 
     @ui.button(label="Enviar no Canal", style=discord.ButtonStyle.success, emoji="🚀")
     async def send_to_channel(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.channel.send(embed=self.current_embed)
-        await interaction.response.edit_message(content="✅ Embed enviado com sucesso!", embed=None, view=None)
+        await interaction.response.edit_message(content="✅ Embed enviado!", embed=None, view=None)
         self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.user.id:
-            await interaction.response.send_message("❌ Apenas o autor do comando pode usar este painel.", ephemeral=True)
+            await interaction.response.send_message("❌ Você não tem permissão.", ephemeral=True)
             return False
         return True
 
