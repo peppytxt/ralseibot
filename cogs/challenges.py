@@ -24,6 +24,74 @@ CTRLV_MESSAGES = [
     "📋 Cola aqui não, escreve com o coração ❤️",
     "🚫 Ctrl+C + Ctrl+V não aumenta QI, só digita 😉",
 ]
+    
+class ChallengeConfigView(ui.View):
+    def __init__(self, cog, guild, config):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.guild = guild
+        # Garante que existam valores padrão se a config for nova
+        self.config = config or {
+            "challenge_enabled": False, 
+            "challenge_interval": 100
+        }
+
+    def build_interface(self):
+        # Limpa os itens antes de reconstruir (importante para o refresh)
+        self.clear_items()
+        
+        enabled = self.config.get("challenge_enabled", False)
+        interval = self.config.get("challenge_interval", 100)
+        
+        # Criamos um Embed para o status
+        embed = discord.Embed(
+            title="⚙️ Painel de Controle: Desafios",
+            description="Configure a frequência e o estado dos desafios automáticos.",
+            color=discord.Color.green() if enabled else discord.Color.red()
+        )
+        embed.add_field(name="Status", value="✅ Ativado" if enabled else "❌ Desativado", inline=True)
+        embed.add_field(name="Intervalo", value=f"`{interval}` mensagens", inline=True)
+        embed.set_footer(text=f"Servidor: {self.guild.name}")
+
+        # Botão Ligar/Desligar
+        btn_toggle = ui.Button(
+            label="Desligar" if enabled else "Ligar",
+            style=discord.ButtonStyle.danger if enabled else discord.ButtonStyle.success,
+            emoji="🔌"
+        )
+        btn_toggle.callback = self.toggle_enabled
+        self.add_item(btn_toggle) # Adicionamos direto na View!
+
+        # Botão Intervalo
+        btn_int = ui.Button(
+            label="Ajustar Mensagens", 
+            style=discord.ButtonStyle.secondary, 
+            emoji="🔢"
+        )
+        btn_int.callback = self.open_interval_modal
+        self.add_item(btn_int)
+
+        return embed
+
+    async def save_and_refresh(self, interaction: discord.Interaction):
+        # Salva no MongoDB
+        if self.cog.col is not None:
+            await self.cog.col.update_one(
+                {"_id": self.guild.id},
+                {"$set": self.config},
+                upsert=True
+            )
+        
+        # Gera o novo embed e edita a mensagem
+        embed = self.build_interface()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def toggle_enabled(self, interaction: discord.Interaction):
+        self.config["challenge_enabled"] = not self.config.get("challenge_enabled", False)
+        await self.save_and_refresh(interaction)
+
+    async def open_interval_modal(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(IntervalModal(self))
 
 
 class Challenges(commands.Cog):
@@ -64,80 +132,21 @@ class Challenges(commands.Cog):
 
     @app_commands.command(
         name="challengeconfig",
-        description="Configura perguntas automáticas no servidor"
+        description="Painel visual de configuração dos desafios"
     )
     @app_commands.default_permissions(administrator=True)
-    @app_commands.describe(
-        channel="Canal onde os desafios serão postados",
-        enabled="Ativar ou desativar desafios",
-        mode="Modo de trigger (messages/tempo)",
-        interval="Valores de intervalo (mensagens ou segundos)"
-    )
-    async def challengeconfig(
-        self,
-        interaction: discord.Interaction,
-        channel: discord.TextChannel,
-        enabled: bool,
-        mode: str,
-        interval: int
-    ):
-        guild = interaction.guild
+    async def challengeconfig(self, interaction: discord.Interaction):
+        if self.col is None:
+            return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
 
-        if not guild:
-            return await interaction.response.send_message(
-                "❌ Este comando só pode ser usado em servidores.",
-                ephemeral=True
-            )
-
-        # 🔒 FILTRO DE MEMBROS
-        if guild.member_count < MIN_MEMBERS:
-            return await interaction.response.send_message(
-                f"❌ Este servidor precisa ter pelo menos **{MIN_MEMBERS} membros** "
-                "para ativar os desafios.",
-                ephemeral=True
-            )
-
-        if mode not in ("messages", "time"):
-            return await interaction.response.send_message(
-                "❌ Modo inválido! Use `messages` ou `time`.",
-                ephemeral=True
-            )
-
-        # 🔒 FILTRO POR MODO
-        if mode == "messages" and interval < MIN_MESSAGES_INTERVAL:
-            return await interaction.response.send_message(
-                f"❌ O intervalo mínimo é **{MIN_MESSAGES_INTERVAL} mensagens**.",
-                ephemeral=True
-            )
-
-        if mode == "time" and interval < MIN_TIME_INTERVAL:
-            return await interaction.response.send_message(
-                f"❌ O intervalo mínimo é **{MIN_TIME_INTERVAL // 60} minutos**.",
-                ephemeral=True
-            )
-
-        # ✅ SALVAR CONFIG
-        self.col.update_one(
-            {"_id": guild.id},
-            {"$set": {
-                "challenge_enabled": enabled,
-                "challenge_channel": channel.id,
-                "challenge_mode": mode,
-                "challenge_interval": interval,
-                "challenge_last": time.time()
-            }},
-            upsert=True
-        )
-
-        await interaction.response.send_message(
-            "✅ **Configuração aplicada com sucesso!**\n"
-            f"🔹 Canal: {channel.mention}\n"
-            f"🔹 Modo: {mode}\n"
-            f"🔹 Intervalo: {interval}\n"
-            f"🔹 Membros: {guild.member_count}",
-            ephemeral=True
-        )
-
+        # Busca a configuração no banco
+        config = await self.col.find_one({"_id": interaction.guild.id}) or {}
+        
+        view = ChallengeConfigView(self, interaction.guild, config)
+        embed = view.build_interface() # Captura o embed gerado pela função
+        
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        
     @app_commands.command(
         name="challengerank",
         description="Ranking dos usuários que mais venceram desafios"
