@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 discord.py
 pymongo
 dnspython
@@ -6,3 +7,12 @@ aiohttp
 requests
 python-dotenv
 motor
+=======
+discord.py
+pymongo
+dnspython
+Pillow
+aiohttp
+requests
+python-dotenv
+>>>>>>> 7e5dd11 (desafios bot funcionando normalmente)
