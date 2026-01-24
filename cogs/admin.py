@@ -40,16 +40,16 @@ class EmbedControlView(ui.View):
         await interaction.response.edit_message(embed=self.current_embed, view=self)
 
     @ui.button(label="Editar Texto", style=discord.ButtonStyle.primary, emoji="✍️")
-    async def edit_text(self, interaction: discord.Interaction):
+    async def edit_text(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(EmbedEditorModal(self))
 
     @ui.button(label="Trocar Cor", style=discord.ButtonStyle.secondary, emoji="🎨")
-    async def change_color(self, interaction: discord.Interaction):
+    async def change_color(self, interaction: discord.Interaction, button: ui.Button):
         self.current_embed.color = discord.Color.random()
         await self.update_preview(interaction)
 
     @ui.button(label="Enviar no Canal", style=discord.ButtonStyle.success, emoji="🚀")
-    async def send_to_channel(self, interaction: discord.Interaction):
+    async def send_to_channel(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.channel.send(embed=self.current_embed)
         await interaction.response.edit_message(content="✅ Embed enviado com sucesso!", embed=None, view=None)
         self.stop()
