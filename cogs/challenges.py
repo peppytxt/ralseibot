@@ -24,6 +24,29 @@ CTRLV_MESSAGES = [
     "📋 Cola aqui não, escreve com o coração ❤️",
     "🚫 Ctrl+C + Ctrl+V não aumenta QI, só digita 😉",
 ]
+
+class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
+    interval = ui.TextInput(
+        label="Quantidade de mensagens",
+        placeholder="Ex: 100",
+        min_length=1,
+        max_length=4
+    )
+
+    def __init__(self, view):
+        super().__init__()
+        self.view = view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            val = int(self.interval.value)
+            if val < 10:
+                return await interaction.response.send_message("❌ O intervalo deve ser pelo menos 10.", ephemeral=True)
+            
+            self.view.config["challenge_interval"] = val
+            await self.view.save_and_refresh(interaction)
+        except ValueError:
+            await interaction.response.send_message("❌ Digite um número válido.", ephemeral=True)
     
 class ChallengeConfigView(ui.View):
     def __init__(self, cog, guild, config):
@@ -125,8 +148,10 @@ class Challenges(commands.Cog):
 
     @property
     def col(self):
-        # coleção no MongoDB
-        return self.bot.get_cog("XP").col
+        xp_cog = self.bot.get_cog("XP")
+        if xp_cog:
+            return xp_cog.col
+        return None
 
     # ------------- CONFIG COMMAND ------------------
 
@@ -139,11 +164,12 @@ class Challenges(commands.Cog):
         if self.col is None:
             return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
 
-        # Busca a configuração no banco
-        config = await self.col.find_one({"_id": interaction.guild.id}) or {}
+        config = await self.col.find_one({"_id": interaction.guild.id})
+        if config is None:
+            config = {}
         
         view = ChallengeConfigView(self, interaction.guild, config)
-        embed = view.build_interface() # Captura o embed gerado pela função
+        embed = view.build_interface()
         
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
         
