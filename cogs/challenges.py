@@ -230,6 +230,7 @@ class Challenges(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
+        # REMOVIDO AWAIT
         config = self.col.find_one({"_id": message.guild.id})
         if not config or not config.get("challenge_enabled"):
             return
@@ -237,23 +238,20 @@ class Challenges(commands.Cog):
         mode = config.get("challenge_mode", DEFAULT_MODE)
         interval = config.get("challenge_interval", DEFAULT_INTERVAL)
 
-        # ********** MODO POR MENSAGENS **********
         if mode == "messages":
             key = str(message.guild.id)
-
             self.message_counters[key] = self.message_counters.get(key, 0) + 1
-            current = self.message_counters[key]
-
-            if current >= interval:
+            
+            if self.message_counters[key] >= interval:
                 self.message_counters[key] = 0
                 await self.spawn_challenge(message.guild, config)
 
+                # REMOVIDO AWAIT
                 self.col.update_one(
                     {"_id": message.guild.id},
                     {"$set": {"challenge_last": time.time()}}
                 )
 
-        # ********** CHECAR RESPOSTAS **********
         await self.check_answer(message)
 
     # ------------- TIMER LOOP ---------------------
@@ -389,8 +387,7 @@ class Challenges(commands.Cog):
             except Exception as e:
                 print(f"⚠️ Erro ao adicionar reação: {e}")
 
-            # O resto do código continua normal abaixo...
-            await self.col.update_one(
+            self.col.update_one(
                 {"_id": message.author.id},
                 {"$inc": {"challenge_wins": 1, "challenge_earnings": reward}},
                 upsert=True
