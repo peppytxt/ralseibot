@@ -455,7 +455,7 @@ class Economy(commands.Cog):
         fish = random.choices(choices, weights=[f['weight'] for f in choices], k=1)[0]
 
         view = FishingLayout(ctx.author, fish, self)
-        await ctx.send(layout=view)
+        await ctx.send(view=view)
 
 
 async def setup(bot):
