@@ -584,7 +584,7 @@ class Economy(commands.Cog):
         )
 
         view = FishingLayout(ctx.author, fish, self)
-        await ctx.send(layout=view)
+        await ctx.send(view=view)
 
     @app_commands.command(name="balde", description="Veja os peixes que você guardou")
     async def balde(self, interaction: discord.Interaction):
