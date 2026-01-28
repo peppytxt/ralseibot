@@ -1,7 +1,6 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-import random
 
 TAX_RATE = 0.05  # Taxa de 5% 
 

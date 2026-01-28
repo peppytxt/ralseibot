@@ -1,5 +1,5 @@
 import discord
-from discord import app_commands
+from discord import app_commands, ui
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
 import random
@@ -354,7 +354,6 @@ class Economy(commands.Cog):
 
             return await interaction.response.send_message(embed=embed)
 
-        # Vitória inicial
         embed = discord.Embed(
             title="🪙 Coinflip - Vitória!",
             description=(
@@ -399,6 +398,72 @@ class Economy(commands.Cog):
             f"🏦 Banco do bot recebeu **{quantidade} ralcoins**.",
             ephemeral=True
         )
+
+    @commands.is_owner()
+    @commands.hybrid_command(name="pescar", description="Tente a sorte no lago!")
+    async def pescar(ctx: commands.Context):
+        choices = [
+            {"name": "Bota Velha", "rarity": "Lixo", "price": 10, "weight": 60},
+            {"name": "Sardinha", "rarity": "Comum", "price": 150, "weight": 30},
+            {"name": "Atum Real", "rarity": "Raro", "price": 800, "weight": 8},
+            {"name": "Tubarão Branco", "rarity": "Lendário", "price": 5000, "weight": 2}
+        ]
+        
+        fish = random.choices(choices, weights=[f['weight'] for f in choices], k=1)[0]
+
+        view = FishingLayout(ctx.author, fish)
+
+        await ctx.send(layout=view)
+
+class FishingLayout(ui.LayoutView):
+    def __init__(self, user, fish_data):
+        super().__init__()
+        self.user = user
+        self.fish = fish_data
+
+        container = ui.Container(accent_color=discord.Color.blue())
+        
+        container.add_item(ui.TextDisplay(f"### 🎣 Pescaria de {self.user.display_name}"))
+
+        container.add_item(ui.Separator())
+
+        rarity_colors = {
+            "Lixo": "⚪",
+            "Comum": "🟢",
+            "Raro": "🔵",
+            "Lendário": "🟡"
+        }
+        
+        emoji = rarity_colors.get(self.fish['rarity'], "🐟")
+        res_text = (
+            f"Você jogou a linha e... **{self.fish['name']}**!\n"
+            f"{emoji} **Raridade:** {self.fish['rarity']}\n"
+            f"💰 **Valor de Venda:** {self.fish['price']} ralcoins"
+        )
+        container.add_item(ui.TextDisplay(res_text))
+        
+        row = ui.ActionRow()
+        
+        btn_sell = ui.Button(label="Vender agora", style=discord.ButtonStyle.success, emoji="💰")
+        btn_keep = ui.Button(label="Guardar no Balde", style=discord.ButtonStyle.secondary, emoji="🪣")
+
+        btn_sell.callback = self.sell_callback
+        
+        row.add_item(btn_sell)
+        row.add_item(btn_keep)
+        
+        container.add_item(row)
+        
+        self.add_item(container)
+
+    async def sell_callback(self, interaction: discord.Interaction):
+        self.col.update_one(
+            {"_id": interaction.user.id},
+            {"$set": {"coins": {"$sum": self.fish['price']}}},
+            upsert=True
+        )
+        await interaction.response.send_message(f"✅ Você vendeu o {self.fish['name']}!", ephemeral=True)
+        self.stop()
 
 
 async def setup(bot):
