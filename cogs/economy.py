@@ -509,10 +509,8 @@ class Economy(commands.Cog):
 
     @app_commands.command(name="balde", description="Veja os peixes que você guardou")
     async def balde(self, interaction: discord.Interaction):
-        # Busca os dados do usuário
         user_data = self.col.find_one({"_id": interaction.user.id})
         
-        # Verifica se o inventário existe e tem itens
         inventory = user_data.get("inventory", []) if user_data else []
         
         if not inventory:
@@ -521,12 +519,10 @@ class Economy(commands.Cog):
                 ephemeral=True
             )
 
-        # Contagem de peixes (Ex: {"Sardinha": 3, "Bota Velha": 1})
         counts = {}
         for item in inventory:
             counts[item] = counts.get(item, 0) + 1
 
-        # Criando a descrição da lista
         lista_texto = ""
         for peixe, qtd in counts.items():
             lista_texto += f"• **{peixe}** x{qtd}\n"
@@ -536,8 +532,7 @@ class Economy(commands.Cog):
             description=lista_texto,
             color=discord.Color.blue()
         )
-        
-        # Criamos a View com o botão de vender tudo
+
         view = BaldeView(self, interaction.user, inventory)
         await interaction.response.send_message(embed=embed, view=view)
 
