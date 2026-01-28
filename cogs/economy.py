@@ -69,6 +69,42 @@ class FishingLayout(ui.LayoutView):
         await interaction.response.send_message(content=f"🪣 Você guardou **{self.fish['name']}** no seu balde!")
         self.stop()
 
+class BaldeView(ui.View):
+    def __init__(self, cog, user, inventory):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.user = user
+        self.inventory = inventory
+
+    @ui.button(label="Vender Tudo", style=discord.ButtonStyle.success, emoji="💰")
+    async def vender_tudo(self, interaction: discord.Interaction, button: ui.Button):
+        if interaction.user.id != self.user.id:
+            return await interaction.response.send_message("❌ Este balde não é seu!", ephemeral=True)
+
+        precos = {
+            "Bota Velha": 10,
+            "Sardinha": 150,
+            "Atum Real": 800,
+            "Tubarão Branco": 5000
+        }
+
+        total_ganho = 0
+        for item in self.inventory:
+            total_ganho += precos.get(item, 0)
+
+        self.cog.col.update_one(
+            {"_id": self.user.id},
+            {
+                "$set": {"inventory": []},
+                "$inc": {"coins": total_ganho}
+            }
+        )
+
+        await interaction.response.send_message(
+            content=f"✅ Você vendeu todo o conteúdo do balde por **{total_ganho} ralcoins**!",
+            embed=None,
+        )
+
 class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -470,6 +506,40 @@ class Economy(commands.Cog):
 
         view = FishingLayout(ctx.author, fish, self)
         await ctx.send(view=view)
+
+    @app_commands.command(name="balde", description="Veja os peixes que você guardou")
+    async def balde(self, interaction: discord.Interaction):
+        # Busca os dados do usuário
+        user_data = self.col.find_one({"_id": interaction.user.id})
+        
+        # Verifica se o inventário existe e tem itens
+        inventory = user_data.get("inventory", []) if user_data else []
+        
+        if not inventory:
+            return await interaction.response.send_message(
+                "🪣 Seu balde está vazio! Vá pescar algo primeiro.", 
+                ephemeral=True
+            )
+
+        # Contagem de peixes (Ex: {"Sardinha": 3, "Bota Velha": 1})
+        counts = {}
+        for item in inventory:
+            counts[item] = counts.get(item, 0) + 1
+
+        # Criando a descrição da lista
+        lista_texto = ""
+        for peixe, qtd in counts.items():
+            lista_texto += f"• **{peixe}** x{qtd}\n"
+
+        embed = discord.Embed(
+            title=f"🪣 Balde de {interaction.user.display_name}",
+            description=lista_texto,
+            color=discord.Color.blue()
+        )
+        
+        # Criamos a View com o botão de vender tudo
+        view = BaldeView(self, interaction.user, inventory)
+        await interaction.response.send_message(embed=embed, view=view)
 
 
 async def setup(bot):
