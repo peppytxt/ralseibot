@@ -52,7 +52,7 @@ class FishingLayout(ui.LayoutView):
             upsert=True
         )
         
-        await interaction.response.send_message(content=f"✅ Você vendeu o {self.fish['name']} por {self.fish['price']}!", view=None)
+        await interaction.response.send_message(content=f"✅ Você vendeu o {self.fish['name']} por **{self.fish['price']}! ralcoins**")
         self.stop()
 
     async def keep_callback(self, interaction: discord.Interaction):
