@@ -66,10 +66,7 @@ class FishingLayout(ui.LayoutView):
             upsert=True
         )
         
-        await interaction.response.send_message(
-            content=f"🪣 Você guardou **{self.fish['name']}** no seu balde!", 
-            view=None
-        )
+        await interaction.response.send_message(content=f"🪣 Você guardou **{self.fish['name']}** no seu balde!")
         self.stop()
 
 class Economy(commands.Cog):
