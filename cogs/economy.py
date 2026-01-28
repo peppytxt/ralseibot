@@ -52,7 +52,23 @@ class FishingLayout(ui.LayoutView):
             upsert=True
         )
         
-        await interaction.response.edit_message(content=f"✅ Você vendeu o {self.fish['name']} por {self.fish['price']}!", layout=None)
+        await interaction.response.send_message(content=f"✅ Você vendeu o {self.fish['name']} por {self.fish['price']}!", view=None)
+        self.stop()
+
+    async def keep_callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user.id:
+            return await interaction.response.send_message("❌ Essa vara não é sua!", ephemeral=True)
+
+        self.cog.col.update_one(
+            {"_id": interaction.user.id},
+            {"$push": {"inventory": self.fish['name']}},
+            upsert=True
+        )
+        
+        await interaction.response.send_message(
+            content=f"🪣 Você guardou o **{self.fish['name']}** no seu balde!", 
+            view=None
+        )
         self.stop()
 
 class Economy(commands.Cog):
