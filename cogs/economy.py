@@ -12,25 +12,19 @@ BR_TZ = timezone(timedelta(hours=-3))
 BOT_ECONOMY_ID = 0
 
 class FishingLayout(ui.LayoutView):
-    def __init__(self, user, fish_data):
+    def __init__(self, user, fish_data, cog):
         super().__init__()
         self.user = user
         self.fish = fish_data
+        self.cog = cog 
 
         container = ui.Container(accent_color=discord.Color.blue())
-        
         container.add_item(ui.TextDisplay(f"### 🎣 Pescaria de {self.user.display_name}"))
-
         container.add_item(ui.Separator())
 
-        rarity_colors = {
-            "Lixo": "⚪",
-            "Comum": "🟢",
-            "Raro": "🔵",
-            "Lendário": "🟡"
-        }
-        
+        rarity_colors = {"Lixo": "⚪", "Comum": "🟢", "Raro": "🔵", "Lendário": "🟡"}
         emoji = rarity_colors.get(self.fish['rarity'], "🐟")
+        
         res_text = (
             f"Você jogou a linha e... **{self.fish['name']}**!\n"
             f"{emoji} **Raridade:** {self.fish['rarity']}\n"
@@ -39,26 +33,26 @@ class FishingLayout(ui.LayoutView):
         container.add_item(ui.TextDisplay(res_text))
         
         row = ui.ActionRow()
-        
         btn_sell = ui.Button(label="Vender agora", style=discord.ButtonStyle.success, emoji="💰")
         btn_keep = ui.Button(label="Guardar no Balde", style=discord.ButtonStyle.secondary, emoji="🪣")
-
-        btn_sell.callback = self.sell_callback
         
+        btn_sell.callback = self.sell_callback
         row.add_item(btn_sell)
         row.add_item(btn_keep)
-        
         container.add_item(row)
-        
         self.add_item(container)
 
     async def sell_callback(self, interaction: discord.Interaction):
-        self.col.update_one(
+        if interaction.user.id != self.user.id:
+            return await interaction.response.send_message("❌ Essa vara não é sua!", ephemeral=True)
+        
+        self.cog.col.update_one(
             {"_id": interaction.user.id},
-            {"$set": {"coins": {"$sum": self.fish['price']}}},
+            {"$inc": {"coins": self.fish['price']}},
             upsert=True
         )
-        await interaction.response.send_message(f"✅ Você vendeu o {self.fish['name']}!", ephemeral=True)
+        
+        await interaction.response.edit_message(content=f"✅ Você vendeu o {self.fish['name']} por {self.fish['price']}!", layout=None)
         self.stop()
 
 class Economy(commands.Cog):
@@ -450,7 +444,7 @@ class Economy(commands.Cog):
 
     @commands.is_owner()
     @commands.hybrid_command(name="pescar", description="Tente a sorte no lago!")
-    async def pescar(ctx: commands.Context):
+    async def pescar(self, ctx: commands.Context):
         choices = [
             {"name": "Bota Velha", "rarity": "Lixo", "price": 10, "weight": 60},
             {"name": "Sardinha", "rarity": "Comum", "price": 150, "weight": 30},
@@ -460,8 +454,7 @@ class Economy(commands.Cog):
         
         fish = random.choices(choices, weights=[f['weight'] for f in choices], k=1)[0]
 
-        view = FishingLayout(ctx.author, fish)
-
+        view = FishingLayout(ctx.author, fish, self)
         await ctx.send(layout=view)
 
 
