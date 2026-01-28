@@ -556,7 +556,7 @@ class Economy(commands.Cog):
     async def pescar(self, ctx: commands.Context):
         user_data = self.col.find_one({"_id": ctx.author.id}) or {}
         last_fish = user_data.get("last_fish", 0)
-        cooldown_seconds = 3600
+        cooldown_seconds = 600
         tempo_passado = time.time() - last_fish
 
         if tempo_passado < cooldown_seconds:
