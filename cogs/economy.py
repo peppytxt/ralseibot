@@ -37,6 +37,7 @@ class FishingLayout(ui.LayoutView):
         btn_keep = ui.Button(label="Guardar no Balde", style=discord.ButtonStyle.secondary, emoji="🪣")
         
         btn_sell.callback = self.sell_callback
+        btn_keep.callback = self.keep_callback
         row.add_item(btn_sell)
         row.add_item(btn_keep)
         container.add_item(row)
