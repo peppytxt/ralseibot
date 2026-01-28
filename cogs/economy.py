@@ -24,11 +24,9 @@ class Economy(commands.Cog):
         )
         
     async def check_economy_achievements(self, user_id: int):
-        """Verifica se o usuário atingiu metas de moedas para conquistas."""
         user_data = self.col.find_one({"_id": user_id}) or {}
         coins = user_data.get("coins", 0)
 
-        # Pegamos a Cog de conquistas
         ach_cog = self.bot.get_cog("AchievementsCog")
         if ach_cog:
             if coins >= 100000:

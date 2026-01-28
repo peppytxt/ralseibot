@@ -2,7 +2,6 @@ import discord
 from discord import ui, app_commands
 from discord.ext import commands
 
-# --- MODAL PARA EDITAR A MENSAGEM ---
 class WelcomeMessageModal(ui.Modal, title="Editar Mensagem de Boas-vindas"):
     def __init__(self, view):
         super().__init__()
@@ -27,7 +26,6 @@ class WelcomeMessageModal(ui.Modal, title="Editar Mensagem de Boas-vindas"):
         await self.view.refresh_data_and_ui(interaction)
         await interaction.followup.send("✅ Mensagem atualizada!", ephemeral=True)
 
-# --- VIEW DO SELETOR DE CANAL ---
 class ChannelSelectView(ui.View):
     def __init__(self, parent_view):
         super().__init__(timeout=60)
@@ -135,7 +133,6 @@ class WelcomeConfigView(ui.LayoutView):
         except:
             pass
 
-    # --- CALLBACKS DOS BOTÕES ---
     async def toggle_system(self, interaction: discord.Interaction):
         new_status = not self.current_config.get("active", False)
         self.cog.col.update_one(
@@ -162,7 +159,6 @@ class WelcomeConfigView(ui.LayoutView):
         await self.cog.send_welcome_message(interaction.user, is_test=True)
         await interaction.response.send_message("📨 Mensagem de teste enviada!", ephemeral=True)
 
-# --- A COG PRINCIPAL ---
 class WelcomeCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

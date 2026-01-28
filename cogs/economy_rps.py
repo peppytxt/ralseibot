@@ -120,7 +120,6 @@ class RockPaperScissors(commands.Cog):
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
 
-        # Certifica que é botão
         if interaction.data.get("component_type") != 2:
             return
 
@@ -128,7 +127,6 @@ class RockPaperScissors(commands.Cog):
         if not cid.startswith("rps|"):
             return
 
-        # ID no formato: rps|<game_id>|<choice>
         parts = cid.split("|")
         if len(parts) != 3:
             return
@@ -143,7 +141,6 @@ class RockPaperScissors(commands.Cog):
 
         game = self.ongoing_games[game_id]
 
-        # Verifica se quem clicou faz parte da partida
         if interaction.user.id not in (game["userA"].id, game["userB"].id):
             return await interaction.followup.send(
                 "❌ Você não faz parte dessa partida!",
@@ -158,7 +155,6 @@ class RockPaperScissors(commands.Cog):
                 ephemeral=True
             )
 
-        # Salva a escolha
         game[side] = choice
 
         await interaction.response.send_message(
@@ -166,7 +162,6 @@ class RockPaperScissors(commands.Cog):
             ephemeral=True
         )
 
-        # Se os dois já escolheram, calcula o resultado
         if game["A"] and game["B"]:
             winner = self.get_winner(game["A"], game["B"])
             db = self.bot.get_cog("XP").col
