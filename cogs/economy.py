@@ -113,7 +113,7 @@ class LojaView(ui.LayoutView):
 
         container = ui.Container(accent_color=discord.Color.gold())
 
-        container.add_item(ui.TextDisplay("## 🛒 Loja do Porto"))
+        container.add_item(ui.TextDisplay("## 🛒 Loja do Ralsei"))
         container.add_item(ui.TextDisplay("Equipe-se com o melhor para suas pescarias!"))
         
         container.add_item(ui.Separator())
