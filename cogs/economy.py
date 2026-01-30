@@ -551,7 +551,6 @@ class Economy(commands.Cog):
             ephemeral=True
         )
 
-    @commands.is_owner()
     @commands.hybrid_command(name="pescar", description="Tente a sorte no lago!")
     async def pescar(self, ctx: commands.Context):
         user_data = self.col.find_one({"_id": ctx.author.id}) or {}
