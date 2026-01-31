@@ -396,7 +396,7 @@ class Challenges(commands.Cog):
 # ------------- GENERATE CHALLENGE -------------
 
     def generate_challenge(self):
-        typ = random.choice(["math", "rewrite"])
+        typ = random.choice(["math", "rewrite", "guess"])
 
         if typ == "math":
             math_type = random.choice(["add", "sub", "mul"])
@@ -426,7 +426,7 @@ class Challenges(commands.Cog):
                 "answer": answer
             }
 
-        else:
+        elif typ == "rewrite":
             phrases = [
                 "O cavaleiro foi até a lua em seu cavalo",
                 "A raposa marrom rápida pula sobre o cão preguiçoso",
@@ -451,6 +451,15 @@ class Challenges(commands.Cog):
                 "question": f"Reescreva a frase exatamente:\n`{disguised}`",
                 "answer": phrase,
                 "token_positions": token_positions
+            }
+        else:
+            min_num = random.randint(1, 50)
+            max_num = min_num + random.randint(10, 20)
+            secret = random.randint(min_num, max_num)
+
+            return {
+                "question": f"Entre **{min_num} e {max_num}** qual número estou pensando?",
+                "answer": str(secret)
             }
 
 def add_invisible_chars(text: str):
