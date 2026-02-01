@@ -454,7 +454,7 @@ class Challenges(commands.Cog):
             }
         else:
             min_num = random.randint(1, 50)
-            max_num = min_num + random.randint(10, 20)
+            max_num = min_num + random.randint(5, 7)
             secret = random.randint(min_num, max_num)
 
             return {
