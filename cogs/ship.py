@@ -66,7 +66,7 @@ class ShipCog(commands.Cog):
 
     @app_commands.command(name="ship", description="Veja a afinidade entre dois usuários")
     @app_commands.describe(user1="Primeiro usuário", user2="Segundo usuário")
-    async def ship(self, interaction: discord.Interaction, user1: discord.Member, user2: discord.Member = None):
+    async def ship(self, interaction: discord.Interaction, user1: str, user2: str = None):
         user2 = user2 or interaction.user
 
         async def get_user(text):
