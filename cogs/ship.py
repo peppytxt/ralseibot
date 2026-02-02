@@ -31,7 +31,7 @@ class MarriageProposalView(ui.LayoutView):
 
     async def accept_callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.target.id:
-            return await interaction.response.send_message("❌ Não és o alvo!", ephemeral=True)
+            return await interaction.response.send_message("❌ Você não é o alvo!", ephemeral=True)
 
         requester_data = self.cog.col.find_one({"_id": self.requester.id}) or {"coins": 0}
         if requester_data.get("coins", 0) < self.custo:
