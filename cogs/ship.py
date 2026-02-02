@@ -70,10 +70,11 @@ class ShipCog(commands.Cog):
         user2 = user2 or interaction.user
 
         async def get_user(text):
-            user_id = text.replace("<@", "").replace(">", "").replace("!", "")
+            if not text: return None
+            clean_id = text.replace("<@", "").replace(">", "").replace("!", "").replace("&", "")
             try:
-                user_id = int(user_id)
-                return self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
+                u_id = int(clean_id)
+                return self.bot.get_user(u_id) or await self.bot.fetch_user(u_id)
             except:
                 return None
             
@@ -92,7 +93,7 @@ class ShipCog(commands.Cog):
             status = "🔥 | Almas Gêmeas!"
         
         else:
-            u1_data = self.col.find_one({"_id": user1.id}) or {}
+            u1_data = self.col.find_one({"_id": u1.id}) or {}
             if u1_data.get("marry_id") == user2.id:
                 porcentagem = 100
                 status = "💍 | Casal Perfeito! (Casados)"
