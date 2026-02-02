@@ -164,7 +164,6 @@ class LojaView(ui.LayoutView):
         container = ui.Container(accent_color=discord.Color.gold())
 
         container.add_item(ui.TextDisplay("## 🛒 Loja do Ralsei"))
-        
         container.add_item(ui.Separator())
 
         item_vara = (
@@ -197,6 +196,8 @@ class LojaView(ui.LayoutView):
         
         row.add_item(btn_cafe)
 
+        
+        container.add_item(ui.Separator())
         container.add_item(row)
         self.add_item(container)
 
