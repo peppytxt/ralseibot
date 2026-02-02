@@ -164,27 +164,38 @@ class LojaView(ui.LayoutView):
         container = ui.Container(accent_color=discord.Color.gold())
 
         container.add_item(ui.TextDisplay("## 🛒 Loja do Ralsei"))
-        container.add_item(ui.TextDisplay("Lojinha de itens do ralsei :3"))
         
         container.add_item(ui.Separator())
 
-        item_text = (
+        item_vara = (
             "### Vara de Bambu 🎣\n"
             "Uma vara simples, mas confiável.\n\n"
             "💰 **Preço:** `1000 ralcoins`\n"
             "🛠️ **Durabilidade:** `100` (10 usos)"
         )
-        container.add_item(ui.TextDisplay(item_text))
+        container.add_item(ui.TextDisplay(item_vara))
+
+        item_cafe = (
+            "### Café Expresso ☕\n"
+            "Reduz o cooldown da pesca para **30 segundos**.\n"
+            "⏱️ **Duração:** `30 minutos` | 💰 **Preço:** `5000 ralcoins`"
+        )
+        container.add_item(ui.TextDisplay(item_cafe))
 
         row = ui.ActionRow()
         btn_comprar = ui.Button(
             label="Comprar Vara", 
             style=discord.ButtonStyle.success, 
-            emoji="🛒"
+            emoji="🎣"
         )
         btn_comprar.callback = self.comprar_vara
         row.add_item(btn_comprar)
+
+        btn_cafe = ui.Button(label="Comprar Café", style=discord.ButtonStyle.success, emoji="☕")
+        btn_cafe.callback = self.comprar_cafe
         
+        row.add_item(btn_cafe)
+
         container.add_item(row)
         self.add_item(container)
 
@@ -214,6 +225,27 @@ class LojaView(ui.LayoutView):
         )
 
         await interaction.response.send_message("✅ Compra realizada com sucesso!", ephemeral=True)
+
+    
+    async def comprar_cafe(self, interaction: discord.Interaction):
+        preco = 5000
+        user_data = self.cog.col.find_one({"_id": interaction.user.id}) or {"coins": 0}
+
+        if user_data.get("coins", 0) < preco:
+            return await interaction.response.send_message("❌ Saldo insuficiente para o café!", ephemeral=True)
+
+        expires_at = int(time.time() + (30 * 60))
+
+        self.cog.col.update_one(
+            {"_id": interaction.user.id},
+            {
+                "$inc": {"coins": -preco},
+                "$set": {"fishing_buff_until": expires_at}
+            },
+            upsert=True
+        )
+
+        await interaction.response.send_message(f"☕ **Gole!** Você está energizado! Seu cooldown agora é de 30s até <t:{expires_at}:t>!", ephemeral=True)
 
 class Economy(commands.Cog):
     def __init__(self, bot):
@@ -604,13 +636,25 @@ class Economy(commands.Cog):
     @commands.hybrid_command(name="pescar", description="Tente a sorte no lago!")
     async def pescar(self, ctx: commands.Context):
         user_data = self.col.find_one({"_id": ctx.author.id}) or {}
+        
+        now = time.time()
+        buff_until = user_data.get("fishing_buff_until", 0)
+
+        is_buffed = now < buff_until
+        cooldown_seconds = 30 if is_buffed else 600
+        
         last_fish = user_data.get("last_fish", 0)
-        cooldown_seconds = 600
-        tempo_passado = time.time() - last_fish
+        tempo_passado = now - last_fish
 
         if tempo_passado < cooldown_seconds:
-            restante = int((cooldown_seconds - tempo_passado) / 60)
-            return await ctx.send(f"⏳ Seus braços estão cansados! Espere mais **{restante} minutos** para pescar de novo.", ephemeral=True)
+            restante = int(cooldown_seconds - tempo_passado)
+            
+            if restante > 60:
+                msg = f"⏳ Seus braços estão cansados! Espere mais **{restante // 60} minutos**."
+            else:
+                msg = f"⚡ O café ainda faz efeito! Espere mais **{restante} segundos**."
+            
+            return await ctx.send(msg, ephemeral=True)
 
         vara = user_data.get("fishing_rod")
         if not vara or vara.get("durability", 0) <= 0:
@@ -627,11 +671,10 @@ class Economy(commands.Cog):
         self.col.update_one(
             {"_id": ctx.author.id},
             {
-                "$set": {"last_fish": time.time()},
+                "$set": {"last_fish": now},
                 "$inc": {"fishing_rod.durability": -10}
             }
         )
-
         view = FishingLayout(ctx.author, fish, self)
         await ctx.send(view=view)
 
