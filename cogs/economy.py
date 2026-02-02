@@ -180,6 +180,7 @@ class LojaView(ui.LayoutView):
             "Reduz o cooldown da pesca para **30 segundos**.\n"
             "⏱️ **Duração:** `30 minutos` | 💰 **Preço:** `5000 ralcoins`"
         )
+        container.add_item(ui.Separator())
         container.add_item(ui.TextDisplay(item_cafe))
 
         row = ui.ActionRow()
