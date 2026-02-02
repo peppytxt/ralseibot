@@ -87,7 +87,7 @@ class ShipCog(commands.Cog):
         current_pair = {u1.id, u2.id}
 
         if current_pair in forced_ships:
-            porcentagem = 99
+            porcentagem = 98
             status = "🔥 | Almas Gêmeas!"
         else:
             u1_data = self.col.find_one({"_id": u1.id}) or {}
