@@ -65,10 +65,9 @@ class ShipCog(commands.Cog):
         return self.bot.get_cog("XP").col
 
     @app_commands.command(name="ship", description="Veja a afinidade entre dois usuários")
-    @app_commands.describe(user1="Primeiro usuário", user2="Segundo usuário")
+    @app_commands.describe(user1="Menção ou ID", user2="Menção ou ID (opcional)")
     async def ship(self, interaction: discord.Interaction, user1: str, user2: str = None):
-        user2 = user2 or interaction.user
-
+        
         async def get_user(text):
             if not text: return None
             clean_id = text.replace("<@", "").replace(">", "").replace("!", "").replace("&", "")
@@ -82,23 +81,21 @@ class ShipCog(commands.Cog):
         u2 = await get_user(user2) if user2 else interaction.user
 
         if not u1 or not u2:
-            return await interaction.response.send_message("❌ Não consegui encontrar um dos usuários pelo ID ou menção fornecidos.", ephemeral=True)
+            return await interaction.response.send_message("❌ Não encontrei esse usuário! Verifique o ID ou menção.", ephemeral=True)
         
         forced_ships = [{1408600509836955720, 297153970613387264}]
-
-        current_pair = {user1.id, user2.id}
+        current_pair = {u1.id, u2.id}
 
         if current_pair in forced_ships:
             porcentagem = 99
             status = "🔥 | Almas Gêmeas!"
-        
         else:
             u1_data = self.col.find_one({"_id": u1.id}) or {}
-            if u1_data.get("marry_id") == user2.id:
+            if u1_data.get("marry_id") == u2.id:
                 porcentagem = 100
                 status = "💍 | Casal Perfeito! (Casados)"
             else:
-                combined_id = "".join(sorted([str(user1.id), str(user2.id)]))
+                combined_id = "".join(sorted([str(u1.id), str(u2.id)]))
                 porcentagem = int(hashlib.md5(combined_id.encode()).hexdigest(), 16) % 101
 
                 if porcentagem < 20: status = "💔 | Clima pesado..."
@@ -111,7 +108,7 @@ class ShipCog(commands.Cog):
 
         container = ui.Container(accent_color=discord.Color.from_rgb(255, 105, 180))
         container.add_item(ui.TextDisplay(f"## ❤️ Teste de Afinidade"))
-        container.add_item(ui.TextDisplay(f"**{user1.display_name}** + **{user2.display_name}**"))
+        container.add_item(ui.TextDisplay(f"**{u1.display_name}** + **{u2.display_name}**"))
         container.add_item(ui.Separator())
         container.add_item(ui.TextDisplay(f"### Resultado: {porcentagem}%"))
         container.add_item(ui.TextDisplay(f"`{barra}`"))
