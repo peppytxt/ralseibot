@@ -11,7 +11,7 @@ class MarriageProposalView(ui.LayoutView):
         self.cog = cog
         self.requester = requester
         self.target = target
-        self.custo = 10000
+        self.custo = custo
 
         container = ui.Container(accent_color=discord.Color.red())
         container.add_item(ui.TextDisplay(f"## 💍 Pedido de Casamento"))
@@ -34,14 +34,14 @@ class MarriageProposalView(ui.LayoutView):
             return await interaction.response.send_message("❌ Não és o alvo!", ephemeral=True)
 
         requester_data = self.cog.col.find_one({"_id": self.requester.id}) or {"coins": 0}
-        if requester_data.get("coins", 0) < 10000:
+        if requester_data.get("coins", 0) < self.custo:
             return await interaction.response.send_message("❌ O proponente não tem mais o dinheiro!", ephemeral=True)
 
         ts = int(time.time())
 
         self.cog.col.update_one(
             {"_id": self.requester.id}, 
-            {"$inc": {"coins": -10000}, "$set": {"marry_id": self.target.id, "marry_date": ts}}
+            {"$inc": {"coins": -self.custo}, "$set": {"marry_id": self.target.id, "marry_date": ts}}
         )
 
         self.cog.col.update_one(
