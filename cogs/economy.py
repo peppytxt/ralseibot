@@ -108,34 +108,49 @@ class BaldeView(ui.View):
 
     @ui.button(label="Vender Tudo (Exceto Lendários)", style=discord.ButtonStyle.secondary, emoji="💰")
     async def vender_quase_tudo(self, interaction: discord.Interaction, button: ui.Button):
-        user_data = self.cog.col.find_one({"_id": interaction.user.id})
+        user_data = self.cog.col.find_one({"_id": interaction.user.id}) or {}
         inventory = user_data.get("inventory", [])
 
         if not inventory:
-            return await interaction.response.send_message("📭 Seu balde já está vazio!", ephemeral=True)
+            return await interaction.response.send_message("📭 Seu inventário está vazio!", ephemeral=True)
 
-        a_vender = [item for item in inventory if item.get("rarity") != "Lendário"]
-        a_manter = [item for item in inventory if item.get("rarity") == "Lendário"]
+        fish_data = {
+            "Bota Velha": {"rarity": "Lixo", "price": 10},
+            "Sardinha": {"rarity": "Comum", "price": 150},
+            "Atum Real": {"rarity": "Raro", "price": 800},
+            "Tubarão Branco": {"rarity": "Lendário", "price": 5000}
+        }
 
-        if not a_vender:
-            return await interaction.response.send_message("💎 Você só tem itens Lendários no balde! Esses eu não vendo.", ephemeral=True)
-        lucro_total = sum(item.get("price", 0) for item in a_vender)
-        quantidade = len(a_vender)
+        a_vender_nomes = []
+        a_manter_nomes = []
+        lucro_total = 0
+
+        for fish_name in inventory:
+            data = fish_data.get(fish_name)
+            
+            if data and data["rarity"] == "Lendário":
+                a_manter_nomes.append(fish_name)
+            else:
+                a_vender_nomes.append(fish_name)
+                lucro_total += data["price"] if data else 0
+
+        if not a_vender_nomes:
+            return await interaction.response.send_message("💎 Você só tem itens Lendários! Esses eu não vendo.", ephemeral=True)
 
         self.cog.col.update_one(
             {"_id": interaction.user.id},
             {
                 "$inc": {"coins": lucro_total},
-                "$set": {"inventory": a_manter}
+                "$set": {"inventory": a_manter_nomes}
             }
         )
 
         success_view = ui.LayoutView()
         container = ui.Container(accent_color=discord.Color.gold())
-        container.add_item(ui.TextDisplay(f"## 💰 Venda Coletiva Realizada!"))
+        container.add_item(ui.TextDisplay(f"## 💰 Venda Coletiva"))
         container.add_item(ui.TextDisplay(
-            f"Você vendeu **{quantidade}** itens e recebeu **{lucro_total} ralcoins**.\n"
-            f"📦 **Itens Lendários preservados:** {len(a_manter)}"
+            f"Você vendeu **{len(a_vender_nomes)}** itens por **{lucro_total} ralcoins**.\n"
+            f"📦 **Lendários Preservados:** {len(a_manter_nomes)}"
         ))
         success_view.add_item(container)
 
