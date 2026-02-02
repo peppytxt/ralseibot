@@ -6,7 +6,7 @@ import time
 import hashlib
 
 class MarriageProposalView(ui.LayoutView):
-    def __init__(self, cog, requester, target):
+    def __init__(self, cog, requester, target, custo):
         super().__init__(timeout=60)
         self.cog = cog
         self.requester = requester
