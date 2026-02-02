@@ -68,6 +68,20 @@ class ShipCog(commands.Cog):
     @app_commands.describe(user1="Primeiro usuário", user2="Segundo usuário")
     async def ship(self, interaction: discord.Interaction, user1: discord.Member, user2: discord.Member = None):
         user2 = user2 or interaction.user
+
+        async def get_user(text):
+            user_id = text.replace("<@", "").replace(">", "").replace("!", "")
+            try:
+                user_id = int(user_id)
+                return self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
+            except:
+                return None
+            
+        u1 = await get_user(user1)
+        u2 = await get_user(user2) if user2 else interaction.user
+
+        if not u1 or not u2:
+            return await interaction.response.send_message("❌ Não consegui encontrar um dos usuários pelo ID ou menção fornecidos.", ephemeral=True)
         
         forced_ships = [1408600509836955720, 297153970613387264]
 
