@@ -83,7 +83,7 @@ class ShipCog(commands.Cog):
         if not u1 or not u2:
             return await interaction.response.send_message("❌ Não consegui encontrar um dos usuários pelo ID ou menção fornecidos.", ephemeral=True)
         
-        forced_ships = [1408600509836955720, 297153970613387264]
+        forced_ships = [{1408600509836955720, 297153970613387264}]
 
         current_pair = {user1.id, user2.id}
 
