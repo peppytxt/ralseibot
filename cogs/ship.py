@@ -103,7 +103,7 @@ class ShipCog(commands.Cog):
         custo = 10000
         
         if user.bot or user.id == interaction.user.id:
-            return await interaction.response.send_message("❌ Alvo inválido.", ephemeral=True)
+            return await interaction.response.send_message("❌ Você não pode se casar com um bot ou consigo mesmo! Bobinho >:3", ephemeral=False)
 
         u1_data = self.col.find_one({"_id": interaction.user.id}) or {"coins": 0}
         u2_data = self.col.find_one({"_id": user.id}) or {}
