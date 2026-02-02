@@ -49,12 +49,24 @@ class MarriageProposalView(ui.LayoutView):
             {"$set": {"marry_id": self.requester.id, "marry_date": ts}}
         )
 
-        await interaction.response.edit_message(content=f"🎉 **{self.target.display_name}** aceitou! Estão oficialmente casados!", view=None)
+        success_view = ui.LayoutView()
+        container = ui.Container(accent_color=discord.Color.green())
+        container.add_item(ui.TextDisplay(f"## ❤️ Casamento Realizado!"))
+        container.add_item(ui.TextDisplay(f"🎉 Parabéns! **{self.target.display_name}** e **{self.requester.display_name}** agora estão casados!"))
+        success_view.add_item(container)
+
+        await interaction.response.edit_message(view=success_view)
 
     async def decline_callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.target.id:
             return await interaction.response.send_message("❌", ephemeral=True)
-        await interaction.response.edit_message(content="💔 O pedido foi recusado...", view=None)
+            
+        fail_view = ui.LayoutView()
+        container = ui.Container(accent_color=discord.Color.greyple())
+        container.add_item(ui.TextDisplay("💔 O pedido de casamento foi recusado..."))
+        fail_view.add_item(container)
+        
+        await interaction.response.edit_message(view=fail_view)
 
 class ShipCog(commands.Cog):
     def __init__(self, bot):
