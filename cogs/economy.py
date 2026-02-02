@@ -109,7 +109,7 @@ class BaldeView(ui.View):
     @ui.button(label="Vender Tudo (Exceto Lendários)", style=discord.ButtonStyle.secondary, emoji="💰")
     async def vender_quase_tudo(self, interaction: discord.Interaction, button: ui.Button):
         user_data = self.cog.col.find_one({"_id": interaction.user.id})
-        inventory = user_data.get("bucket", [])
+        inventory = user_data.get("inventory", [])
 
         if not inventory:
             return await interaction.response.send_message("📭 Seu balde já está vazio!", ephemeral=True)
@@ -126,7 +126,7 @@ class BaldeView(ui.View):
             {"_id": interaction.user.id},
             {
                 "$inc": {"coins": lucro_total},
-                "$set": {"bucket": a_manter}
+                "$set": {"inventory": a_manter}
             }
         )
 
