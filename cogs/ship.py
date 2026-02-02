@@ -135,7 +135,7 @@ class ShipCog(commands.Cog):
             return await interaction.response.send_message("❌ Um de vocês já está casado!", ephemeral=True)
 
         view = MarriageProposalView(self, interaction.user, user, custo)
-        await interaction.response.send_message(content=user.mention, view=view)
+        await interaction.response.send_message(view=view)
 
 
     casamento = app_commands.Group(name="casamento",description="Comandos relacionados a casamento")
