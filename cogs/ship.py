@@ -69,22 +69,28 @@ class ShipCog(commands.Cog):
     async def ship(self, interaction: discord.Interaction, user1: discord.Member, user2: discord.Member = None):
         user2 = user2 or interaction.user
         
-        combined_id = "".join(sorted([str(user1.id), str(user2.id)]))
-        percentage = int(hashlib.md5(combined_id.encode()).hexdigest(), 16) % 101
+        u1_data = self.col.find_one({"_id": user1.id}) or {}
+        
+        if u1_data.get("marry_id") == user2.id:
+            porcentagem = 100
+            status = "💍 | Casal Perfeito! (Casados)"
+        else:
+            combined_id = "".join(sorted([str(user1.id), str(user2.id)]))
+            porcentagem = int(hashlib.md5(combined_id.encode()).hexdigest(), 16) % 101
 
-        if percentage < 20: status = "💔 | Clima pesado..."
-        elif percentage < 50: status = "⚖️ | Amizade (talvez?)"
-        elif percentage < 80: status = "💖 | Há algo no ar!"
-        else: status = "🔥 | Almas Gêmeas!"
+            if porcentagem < 20: status = "💔 | Clima pesado..."
+            elif porcentagem < 50: status = "⚖️ | Amizade (talvez?)"
+            elif porcentagem < 80: status = "💖 | Há algo no ar!"
+            else: status = "🔥 | Almas Gêmeas!"
 
-        blocos_cheios = int(percentage / 10)
+        blocos_cheios = int(porcentagem / 10)
         barra = "█" * blocos_cheios + "░" * (10 - blocos_cheios)
 
         container = ui.Container(accent_color=discord.Color.from_rgb(255, 105, 180))
         container.add_item(ui.TextDisplay(f"## ❤️ Teste de Afinidade"))
         container.add_item(ui.TextDisplay(f"**{user1.display_name}** + **{user2.display_name}**"))
         container.add_item(ui.Separator())
-        container.add_item(ui.TextDisplay(f"### Resultado: {percentage}%"))
+        container.add_item(ui.TextDisplay(f"### Resultado: {porcentagem}%"))
         container.add_item(ui.TextDisplay(f"`{barra}`"))
         container.add_item(ui.TextDisplay(f"> {status}"))
         
