@@ -154,7 +154,7 @@ class BaldeView(ui.View):
         ))
         success_view.add_item(container)
 
-        await interaction.response.edit_message(view=success_view, embeds=[])
+        await interaction.response.send_message(view=success_view, embeds=[])
 
 class LojaView(ui.LayoutView):
     def __init__(self, cog):
