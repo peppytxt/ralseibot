@@ -106,6 +106,41 @@ class BaldeView(ui.View):
             embed=None,
         )
 
+    @ui.button(label="Vender Tudo (Exceto Lendários)", style=discord.ButtonStyle.secondary, emoji="💰")
+    async def vender_quase_tudo(self, interaction: discord.Interaction, button: ui.Button):
+        user_data = self.cog.col.find_one({"_id": interaction.user.id})
+        inventory = user_data.get("bucket", [])
+
+        if not inventory:
+            return await interaction.response.send_message("📭 Seu balde já está vazio!", ephemeral=True)
+
+        a_vender = [item for item in inventory if item.get("rarity") != "Lendário"]
+        a_manter = [item for item in inventory if item.get("rarity") == "Lendário"]
+
+        if not a_vender:
+            return await interaction.response.send_message("💎 Você só tem itens Lendários no balde! Esses eu não vendo.", ephemeral=True)
+        lucro_total = sum(item.get("price", 0) for item in a_vender)
+        quantidade = len(a_vender)
+
+        self.cog.col.update_one(
+            {"_id": interaction.user.id},
+            {
+                "$inc": {"coins": lucro_total},
+                "$set": {"bucket": a_manter}
+            }
+        )
+
+        success_view = ui.LayoutView()
+        container = ui.Container(accent_color=discord.Color.gold())
+        container.add_item(ui.TextDisplay(f"## 💰 Venda Coletiva Realizada!"))
+        container.add_item(ui.TextDisplay(
+            f"Você vendeu **{quantidade}** itens e recebeu **{lucro_total} ralcoins**.\n"
+            f"📦 **Itens Lendários preservados:** {len(a_manter)}"
+        ))
+        success_view.add_item(container)
+
+        await interaction.response.edit_message(view=success_view)
+
 class LojaView(ui.LayoutView):
     def __init__(self, cog):
         super().__init__(timeout=60)
@@ -114,7 +149,7 @@ class LojaView(ui.LayoutView):
         container = ui.Container(accent_color=discord.Color.gold())
 
         container.add_item(ui.TextDisplay("## 🛒 Loja do Ralsei"))
-        container.add_item(ui.TextDisplay("Equipe-se com o melhor para suas pescarias!"))
+        container.add_item(ui.TextDisplay("Lojinha de itens do ralsei :3"))
         
         container.add_item(ui.Separator())
 
