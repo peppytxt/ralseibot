@@ -77,11 +77,15 @@ class ShipCog(commands.Cog):
         elif percentage < 80: status = "💖 | Há algo no ar!"
         else: status = "🔥 | Almas Gêmeas!"
 
+        blocos_cheios = int(percentage / 10)
+        barra = "█" * blocos_cheios + "░" * (10 - blocos_cheios)
+
         container = ui.Container(accent_color=discord.Color.from_rgb(255, 105, 180))
         container.add_item(ui.TextDisplay(f"## ❤️ Teste de Afinidade"))
         container.add_item(ui.TextDisplay(f"**{user1.display_name}** + **{user2.display_name}**"))
         container.add_item(ui.Separator())
         container.add_item(ui.TextDisplay(f"### Resultado: {percentage}%"))
+        container.add_item(ui.TextDisplay(f"`{barra}`"))
         container.add_item(ui.TextDisplay(f"> {status}"))
         
         view = ui.LayoutView()
