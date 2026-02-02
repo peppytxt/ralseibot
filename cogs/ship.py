@@ -69,19 +69,27 @@ class ShipCog(commands.Cog):
     async def ship(self, interaction: discord.Interaction, user1: discord.Member, user2: discord.Member = None):
         user2 = user2 or interaction.user
         
-        u1_data = self.col.find_one({"_id": user1.id}) or {}
-        
-        if u1_data.get("marry_id") == user2.id:
-            porcentagem = 100
-            status = "💍 | Casal Perfeito! (Casados)"
-        else:
-            combined_id = "".join(sorted([str(user1.id), str(user2.id)]))
-            porcentagem = int(hashlib.md5(combined_id.encode()).hexdigest(), 16) % 101
+        forced_ships = [1408600509836955720, 297153970613387264]
 
-            if porcentagem < 20: status = "💔 | Clima pesado..."
-            elif porcentagem < 50: status = "⚖️ | Amizade (talvez?)"
-            elif porcentagem < 80: status = "💖 | Há algo no ar!"
-            else: status = "🔥 | Almas Gêmeas!"
+        current_pair = {user1.id, user2.id}
+
+        if current_pair in forced_ships:
+            porcentagem = 99
+            status = "🔥 | Almas Gêmeas!"
+        
+        else:
+            u1_data = self.col.find_one({"_id": user1.id}) or {}
+            if u1_data.get("marry_id") == user2.id:
+                porcentagem = 100
+                status = "💍 | Casal Perfeito! (Casados)"
+            else:
+                combined_id = "".join(sorted([str(user1.id), str(user2.id)]))
+                porcentagem = int(hashlib.md5(combined_id.encode()).hexdigest(), 16) % 101
+
+                if porcentagem < 20: status = "💔 | Clima pesado..."
+                elif porcentagem < 50: status = "⚖️ | Amizade (talvez?)"
+                elif porcentagem < 80: status = "💖 | Há algo no ar!"
+                else: status = "🔥 | Almas Gêmeas!"
 
         blocos_cheios = int(porcentagem / 10)
         barra = "█" * blocos_cheios + "░" * (10 - blocos_cheios)
