@@ -2,7 +2,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import os
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+import time
+from PIL import Image, ImageDraw, ImageFont
 import aiohttp
 from io import BytesIO
 
@@ -19,116 +20,94 @@ class Profile(commands.Cog):
     @app_commands.command(name="perfil")
     async def perfil(self, interaction: discord.Interaction, member: discord.Member = None):
         member = member or interaction.user
-
+        
+        # Busca dados na collection global
         data = self.bot.get_cog("XP").col.find_one({"_id": member.id})
         if not data:
-            return await interaction.response.send_message("Você ainda não possui XP registrado.")
+            return await interaction.response.send_message("Usuário sem dados registrados.")
 
         WIDTH = 931
         HEIGHT = 465
-        
-        # Fundo com imagem externa
         BASE = os.path.dirname(__file__)
         FONT_PATH = os.path.join(BASE, "fonts", "DejaVuSans.ttf")
 
-        font_big = ImageFont.truetype(FONT_PATH, 32)
-        font_small = ImageFont.truetype(FONT_PATH, 18)
+        font_big = ImageFont.truetype(FONT_PATH, 30)
+        font_mid = ImageFont.truetype(FONT_PATH, 18)
+        font_small = ImageFont.truetype(FONT_PATH, 14)
 
-        bg_path = os.path.join(BASE, "ProfileV1.png")
-
-        background = Image.open(bg_path).convert("RGBA")
-        background = background.resize((WIDTH, HEIGHT))
-
-        img = background.copy()
+        background = Image.open(os.path.join(BASE, "ProfileV1.png")).convert("RGBA")
+        img = background.resize((WIDTH, HEIGHT))
         draw = ImageDraw.Draw(img)
-        
-        draw = ImageDraw.Draw(img)
-        
+
         # --------------------- AVATAR ---------------------
         avatar = await self.fetch_avatar(member)
-        avatar_size = 142
-        avatar = avatar.resize((avatar_size, avatar_size))
-
-        # Máscara circular
-        mask = Image.new("L", (avatar_size, avatar_size), 0)
-        ImageDraw.Draw(mask).ellipse((0, 0, avatar_size, avatar_size), fill=255)
-
-        avatar_x = 45
-        avatar_y = 161
-        
-        img.paste(avatar, (avatar_x, avatar_y), mask)
+        avatar = avatar.resize((142, 142))
+        mask = Image.new("L", (142, 142), 0)
+        ImageDraw.Draw(mask).ellipse((0, 0, 142, 142), fill=255)
+        img.paste(avatar, (45, 161), mask)
 
         # --------------------- NOME ---------------------
-        name_x = avatar_x + 150
-        name_y = avatar_y + 20
-
-        draw.text((name_x, name_y), member.name, font=font_big, fill=(0, 0, 0))
+        draw.text((195, 185), member.display_name, font=font_big, fill=(0, 0, 0))
 
         # --------------------- SOBRE MIM ---------------------
+        draw.text((275, 275), data.get("about", "Insira um SOBRE MIM :3")[:100], font=font_small, fill=(50, 50, 50))
 
-        about_x = 242
-        about_y = 240      
+        # --------------------- STATUS DE CASAMENTO (Campo abaixo do Nome) ---------------------
+        partner_id = data.get("marry_id")
+        if partner_id:
+            try:
+                partner = self.bot.get_user(partner_id) or await self.bot.fetch_user(partner_id)
+                marry_text = f"❤️ Casado com: {partner.name}"
+            except:
+                marry_text = "❤️ Casado(a)"
+        else:
+            marry_text = "💔 Solteiro(a)"
+        draw.text((285, 345), marry_text, font=font_small, fill=(200, 0, 0))
 
-        draw.text(
-            (about_x + 25, about_y + 40),
-            data.get("about", "Insira um SOBRE MIM :3"),
-            font=font_small,
-            fill=(0, 0, 0)
-        )
+        # --------------------- BUFF DE CAFÉ (Campo ao lado do Casamento) ---------------------
+        buff_until = data.get("fishing_buff_until", 0)
+        now = time.time()
+        if now < buff_until:
+            rem = int((buff_until - now) / 60)
+            buff_text = f"☕ Café: {rem}m restando"
+        else:
+            buff_text = "☕ Sem Buff ativo"
+        draw.text((515, 345), buff_text, font=font_small, fill=(100, 70, 0))
 
-        # --------------------- BARRA XP ---------------------
-        bar_label_y = about_y + 120
-
-        bar_x = 260
-        bar_y = bar_label_y + 55
-        bar_w = 400
-        bar_h = 15
-
-        radius = 12
-        
-        # fundo da barra
-        draw.rounded_rectangle(
-            (bar_x, bar_y, bar_x + bar_w, bar_y + bar_h),
-            radius=radius,
-            fill=(255, 255, 255)
-        )
-
-        # progresso
+        # --------------------- COLUNA XP ---------------------
         xp = data.get("xp_global", 0)
         level = xp // 1000
-        xp_current = xp % 1000
-        xp_next = 1000
-        ratio = xp_current / xp_next
+        xp_curr = xp % 1000
+        ratio = xp_curr / 1000
+        
+        # Barra XP
+        draw.rounded_rectangle((195, 400, 195 + 180, 412), radius=6, fill=(230, 230, 230))
+        draw.rounded_rectangle((195, 400, 195 + (180 * ratio), 412), radius=6, fill=(100, 230, 100))
+        draw.text((195, 415), f"Level {level} ({xp_curr}/1000)", font=font_small, fill=(0, 0, 0))
 
-        progress_w = int(bar_w * ratio)
+        # --------------------- COLUNA ECONOMIA (Vara) ---------------------
+        rod = data.get("fishing_rod", {})
+        rod_name = rod.get("name", "Nenhuma")
+        rod_dur = rod.get("durability", 0)
+        draw.text((405, 400), f"🎣 {rod_name}", font=font_small, fill=(0, 0, 0))
+        draw.text((405, 420), f"🛠️ Durabilidade: {rod_dur}/100", font=font_small, fill=(0, 0, 0))
 
-        draw.rounded_rectangle(
-            (bar_x, bar_y, bar_x + progress_w, bar_y + bar_h),
-            radius=radius,
-            fill=(100, 230, 100)
-        )
-
-        # --------------------- TEXTO DO XP ---------------------
-        xp_text = f"{xp_current}/{xp_next} • Nível {level}"
-
-        text_x = bar_x + bar_w // 2
-        text_y = bar_y + bar_h + 10
-
-        bbox = draw.textbbox((0, 0), xp_text, font=font_small)
-        w = bbox[2] - bbox[0]
-        h = bbox[3] - bbox[1]
-
-        # Centraliza
-        draw.text((text_x - w // 2, text_y), xp_text, font=font_small, fill=(0, 0, 0))
-
+        # --------------------- COLUNA INVENTÁRIO (Balde) ---------------------
+        inventory = data.get("inventory", [])
+        # Agrupa itens repetidos: ["Peixe", "Peixe"] -> "2x Peixe"
+        inv_counts = {}
+        for item in inventory:
+            inv_counts[item] = inv_counts.get(item, 0) + 1
+        
+        inv_text = "\n".join([f"{qty}x {name}" for name, qty in list(inv_counts.items())[:3]])
+        if not inv_text: inv_text = "Vazio..."
+        draw.text((620, 400), inv_text, font=font_small, fill=(0, 0, 0))
 
         # --------------------- EXPORTAR ---------------------
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         buffer.seek(0)
-
         await interaction.response.send_message(file=discord.File(buffer, "perfil.png"))
-
 
 async def setup(bot):
     await bot.add_cog(Profile(bot))
