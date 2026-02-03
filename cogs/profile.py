@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 import os
 import time
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageEmoji
 import aiohttp
 from io import BytesIO
 
@@ -33,6 +33,13 @@ class Profile(commands.Cog):
         font_big = ImageFont.truetype(FONT_PATH, 30)
         font_mid = ImageFont.truetype(FONT_PATH, 18)
         font_small = ImageFont.truetype(FONT_PATH, 14)
+
+        FONT_EMOJI_PATH = os.path.join(BASE, "fonts", "Symbola.ttf") # Uma fonte comum para símbolos
+
+        try:
+            font_emoji = ImageFont.truetype(FONT_EMOJI_PATH, 14)
+        except:
+            font_emoji = font_small
 
         background = Image.open(os.path.join(BASE, "ProfileV1.png")).convert("RGBA")
         img = background.resize((WIDTH, HEIGHT))
@@ -75,26 +82,26 @@ class Profile(commands.Cog):
 
         # --------------------- COLUNA XP ---------------------
         xp = data.get("xp_global", 0)
+        xp_global_rank = self.bot.get_cog("XP").col.count_documents({"xp_global": {"$gt": xp}}) + 1
         level = xp // 1000
         xp_curr = xp % 1000
         ratio = xp_curr / 1000
         
-        draw.rounded_rectangle((195, 400, 195 + 180, 412), radius=6, fill=(230, 230, 230))
-        draw.rounded_rectangle((195, 400, 195 + (180 * ratio), 412), radius=6, fill=(100, 230, 100))
-        draw.text((185, 415), f"Level {level} ({xp_curr}/1000)", font=font_small, fill=(0, 0, 0))
+        draw.rounded_rectangle((185, 400, 195 + 180, 412), radius=6, fill=(230, 230, 230))
+        draw.rounded_rectangle((185, 400, 195 + (180 * ratio), 412), radius=6, fill=(100, 230, 100))
+        draw.text((185, 415), f"Level {level} ({xp_curr}/1000) #{xp_global_rank}", font=font_small, fill=(0, 0, 0))
 
-        # --------------------- COLUNA ECONOMIA (Vara) ---------------------
         # --------------------- COLUNA ECONOMIA (Vara) ---------------------
         rod = data.get("fishing_rod", {})
         ralcoins = data.get("coins", 0) 
-        
+
         rank_global_ralcoins = self.bot.get_cog("XP").col.count_documents({"coins": {"$gt": ralcoins}}) + 1
 
         rod_name = rod.get("name", "Nenhuma")
         rod_dur = rod.get("durability", 0)
         
-        draw.text((405, 400), f"🎣 {rod_name}: {rod_dur}/100", font=font_small, fill=(0, 0, 0))
-        draw.text((405, 430), f"💰 Ralcoins: {ralcoins} #{rank_global_ralcoins}", font=font_small, fill=(0, 0, 0))
+        draw.text((395, 430), f"💰 Ralcoins: {ralcoins} #{rank_global_ralcoins}", font=font_small, fill=(0, 0, 0))
+        draw.text((395, 400), f"🎣 {rod_name}: {rod_dur}/100", font=font_small, fill=(0, 0, 0))
 
         # --------------------- COLUNA INVENTÁRIO (Balde) ---------------------
         inventory = data.get("inventory", [])
