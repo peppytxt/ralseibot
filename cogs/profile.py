@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 import os
 import time
-from PIL import Image, ImageDraw, ImageFont, ImageEmoji
+from PIL import Image, ImageDraw, ImageFont
 import aiohttp
 from io import BytesIO
 
@@ -34,14 +34,7 @@ class Profile(commands.Cog):
         font_mid = ImageFont.truetype(FONT_PATH, 18)
         font_small = ImageFont.truetype(FONT_PATH, 14)
 
-        FONT_EMOJI_PATH = os.path.join(BASE, "fonts", "Symbola.ttf") # Uma fonte comum para símbolos
-
-        try:
-            font_emoji = ImageFont.truetype(FONT_EMOJI_PATH, 14)
-        except:
-            font_emoji = font_small
-
-        background = Image.open(os.path.join(BASE, "ProfileV1.png")).convert("RGBA")
+        background = Image.open(os.path.join(BASE, "images", "ProfileV1.png")).convert("RGBA")
         img = background.resize((WIDTH, HEIGHT))
         draw = ImageDraw.Draw(img)
 
@@ -63,11 +56,15 @@ class Profile(commands.Cog):
         if partner_id:
             try:
                 partner = self.bot.get_user(partner_id) or await self.bot.fetch_user(partner_id)
-                marry_text = f"❤️ Casado com: {partner.name}"
+                icon_heart = Image.open(os.path.join(BASE, "images", "heart.png")).convert("RGBA").resize((16, 16))
+                img.paste(icon_heart, (285, 345), icon_heart)
+                marry_text = f"Casado com: {partner.name}"
             except:
-                marry_text = "❤️ Casado(a)"
+                marry_text = "Casado(a)"
         else:
-            marry_text = "💔 Solteiro(a)"
+            icon_broken_heart = Image.open(os.path.join(BASE, "images", "brokenheart.png")).convert("RGBA").resize((16, 16))
+            img.paste(icon_broken_heart, (285, 345), icon_broken_heart)
+            marry_text = "Solteiro(a)"
         draw.text((285, 345), marry_text, font=font_small, fill=(200, 0, 0))
 
         # --------------------- BUFF DE CAFÉ (Campo ao lado do Casamento) ---------------------
@@ -75,9 +72,13 @@ class Profile(commands.Cog):
         now = time.time()
         if now < buff_until:
             rem = int((buff_until - now) / 60)
-            buff_text = f"☕ Café: {rem}m restando"
+            icon_coffee = Image.open(os.path.join(BASE, "images", "coffee.png")).convert("RGBA").resize((16, 16))
+            img.paste(icon_coffee, (515, 345), icon_coffee)
+            buff_text = f"Café: {rem}m restando"
         else:
-            buff_text = "☕ Sem Buff ativo"
+            icon_coffee = Image.open(os.path.join(BASE, "images", "coffee.png")).convert("RGBA").resize((16, 16))
+            img.paste(icon_coffee, (515, 345), icon_coffee)
+            buff_text = "Sem Buff ativo"
         draw.text((515, 345), buff_text, font=font_small, fill=(100, 70, 0))
 
         # --------------------- COLUNA XP ---------------------
@@ -100,8 +101,12 @@ class Profile(commands.Cog):
         rod_name = rod.get("name", "Nenhuma")
         rod_dur = rod.get("durability", 0)
         
-        draw.text((395, 430), f"💰 Ralcoins: {ralcoins} #{rank_global_ralcoins}", font=font_small, fill=(0, 0, 0))
-        draw.text((395, 400), f"🎣 {rod_name}: {rod_dur}/100", font=font_small, fill=(0, 0, 0))
+        icon_bagofmoney = Image.open(os.path.join(BASE, "images", "bagofmoney.png")).convert("RGBA").resize((16, 16))
+        img.paste(icon_bagofmoney, (395, 430), icon_bagofmoney)
+        icon_fishingrod = Image.open(os.path.join(BASE, "images", "rod.png")).convert("RGBA").resize((16, 16))
+        img.paste(icon_fishingrod, (395, 400), icon_fishingrod)
+        draw.text((395, 430), f"Ralcoins: {ralcoins} #{rank_global_ralcoins}", font=font_small, fill=(0, 0, 0))
+        draw.text((395, 400), f"{rod_name}: {rod_dur}/100", font=font_small, fill=(0, 0, 0))
 
         # --------------------- COLUNA INVENTÁRIO (Balde) ---------------------
         inventory = data.get("inventory", [])
