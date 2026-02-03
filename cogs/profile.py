@@ -51,7 +51,7 @@ class Profile(commands.Cog):
         # --------------------- SOBRE MIM ---------------------
         draw.text((275, 278), data.get("about", "Insira um SOBRE MIM :3")[:100], font=font_small, fill=(50, 50, 50))
 
-        # --------------------- STATUS DE CASAMENTO (Campo abaixo do Nome) ---------------------
+        # --------------------- STATUS DE CASAMENTO (Campo abaixo do Nome) ---------------------.
         partner_id = data.get("marry_id")
         if partner_id:
             try:
