@@ -73,11 +73,11 @@ class Profile(commands.Cog):
         if now < buff_until:
             rem = int((buff_until - now) / 60)
             icon_coffee = Image.open(os.path.join(BASE, "images", "coffee.png")).convert("RGBA").resize((16, 16))
-            img.paste(icon_coffee, (515, 345), icon_coffee)
+            img.paste(icon_coffee, (505, 345), icon_coffee)
             buff_text = f"Café: {rem}m restando"
         else:
             icon_coffee = Image.open(os.path.join(BASE, "images", "coffee.png")).convert("RGBA").resize((16, 16))
-            img.paste(icon_coffee, (515, 345), icon_coffee)
+            img.paste(icon_coffee, (505, 345), icon_coffee)
             buff_text = "Sem Buff ativo"
         draw.text((515, 345), buff_text, font=font_small, fill=(100, 70, 0))
 
@@ -88,8 +88,8 @@ class Profile(commands.Cog):
         xp_curr = xp % 1000
         ratio = xp_curr / 1000
         
-        draw.rounded_rectangle((185, 390, 195 + 180, 412), radius=6, fill=(230, 230, 230))
-        draw.rounded_rectangle((185, 390, 195 + (180 * ratio), 412), radius=6, fill=(100, 230, 100))
+        draw.rounded_rectangle((185, 400, 195 + 180, 402), radius=6, fill=(230, 230, 230))
+        draw.rounded_rectangle((185, 400, 195 + (180 * ratio), 412), radius=6, fill=(100, 230, 100))
         draw.text((185, 415), f"Level {level} ({xp_curr}/1000) #{xp_global_rank}", font=font_small, fill=(0, 0, 0))
 
         # --------------------- COLUNA ECONOMIA (Vara) ---------------------
