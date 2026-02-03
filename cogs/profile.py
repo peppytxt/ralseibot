@@ -84,11 +84,15 @@ class Profile(commands.Cog):
         draw.text((185, 415), f"Level {level} ({xp_curr}/1000)", font=font_small, fill=(0, 0, 0))
 
         # --------------------- COLUNA ECONOMIA (Vara) ---------------------
+        # --------------------- COLUNA ECONOMIA (Vara) ---------------------
         rod = data.get("fishing_rod", {})
-        ralcoins = data.get("ralcoins", 0)
-        rank_global_ralcoins = self.bot.get_cog("Economy").get_rank(member.id)
+        ralcoins = data.get("coins", 0) 
+        
+        rank_global_ralcoins = self.bot.get_cog("XP").col.count_documents({"coins": {"$gt": ralcoins}}) + 1
+
         rod_name = rod.get("name", "Nenhuma")
         rod_dur = rod.get("durability", 0)
+        
         draw.text((405, 400), f"🎣 {rod_name}: {rod_dur}/100", font=font_small, fill=(0, 0, 0))
         draw.text((405, 430), f"💰 Ralcoins: {ralcoins} #{rank_global_ralcoins}", font=font_small, fill=(0, 0, 0))
 
