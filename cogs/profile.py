@@ -17,7 +17,7 @@ class Profile(commands.Cog):
             async with session.get(url) as r:
                 return Image.open(BytesIO(await r.read())).convert("RGBA")
 
-    @app_commands.command(name="perfil")
+    @app_commands.command(name="perfil", description="Mostra o perfil de um usuário")
     async def perfil(self, interaction: discord.Interaction, member: discord.Member = None):
         member = member or interaction.user
         
