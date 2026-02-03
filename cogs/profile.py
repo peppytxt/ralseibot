@@ -21,7 +21,6 @@ class Profile(commands.Cog):
     async def perfil(self, interaction: discord.Interaction, member: discord.Member = None):
         member = member or interaction.user
         
-        # Busca dados na collection global
         data = self.bot.get_cog("XP").col.find_one({"_id": member.id})
         if not data:
             return await interaction.response.send_message("Usuário sem dados registrados.")
@@ -44,13 +43,13 @@ class Profile(commands.Cog):
         avatar = avatar.resize((142, 142))
         mask = Image.new("L", (142, 142), 0)
         ImageDraw.Draw(mask).ellipse((0, 0, 142, 142), fill=255)
-        img.paste(avatar, (45, 161), mask)
+        img.paste(avatar, (46, 161), mask)
 
         # --------------------- NOME ---------------------
         draw.text((195, 185), member.display_name, font=font_big, fill=(0, 0, 0))
 
         # --------------------- SOBRE MIM ---------------------
-        draw.text((275, 275), data.get("about", "Insira um SOBRE MIM :3")[:100], font=font_small, fill=(50, 50, 50))
+        draw.text((275, 278), data.get("about", "Insira um SOBRE MIM :3")[:100], font=font_small, fill=(50, 50, 50))
 
         # --------------------- STATUS DE CASAMENTO (Campo abaixo do Nome) ---------------------
         partner_id = data.get("marry_id")
@@ -80,7 +79,6 @@ class Profile(commands.Cog):
         xp_curr = xp % 1000
         ratio = xp_curr / 1000
         
-        # Barra XP
         draw.rounded_rectangle((195, 400, 195 + 180, 412), radius=6, fill=(230, 230, 230))
         draw.rounded_rectangle((195, 400, 195 + (180 * ratio), 412), radius=6, fill=(100, 230, 100))
         draw.text((195, 415), f"Level {level} ({xp_curr}/1000)", font=font_small, fill=(0, 0, 0))
@@ -94,7 +92,6 @@ class Profile(commands.Cog):
 
         # --------------------- COLUNA INVENTÁRIO (Balde) ---------------------
         inventory = data.get("inventory", [])
-        # Agrupa itens repetidos: ["Peixe", "Peixe"] -> "2x Peixe"
         inv_counts = {}
         for item in inventory:
             inv_counts[item] = inv_counts.get(item, 0) + 1
