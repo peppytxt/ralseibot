@@ -57,13 +57,13 @@ class Profile(commands.Cog):
             try:
                 partner = self.bot.get_user(partner_id) or await self.bot.fetch_user(partner_id)
                 icon_heart = Image.open(os.path.join(BASE, "images", "heart.png")).convert("RGBA").resize((16, 16))
-                img.paste(icon_heart, (275, 345), icon_heart)
+                img.paste(icon_heart, (275, 350), icon_heart)
                 marry_text = f"Casado com: {partner.name}"
             except:
                 marry_text = "Casado(a)"
         else:
             icon_broken_heart = Image.open(os.path.join(BASE, "images", "brokenheart.png")).convert("RGBA").resize((16, 16))
-            img.paste(icon_broken_heart, (275, 345), icon_broken_heart)
+            img.paste(icon_broken_heart, (275, 350), icon_broken_heart)
             marry_text = "Solteiro(a)"
         draw.text((295, 350), marry_text, font=font_small, fill=(200, 0, 0))
 
@@ -79,7 +79,7 @@ class Profile(commands.Cog):
             icon_coffee = Image.open(os.path.join(BASE, "images", "coffee.png")).convert("RGBA").resize((16, 16))
             img.paste(icon_coffee, (490, 350), icon_coffee)
             buff_text = "Sem Buff ativo"
-        draw.text((515, 345), buff_text, font=font_small, fill=(100, 70, 0))
+        draw.text((515, 350), buff_text, font=font_small, fill=(100, 70, 0))
 
         # --------------------- COLUNA XP ---------------------
         xp = data.get("xp_global", 0)
@@ -88,11 +88,11 @@ class Profile(commands.Cog):
         xp_curr = xp % 1000
         ratio = xp_curr / 1000
         
-        draw.rounded_rectangle((185, 400, 195 + 150, 412), radius=6, fill=(230, 230, 230))
-        draw.rounded_rectangle((185, 400, 195 + (150 * ratio), 412), radius=6, fill=(100, 230, 100))
+        draw.rounded_rectangle((185, 400, 195 + 160, 412), radius=6, fill=(230, 230, 230))
+        draw.rounded_rectangle((185, 400, 195 + (160 * ratio), 412), radius=6, fill=(100, 230, 100))
         draw.text((185, 415), f"Level {level} ({xp_curr}/1000) #{xp_global_rank}", font=font_small, fill=(0, 0, 0))
 
-        # --------------------- COLUNA ECONOMIA (Vara) ---------------------
+        # --------------------- COLUNA ECONOMIA ---------------------
         rod = data.get("fishing_rod", {})
         ralcoins = data.get("coins", 0) 
 
