@@ -53,7 +53,6 @@ class ChallengeConfigView(ui.LayoutView):
         super().__init__(timeout=300)
         self.cog = cog
         self.guild = guild
-        # Garante que as chaves existam
         self.config = {
             "enabled": config.get("challenge_enabled", False),
             "interval": config.get("challenge_interval", 100),
@@ -63,15 +62,14 @@ class ChallengeConfigView(ui.LayoutView):
     def build_interface(self):
         self.clear_items()
         
-        # Container Principal
         color = discord.Color.green() if self.config["enabled"] else discord.Color.red()
         container = ui.Container(accent_color=color)
         
-        container.add_item(ui.TextDisplay("## ⚙️ Painel de Desafios", style=ui.TextStyle.heading))
+        container.add_item(ui.TextDisplay("## ⚙️ Painel de Desafios"))
         
         status_str = "✅ **Ativado**" if self.config["enabled"] else "❌ **Desativado**"
         canal_obj = self.guild.get_channel(self.config["channel_id"])
-        canal_str = canal_obj.mention if canal_obj else "`Não definido (usa o canal atual)`"
+        canal_str = canal_obj.mention if canal_obj else "`Não definido (canal atual)`"
         
         container.add_item(ui.TextDisplay(
             f"Configure onde e com que frequência os desafios aparecem.\n\n"
@@ -80,8 +78,6 @@ class ChallengeConfigView(ui.LayoutView):
             f"**Canal:** {canal_str}"
         ))
 
-        # Dropdown de Canais (Select V2)
-        # Filtramos apenas canais de texto
         select_canal = ui.ChannelSelect(
             placeholder="Escolha o canal dos desafios...",
             channel_types=[discord.ChannelType.text],
@@ -91,7 +87,6 @@ class ChallengeConfigView(ui.LayoutView):
         select_canal.callback = self.update_channel
         container.add_item(select_canal)
 
-        # Linha de Ação para Botões
         row = ui.ActionRow()
         
         btn_toggle = ui.Button(
@@ -111,7 +106,7 @@ class ChallengeConfigView(ui.LayoutView):
         self.add_item(container)
 
     async def update_channel(self, interaction: discord.Interaction):
-        canal = interaction.data['values'][0] # ID do canal selecionado
+        canal = interaction.data['values'][0]
         self.config["channel_id"] = int(canal)
         
         await self.cog.col.update_one(
