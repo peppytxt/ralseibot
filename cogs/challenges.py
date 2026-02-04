@@ -65,29 +65,18 @@ class ChallengeConfigView(ui.LayoutView):
         color = discord.Color.green() if self.config["enabled"] else discord.Color.red()
         container = ui.Container(accent_color=color)
         
-        container.add_item(ui.TextDisplay("## ⚙️ Painel de Desafios"))
-        
         status_str = "✅ **Ativado**" if self.config["enabled"] else "❌ **Desativado**"
         canal_obj = self.guild.get_channel(self.config["channel_id"])
-        canal_str = canal_obj.mention if canal_obj else "`Não definido (canal atual)`"
+        canal_str = canal_obj.mention if canal_obj else "`Canal Atual`"
         
         container.add_item(ui.TextDisplay(
-            f"Configure onde e com que frequência os desafios aparecem.\n\n"
-            f"**Status:** {status_str}\n"
-            f"**Intervalo:** `{self.config['interval']}` mensagens\n"
-            f"**Canal:** {canal_str}"
+            f"## ⚙️ Configuração de Desafios\n"
+            f"Status: {status_str}\n"
+            f"Intervalo: `{self.config['interval']}` mensagens\n"
+            f"Canal: {canal_str}"
         ))
-
-        select_canal = ui.ChannelSelect(
-            placeholder="Escolha o canal dos desafios...",
-            channel_types=[discord.ChannelType.text],
-            min_values=1,
-            max_values=1
-        )
-        select_canal.callback = self.update_channel
-        container.add_item(select_canal)
-
-        row = ui.ActionRow()
+        
+        row_buttons = ui.ActionRow()
         
         btn_toggle = ui.Button(
             label="Desativar" if self.config["enabled"] else "Ativar",
@@ -96,14 +85,24 @@ class ChallengeConfigView(ui.LayoutView):
         )
         btn_toggle.callback = self.toggle_enabled
         
-        btn_int = ui.Button(label="Ajustar Intervalo", style=discord.ButtonStyle.secondary, emoji="🔢")
+        btn_int = ui.Button(label="Intervalo", style=discord.ButtonStyle.secondary, emoji="🔢")
         btn_int.callback = self.open_interval_modal
         
-        row.add_item(btn_toggle)
-        row.add_item(btn_int)
+        row_buttons.add_item(btn_toggle)
+        row_buttons.add_item(btn_int)
         
-        container.add_item(row)
+        container.add_item(row_buttons)
+
+        select_canal = ui.ChannelSelect(
+            placeholder="Selecione o canal para os desafios...",
+            channel_types=[discord.ChannelType.text],
+            min_values=1,
+            max_values=1
+        )
+        select_canal.callback = self.update_channel
+
         self.add_item(container)
+        self.add_item(select_canal)
 
     async def update_channel(self, interaction: discord.Interaction):
         canal_id = interaction.data['values'][0]
