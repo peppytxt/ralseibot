@@ -11,7 +11,6 @@ BR_TZ = timezone(timedelta(hours=-3))
 
 BOT_ECONOMY_ID = 0
 
-
 class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

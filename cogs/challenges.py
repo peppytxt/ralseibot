@@ -120,6 +120,7 @@ class Challenges(commands.Cog):
         self.message_counters = {}
         self.active_challenges = {}
         self.warned_users = {}
+        self.locks = {}
         self.challenge_timeout_checker.start()
 
     def cog_unload(self):
@@ -361,7 +362,6 @@ class Challenges(commands.Cog):
         if not channel:
             return
 
-        # gerar um desafio
         challenge = self.generate_challenge()
 
         self.active_challenges[guild.id] = {
@@ -386,8 +386,11 @@ class Challenges(commands.Cog):
     async def check_answer(self, message):
         guild_id = message.guild.id
         challenge = self.active_challenges.get(guild_id)
-        if not challenge:
+        if not challenge or challenge.get("solved"):
             return
+        
+        if guild_id not in self.locks:
+            self.locks[guild_id] = asyncio.Lock()
 
         # anti ctrl+c ctrl+v
         if "\u200b" in message.content:
@@ -405,19 +408,18 @@ class Challenges(commands.Cog):
 
             return
 
-        if normalize(message.content) == normalize(challenge["answer"]):
-            if challenge["solved"]:
+        async with self.locks[guild_id]:
+            if challenge.get("solved"):
                 return
 
-            challenge["solved"] = True
+            if normalize(message.content) == normalize(challenge["answer"]):
+                challenge["solved"] = True
 
             reward = random.randint(REWARD_MIN, REWARD_MAX)
-            
             response_time = time.time() - challenge["spawned_at"]
 
             await message.add_reaction("✅")
 
-            # SE FOR LISTA (ARRAY):
             await self.col.update_one(
                 {"_id": message.author.id},
                 {"$inc": {"challenge_wins": 1, "challenge_earnings": reward}},
@@ -429,19 +431,14 @@ class Challenges(commands.Cog):
                 f"Você ganhou **{reward} ralcoins!**"
             )
 
-            asyncio.create_task(
-                self.send_speed_message(
-                    message.channel,
-                    message.author,
-                    response_time
-                )
-            )
+            self.active_challenges.pop(guild_id, None)
+            self.warned_users.clear()
+
+            asyncio.create_task(self.send_speed_message(message.channel, message.author, response_time))
 
             achievements_cog = self.bot.get_cog("AchievementsCog") 
             if achievements_cog:
                 await achievements_cog.give_achievement(message.author.id, "challenge_first_win")
-            self.active_challenges.pop(guild_id, None)
-            self.warned_users.clear()
 
     # ------------- GENERATE CHALLENGE -------------
 
@@ -451,14 +448,12 @@ class Challenges(commands.Cog):
         if typ == "math":
             math_type = random.choice(["add", "sub", "mul"])
 
-            # ➕ SOMA
             if math_type == "add":
                 a = random.randint(1, 50)
                 b = random.randint(1, 50)
                 question = f"Quanto é **{a} + {b}**?"
                 answer = str(a + b)
 
-            # ➖ SUBTRAÇÃO (nunca negativa)
             elif math_type == "sub":
                 a = random.randint(1, 50)
                 b = random.randint(1, 50)
@@ -467,7 +462,6 @@ class Challenges(commands.Cog):
                 question = f"Quanto é **{maior} - {menor}**?"
                 answer = str(maior - menor)
 
-            # ✖️ MULTIPLICAÇÃO SIMPLES
             else:
                 a = random.randint(2, 9)
                 b = random.randint(2, 9)
