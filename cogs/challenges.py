@@ -14,7 +14,7 @@ CHALLENGE_TIMEOUT = 60
 
 MIN_MEMBERS = 100
 MIN_MESSAGES_INTERVAL = 50
-MIN_TIME_INTERVAL = 600
+MIN_TIME_INTERVAL = 600 
 
 
 CTRLV_MESSAGES = [
@@ -25,12 +25,12 @@ CTRLV_MESSAGES = [
     "🚫 Ctrl+C + Ctrl+V não aumenta QI, só digita 😉",
 ]
 
-class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
+class IntervalModal(ui.Modal, title="Configurar Intervalo"):
     interval = ui.TextInput(
-        label="Quantidade de mensagens",
-        placeholder="Ex: 100",
+        label="Quantidade de Mensagens",
+        placeholder="Ex: 50, 100, 200...",
         min_length=1,
-        max_length=4
+        max_length=5
     )
 
     def __init__(self, view):
@@ -40,14 +40,14 @@ class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
     async def on_submit(self, interaction: discord.Interaction):
         try:
             val = int(self.interval.value)
-            if val < 10:
-                return await interaction.response.send_message("❌ O intervalo deve ser pelo menos 10.", ephemeral=True)
+            if val < MIN_MESSAGES_INTERVAL:
+                return await interaction.response.send_message(f"❌ Mínimo de {MIN_MESSAGES_INTERVAL} mensagens.", ephemeral=True)
             
             self.view.config["challenge_interval"] = val
             await self.view.save_and_refresh(interaction)
         except ValueError:
-            await interaction.response.send_message("❌ Digite um número válido.", ephemeral=True)
-    
+            await interaction.response.send_message("❌ Digite apenas números!", ephemeral=True)
+
 class ChallengeConfigView(ui.View):
     def __init__(self, cog, guild, config):
         super().__init__(timeout=300)
@@ -63,7 +63,8 @@ class ChallengeConfigView(ui.View):
         
         enabled = self.config.get("challenge_enabled", False)
         interval = self.config.get("challenge_interval", 100)
-
+        
+        # Criamos um Embed para o status
         embed = discord.Embed(
             title="⚙️ Painel de Controle: Desafios",
             description="Configure a frequência e o estado dos desafios automáticos.",
@@ -73,6 +74,7 @@ class ChallengeConfigView(ui.View):
         embed.add_field(name="Intervalo", value=f"`{interval}` mensagens", inline=True)
         embed.set_footer(text=f"Servidor: {self.guild.name}")
 
+        # Botão Ligar/Desligar
         btn_toggle = ui.Button(
             label="Desligar" if enabled else "Ligar",
             style=discord.ButtonStyle.danger if enabled else discord.ButtonStyle.success,
@@ -81,6 +83,7 @@ class ChallengeConfigView(ui.View):
         btn_toggle.callback = self.toggle_enabled
         self.add_item(btn_toggle)
 
+        # Botão Intervalo
         btn_int = ui.Button(
             label="Ajustar Mensagens", 
             style=discord.ButtonStyle.secondary, 
@@ -92,16 +95,18 @@ class ChallengeConfigView(ui.View):
         return embed
 
     async def save_and_refresh(self, interaction: discord.Interaction):
+        # Salva no MongoDB
         if self.cog.col is not None:
-            self.cog.col.update_one(
+            await self.cog.col.update_one(
                 {"_id": self.guild.id},
                 {"$set": self.config},
                 upsert=True
             )
         
+        # Gera o novo embed e edita a mensagem
         embed = self.build_interface()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def toggle_enabled(self, interaction: discord.Interaction):
         self.config["challenge_enabled"] = not self.config.get("challenge_enabled", False)
         await self.save_and_refresh(interaction)
@@ -109,21 +114,16 @@ class ChallengeConfigView(ui.View):
     async def open_interval_modal(self, interaction: discord.Interaction):
         await interaction.response.send_modal(IntervalModal(self))
 
-
 class Challenges(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        
         self.message_counters = {}
         self.active_challenges = {}
-        
         self.warned_users = {}
-
-        self.challenge_timer.start()
+        self.locks = {}
         self.challenge_timeout_checker.start()
 
     def cog_unload(self):
-        self.challenge_timer.cancel()
         self.challenge_timeout_checker.cancel()
         
     async def send_speed_message(self, channel, user, response_time):
@@ -135,15 +135,13 @@ class Challenges(commands.Cog):
             f"**{response_time:.2f} segundos** ⌨️⚡"
         )
     
-
     @property
     def col(self):
-        xp_cog = self.bot.get_cog("XP")
-        if xp_cog:
-            return xp_cog.col
-        return None
+        database = getattr(self.bot, "db", None)
+        return database.users if database is not None else None
 
     # ------------- CONFIG COMMAND ------------------
+
     @app_commands.command(
         name="challengeconfig",
         description="Painel visual de configuração dos desafios"
@@ -153,103 +151,151 @@ class Challenges(commands.Cog):
         if self.col is None:
             return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
 
-        config = self.col.find_one({"_id": interaction.guild.id})
-        if config is None:
-            config = {}
+        config = await self.col.find_one({"_id": interaction.guild.id}) or {}
         
         view = ChallengeConfigView(self, interaction.guild, config)
         embed = view.build_interface()
         
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    @app_commands.command(
-        name="challengerank",
-        description="Ranking dos usuários que mais venceram desafios"
-    )
+    @app_commands.command(name="challengerank", description="Ranking de desafios")
     async def challenge_rank(self, interaction: discord.Interaction):
+        if self.col is None: 
+            return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
+            
+        await interaction.response.defer()
+
         cursor = self.col.find(
-            {"challenge_wins": {"$gt": 0}},
-            {"challenge_wins": 1}
+            {"challenge_wins": {"$gt": 0}}
         ).sort("challenge_wins", -1).limit(10)
+        
+        data_list = await cursor.to_list(length=10)
 
-        users = list(cursor)
-
-        if not users:
-            return await interaction.response.send_message("❌ Ainda ninguém completou desafios.", ephemeral=True)
+        if not data_list:
+            return await interaction.followup.send("❌ Ainda ninguém completou desafios.")
 
         desc = ""
-        for i, u in enumerate(users, start=1):
-            user = self.bot.get_user(u["_id"]) or await self.bot.fetch_user(u["_id"])
-            name = user.display_name if user else f"Usuário {u['_id']}"
-            wins = u.get("challenge_wins", 0)
-            desc += f"**#{i} - {name}** • 📺 {wins} desafios\n"
+        rank_pos = 1
+        
+        for data in data_list:
+            user_id = data["_id"]
+            
+            wins = data.get("challenge_wins", 0)
 
-        embed = discord.Embed(title="🏆 Ranking de Desafios", description=desc, color=discord.Color.purple())
-        await interaction.response.send_message(embed=embed)
+            user = self.bot.get_user(user_id)
+            if not user:
+                try:
+                    user = await self.bot.fetch_user(user_id)
+                except:
+                    continue
 
+            if user.bot:
+                continue
+
+            name = user.display_name
+            desc += f"**#{rank_pos} - {name}** • 📺 {wins} vitórias\n"
+            rank_pos += 1
+
+        if not desc:
+            return await interaction.followup.send("❌ Nenhum usuário válido encontrado no ranking.")
+
+        embed = discord.Embed(
+            title="🏆 Ranking de Desafios", 
+            description=desc, 
+            color=0x5865F2
+        )
+        
+        await interaction.followup.send(embed=embed)
+        
     @app_commands.command(
         name="challengestats",
         description="Veja estatísticas de desafios"
     )
-    async def challenge_stats(self, interaction: discord.Interaction, user: discord.Member | None = None):
+    @app_commands.describe(user="Usuário para ver as estatísticas")
+    async def challenge_stats(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member | None = None
+    ):
+        if self.col is None: 
+            return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
+            
         target = user or interaction.user
-        if target.bot:
-            return await interaction.response.send_message("❌ Bots não participam.", ephemeral=True)
 
-        data = self.col.find_one({"_id": target.id}) or {}
+        if target.bot:
+            return await interaction.response.send_message(
+                "❌ Bots não participam de desafios.",
+                ephemeral=True
+            )
+
+        data = await self.col.find_one({"_id": target.id}) or {}
+
         wins = data.get("challenge_wins", 0)
         earnings = data.get("challenge_earnings", 0)
 
-        rank = self.col.count_documents({"challenge_wins": {"$gt": wins}, "_id": {"$ne": 0}}) + 1
+        rank = await self.col.count_documents({"challenge_wins": {"$gt": wins}}) + 1
 
         embed = discord.Embed(
-            title="📺 Estatísticas",
-            description=f"👤 {target.mention}\n\n📺 **Vitórias:** {wins}\n💰 **Ganhos:** {earnings}\n🏆 **Rank:** #{rank}",
+            title="📺 Estatísticas de Desafios",
+            description=(
+                f"👤 {target.mention}\n\n"
+                f"📺 **Vitórias:** {wins}\n"
+                f"💰 **Ralcoins ganhos:** {earnings}\n"
+                f"🏆 **Rank de vitórias:** #{rank}"
+            ),
             color=discord.Color.blurple()
         )
-        await interaction.response.send_message(embed=embed)
 
+        await interaction.response.send_message(embed=embed)
 
     # ------------- ON MESSAGE ---------------------
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or not message.guild:
+        if message.author.bot or not message.guild or self.col is None:
             return
-
-        config = self.col.find_one({"_id": message.guild.id})
+        
+        config = await self.col.find_one({"_id": message.guild.id})
         if not config or not config.get("challenge_enabled"):
             return
 
-        mode = config.get("challenge_mode", DEFAULT_MODE)
+        # ********** MODO POR MENSAGENS **********
+        key = str(message.guild.id)
         interval = config.get("challenge_interval", DEFAULT_INTERVAL)
 
-        if mode == "messages":
-            key = str(message.guild.id)
-            self.message_counters[key] = self.message_counters.get(key, 0) + 1
-            
-            if self.message_counters[key] >= interval:
-                self.message_counters[key] = 0
-                await self.spawn_challenge(message.guild, config)
+        self.message_counters[key] = self.message_counters.get(key, 0) + 1
+        current = self.message_counters[key]
 
-                self.col.update_one(
-                    {"_id": message.guild.id},
-                    {"$set": {"challenge_last": time.time()}}
-                )
+        if self.message_counters[key] >= interval:
+            self.message_counters[key] = 0
+            await self.spawn_challenge(message.guild, config)
 
+            # Adicionado AWAIT
+            await self.col.update_one(
+                {"_id": message.guild.id},
+                {"$set": {"challenge_last": time.time()}}
+            )
+
+        # ********** CHECAR RESPOSTAS **********
         await self.check_answer(message)
-
     # ------------- TIMER LOOP ---------------------
 
     @tasks.loop(seconds=60)
     async def challenge_timer(self):
+        if self.col is None: 
+            return
         try: 
-            for config in self.col.find({"challenge_enabled": True}):
+            cursor = self.col.find({"challenge_enabled": True})
+            
+            count = 0
+            async for config in cursor:
+                count += 1
                 guild = self.bot.get_guild(config["_id"])
                 if not guild:
                     continue
 
                 mode = config.get("challenge_mode", DEFAULT_MODE)
+                
                 if mode != "time":
                     continue
 
@@ -259,30 +305,32 @@ class Challenges(commands.Cog):
 
                 if now - last >= interval:
                     await self.spawn_challenge(guild, config)
-                    self.col.update_one(
+                    await self.col.update_one(
                         {"_id": config["_id"]},
                         {"$set": {"challenge_last": now}}
                     )
+            
+            if count == 0:
+                print("DEBUG: Nenhum servidor com challenge_enabled=True no banco.")
                     
         except Exception as e:
             print("❌ ERRO NO challenge_timer:", e)
             
     @tasks.loop(seconds=5)
     async def challenge_timeout_checker(self):
+        if self.col is None: return
         try:
             now = time.time()
-
             to_remove = []
 
             for guild_id, challenge in self.active_challenges.items():
                 if challenge.get("solved"):
                     continue
-                    
                 if now - challenge["spawned_at"] >= CHALLENGE_TIMEOUT:
                     to_remove.append(guild_id)
 
             for guild_id in to_remove:
-                config = self.col.find_one({"_id": guild_id})
+                config = await self.col.find_one({"_id": guild_id})
                 if not config:
                     continue
 
@@ -338,9 +386,13 @@ class Challenges(commands.Cog):
     async def check_answer(self, message):
         guild_id = message.guild.id
         challenge = self.active_challenges.get(guild_id)
-        if not challenge:
+        if not challenge or challenge.get("solved"):
             return
+        
+        if guild_id not in self.locks:
+            self.locks[guild_id] = asyncio.Lock()
 
+        # anti ctrl+c ctrl+v
         if "\u200b" in message.content:
             key = (guild_id, message.author.id)
 
@@ -350,53 +402,48 @@ class Challenges(commands.Cog):
                 warning = random.choice(CTRLV_MESSAGES)
                 msg = await message.reply(warning, mention_author=False)
 
+                # apagar depois de 7 segundos
                 await asyncio.sleep(7)
                 await msg.delete()
 
             return
 
-        if normalize(message.content) == normalize(challenge["answer"]):
-            challenge["solved"] = True
+        async with self.locks[guild_id]:
+            if challenge.get("solved"):
+                return
+
+            if normalize(message.content) == normalize(challenge["answer"]):
+                challenge["solved"] = True
+
             reward = random.randint(REWARD_MIN, REWARD_MAX)
             response_time = time.time() - challenge["spawned_at"]
 
-            try:
-                await message.add_reaction("✅")
-            except discord.Forbidden:
-                print(f"⚠️ Não foi possível reagir à mensagem de {message.author} (Bot bloqueado ou falta de permissão).")
-            except Exception as e:
-                print(f"⚠️ Erro ao adicionar reação: {e}")
+            await message.add_reaction("✅")
 
-            self.col.update_one(
+            await self.col.update_one(
                 {"_id": message.author.id},
                 {"$inc": {"challenge_wins": 1, "challenge_earnings": reward}},
                 upsert=True
             )
-
 
             await message.channel.send(
                 f"🎉 {message.author.mention} acertou! "
                 f"Você ganhou **{reward} ralcoins!**"
             )
 
-            asyncio.create_task(
-                self.send_speed_message(
-                    message.channel,
-                    message.author,
-                    response_time
-                )
-            )
+            self.active_challenges.pop(guild_id, None)
+            self.warned_users.clear()
+
+            asyncio.create_task(self.send_speed_message(message.channel, message.author, response_time))
 
             achievements_cog = self.bot.get_cog("AchievementsCog") 
             if achievements_cog:
                 await achievements_cog.give_achievement(message.author.id, "challenge_first_win")
-            self.active_challenges.pop(guild_id, None)
-            self.warned_users.clear()
 
-# ------------- GENERATE CHALLENGE -------------
+    # ------------- GENERATE CHALLENGE -------------
 
     def generate_challenge(self):
-        typ = random.choice(["math", "rewrite", "guess"])
+        typ = random.choice(["math", "rewrite"])
 
         if typ == "math":
             math_type = random.choice(["add", "sub", "mul"])
@@ -426,7 +473,7 @@ class Challenges(commands.Cog):
                 "answer": answer
             }
 
-        elif typ == "rewrite":
+        else:
             phrases = [
                 "O cavaleiro foi até a lua em seu cavalo",
                 "A raposa marrom rápida pula sobre o cão preguiçoso",
@@ -452,15 +499,7 @@ class Challenges(commands.Cog):
                 "answer": phrase,
                 "token_positions": token_positions
             }
-        else:
-            min_num = random.randint(1, 50)
-            max_num = min_num + random.randint(5, 7)
-            secret = random.randint(min_num, max_num)
 
-            return {
-                "question": f"Entre **{min_num} e {max_num}** qual número estou pensando?",
-                "answer": str(secret)
-            }
 
 def add_invisible_chars(text: str):
     ZERO_WIDTH = "\u200b"
