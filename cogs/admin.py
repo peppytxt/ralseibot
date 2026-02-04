@@ -87,7 +87,6 @@ class EmbedControlView(ui.View):
             return False
         return True
 
-# --- COG PRINCIPAL ---
 class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

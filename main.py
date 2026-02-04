@@ -52,6 +52,7 @@ COGS = [
     "cogs.achievements",
     "cogs.welcome",
     "cogs.help",
+    "cogs.ship",
     "cogs.admin",
 ]
 

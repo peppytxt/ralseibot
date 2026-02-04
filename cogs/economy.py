@@ -1,8 +1,9 @@
 import discord
-from discord import app_commands
+from discord import app_commands, ui
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
 import random
+import time
 from cogs.xp import RankView
 from views.coinflip import CoinflipView
 from views.pay_confirm import PayConfirmView
@@ -10,6 +11,243 @@ from views.pay_confirm import PayConfirmView
 BR_TZ = timezone(timedelta(hours=-3))
 
 BOT_ECONOMY_ID = 0
+
+class FishingLayout(ui.LayoutView):
+    def __init__(self, user, fish_data, cog):
+        super().__init__()
+        self.user = user
+        self.fish = fish_data
+        self.cog = cog 
+
+        container = ui.Container(accent_color=discord.Color.blue())
+        container.add_item(ui.TextDisplay(f"### 🎣 Pescaria de {self.user.display_name}"))
+        container.add_item(ui.Separator())
+
+        rarity_colors = {"Lixo": "⚪", "Comum": "🟢", "Raro": "🔵", "Lendário": "🟡"}
+        emoji = rarity_colors.get(self.fish['rarity'], "🐟")
+        
+        res_text = (
+            f"Você jogou a linha e... **{self.fish['name']}**!\n"
+            f"{emoji} **Raridade:** {self.fish['rarity']}\n"
+            f"💰 **Valor de Venda:** {self.fish['price']} ralcoins"
+        )
+        container.add_item(ui.TextDisplay(res_text))
+        
+        row = ui.ActionRow()
+        btn_sell = ui.Button(label="Vender agora", style=discord.ButtonStyle.success, emoji="💰")
+        btn_keep = ui.Button(label="Guardar no Balde", style=discord.ButtonStyle.secondary, emoji="🪣")
+        
+        btn_sell.callback = self.sell_callback
+        btn_keep.callback = self.keep_callback
+        row.add_item(btn_sell)
+        row.add_item(btn_keep)
+        container.add_item(row)
+        self.add_item(container)
+
+    async def sell_callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user.id:
+            return await interaction.response.send_message("❌ Essa vara não é sua!", ephemeral=True)
+        
+        self.cog.col.update_one(
+            {"_id": interaction.user.id},
+            {"$inc": {"coins": self.fish['price']}},
+            upsert=True
+        )
+        
+        await interaction.response.send_message(content=f"✅ Você vendeu {self.fish['name']} por **{self.fish['price']} ralcoins**")
+        self.stop()
+
+    async def keep_callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user.id:
+            return await interaction.response.send_message("❌ Essa vara não é sua!", ephemeral=True)
+
+        self.cog.col.update_one(
+            {"_id": interaction.user.id},
+            {"$push": {"inventory": self.fish['name']}},
+            upsert=True
+        )
+        
+        await interaction.response.send_message(content=f"🪣 Você guardou **{self.fish['name']}** no seu balde!")
+        self.stop()
+
+class BaldeView(ui.View):
+    def __init__(self, cog, user, inventory):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.user = user
+        self.inventory = inventory
+
+    @ui.button(label="Vender Tudo", style=discord.ButtonStyle.success, emoji="💰")
+    async def vender_tudo(self, interaction: discord.Interaction, button: ui.Button):
+        if interaction.user.id != self.user.id:
+            return await interaction.response.send_message("❌ Este balde não é seu!", ephemeral=True)
+
+        precos = {
+            "Bota Velha": 10,
+            "Sardinha": 150,
+            "Atum Real": 800,
+            "Tubarão Branco": 5000
+        }
+
+        total_ganho = 0
+        for item in self.inventory:
+            total_ganho += precos.get(item, 0)
+
+        self.cog.col.update_one(
+            {"_id": self.user.id},
+            {
+                "$set": {"inventory": []},
+                "$inc": {"coins": total_ganho}
+            }
+        )
+
+        await interaction.response.send_message(
+            content=f"✅ Você vendeu todo o conteúdo do balde por **{total_ganho} ralcoins**!",
+            embed=None,
+        )
+
+    @ui.button(label="Vender Tudo (Exceto Lendários)", style=discord.ButtonStyle.secondary, emoji="💰")
+    async def vender_quase_tudo(self, interaction: discord.Interaction, button: ui.Button):
+        user_data = self.cog.col.find_one({"_id": interaction.user.id}) or {}
+        inventory = user_data.get("inventory", [])
+
+        if not inventory:
+            return await interaction.response.send_message("📭 Seu inventário está vazio!", ephemeral=True)
+
+        fish_data = {
+            "Bota Velha": {"rarity": "Lixo", "price": 10},
+            "Sardinha": {"rarity": "Comum", "price": 150},
+            "Atum Real": {"rarity": "Raro", "price": 800},
+            "Tubarão Branco": {"rarity": "Lendário", "price": 5000}
+        }
+
+        a_vender_nomes = []
+        a_manter_nomes = []
+        lucro_total = 0
+
+        for fish_name in inventory:
+            data = fish_data.get(fish_name)
+            
+            if data and data["rarity"] == "Lendário":
+                a_manter_nomes.append(fish_name)
+            else:
+                a_vender_nomes.append(fish_name)
+                lucro_total += data["price"] if data else 0
+
+        if not a_vender_nomes:
+            return await interaction.response.send_message("💎 Você só tem itens Lendários! Esses eu não vendo.", ephemeral=True)
+
+        self.cog.col.update_one(
+            {"_id": interaction.user.id},
+            {
+                "$inc": {"coins": lucro_total},
+                "$set": {"inventory": a_manter_nomes}
+            }
+        )
+
+        success_view = ui.LayoutView()
+        container = ui.Container(accent_color=discord.Color.gold())
+        container.add_item(ui.TextDisplay(f"## 💰 Venda Coletiva"))
+        container.add_item(ui.TextDisplay(
+            f"Você vendeu **{len(a_vender_nomes)}** itens por **{lucro_total} ralcoins**.\n"
+            f"📦 **Lendários Preservados:** {len(a_manter_nomes)}"
+        ))
+        success_view.add_item(container)
+
+        await interaction.response.send_message(view=success_view, embeds=[])
+
+class LojaView(ui.LayoutView):
+    def __init__(self, cog):
+        super().__init__(timeout=60)
+        self.cog = cog
+
+        container = ui.Container(accent_color=discord.Color.gold())
+
+        container.add_item(ui.TextDisplay("## 🛒 Loja do Ralsei"))
+        container.add_item(ui.Separator())
+
+        item_vara = (
+            "### Vara de Bambu 🎣\n"
+            "Uma vara simples, mas confiável.\n\n"
+            "💰 **Preço:** `1000 ralcoins`\n"
+            "🛠️ **Durabilidade:** `100` (10 usos)"
+        )
+        container.add_item(ui.TextDisplay(item_vara))
+
+        item_cafe = (
+            "### Café Expresso ☕\n"
+            "Reduz o cooldown da pesca para **30 segundos**.\n"
+            "⏱️ **Duração:** `30 minutos` | 💰 **Preço:** `5000 ralcoins`"
+        )
+        container.add_item(ui.Separator())
+        container.add_item(ui.TextDisplay(item_cafe))
+
+        row = ui.ActionRow()
+        btn_comprar = ui.Button(
+            label="Comprar Vara", 
+            style=discord.ButtonStyle.success, 
+            emoji="🎣"
+        )
+        btn_comprar.callback = self.comprar_vara
+        row.add_item(btn_comprar)
+
+        btn_cafe = ui.Button(label="Comprar Café", style=discord.ButtonStyle.success, emoji="☕")
+        btn_cafe.callback = self.comprar_cafe
+        
+        row.add_item(btn_cafe)
+
+        
+        container.add_item(ui.Separator())
+        container.add_item(row)
+        self.add_item(container)
+
+    async def comprar_vara(self, interaction: discord.Interaction):
+        preco = 1000
+        user_data = self.cog.col.find_one({"_id": interaction.user.id}) or {"coins": 0}
+
+        current_rod = user_data.get("fishing_rod", {})
+        if current_rod.get("durability", 0) > 20:
+            return await interaction.response.send_message("⚠️ Sua vara atual ainda está boa! Use-a até ficar com menos de 20 de durabilidade para comprar uma nova.", ephemeral=True)
+        
+        if user_data.get("coins", 0) < preco:
+            return await interaction.response.send_message("❌ Saldo insuficiente!", ephemeral=True)
+
+        self.cog.col.update_one(
+            {"_id": interaction.user.id},
+            {
+                "$inc": {"coins": -preco},
+                "$set": {
+                    "fishing_rod": {
+                        "name": "Vara de Bambu",
+                        "durability": 100
+                    }
+                }
+            },
+            upsert=True
+        )
+
+        await interaction.response.send_message("✅ Compra realizada com sucesso!", ephemeral=True)
+
+    
+    async def comprar_cafe(self, interaction: discord.Interaction):
+        preco = 5000
+        user_data = self.cog.col.find_one({"_id": interaction.user.id}) or {"coins": 0}
+
+        if user_data.get("coins", 0) < preco:
+            return await interaction.response.send_message("❌ Saldo insuficiente para o café!", ephemeral=True)
+
+        expires_at = int(time.time() + (30 * 60))
+
+        self.cog.col.update_one(
+            {"_id": interaction.user.id},
+            {
+                "$inc": {"coins": -preco},
+                "$set": {"fishing_buff_until": expires_at}
+            },
+            upsert=True
+        )
+
+        await interaction.response.send_message(f"☕ **Gole!** Você está energizado! Seu cooldown agora é de 30s até <t:{expires_at}:t>!", ephemeral=True)
 
 class Economy(commands.Cog):
     def __init__(self, bot):
@@ -23,11 +261,9 @@ class Economy(commands.Cog):
         )
         
     async def check_economy_achievements(self, user_id: int):
-        """Verifica se o usuário atingiu metas de moedas para conquistas."""
         user_data = self.col.find_one({"_id": user_id}) or {}
         coins = user_data.get("coins", 0)
 
-        # Pegamos a Cog de conquistas
         ach_cog = self.bot.get_cog("AchievementsCog")
         if ach_cog:
             if coins >= 100000:
@@ -329,8 +565,7 @@ class Economy(commands.Cog):
                 "❌ Você não tem ralcoins suficientes.",
                 ephemeral=True
             )
-            
-        # Debita aposta inicial
+
         self.col.update_one(
             {"_id": user_id},
             {"$inc": {"coins": -quantidade}}
@@ -355,7 +590,6 @@ class Economy(commands.Cog):
 
             return await interaction.response.send_message(embed=embed)
 
-        # Vitória inicial
         embed = discord.Embed(
             title="🪙 Coinflip - Vitória!",
             description=(
@@ -400,6 +634,85 @@ class Economy(commands.Cog):
             f"🏦 Banco do bot recebeu **{quantidade} ralcoins**.",
             ephemeral=True
         )
+
+    @commands.hybrid_command(name="pescar", description="Tente a sorte no lago!")
+    async def pescar(self, ctx: commands.Context):
+        user_data = self.col.find_one({"_id": ctx.author.id}) or {}
+        
+        now = time.time()
+        buff_until = user_data.get("fishing_buff_until", 0)
+
+        is_buffed = now < buff_until
+        cooldown_seconds = 30 if is_buffed else 600
+        
+        last_fish = user_data.get("last_fish", 0)
+        tempo_passado = now - last_fish
+
+        if tempo_passado < cooldown_seconds:
+            restante = int(cooldown_seconds - tempo_passado)
+            
+            if restante > 60:
+                msg = f"⏳ Seus braços estão cansados! Espere mais **{restante // 60} minutos**."
+            else:
+                msg = f"⚡ O café ainda faz efeito! Espere mais **{restante} segundos**."
+            
+            return await ctx.send(msg, ephemeral=True)
+
+        vara = user_data.get("fishing_rod")
+        if not vara or vara.get("durability", 0) <= 0:
+            return await ctx.send("❌ Sua vara de pesca quebrou ou você não tem uma! Compre uma nova na `/loja`.", ephemeral=True)
+
+        choices = [
+            {"name": "Bota Velha", "rarity": "Lixo", "price": 10, "weight": 60},
+            {"name": "Sardinha", "rarity": "Comum", "price": 150, "weight": 30},
+            {"name": "Atum Real", "rarity": "Raro", "price": 800, "weight": 8},
+            {"name": "Tubarão Branco", "rarity": "Lendário", "price": 5000, "weight": 2}
+        ]
+        fish = random.choices(choices, weights=[f['weight'] for f in choices], k=1)[0]
+
+        self.col.update_one(
+            {"_id": ctx.author.id},
+            {
+                "$set": {"last_fish": now},
+                "$inc": {"fishing_rod.durability": -10}
+            }
+        )
+        view = FishingLayout(ctx.author, fish, self)
+        await ctx.send(view=view)
+
+    @app_commands.command(name="balde", description="Veja os peixes que você guardou")
+    async def balde(self, interaction: discord.Interaction):
+        user_data = self.col.find_one({"_id": interaction.user.id})
+        
+        inventory = user_data.get("inventory", []) if user_data else []
+        
+        if not inventory:
+            return await interaction.response.send_message(
+                "🪣 Seu balde está vazio! Vá pescar algo primeiro.", 
+                ephemeral=True
+            )
+
+        counts = {}
+        for item in inventory:
+            counts[item] = counts.get(item, 0) + 1
+
+        lista_texto = ""
+        for peixe, qtd in counts.items():
+            lista_texto += f"• **{peixe}** x{qtd}\n"
+
+        embed = discord.Embed(
+            title=f"🪣 Balde de {interaction.user.display_name}",
+            description=lista_texto,
+            color=discord.Color.blue()
+        )
+
+        view = BaldeView(self, interaction.user, inventory)
+        await interaction.response.send_message(embed=embed, view=view)
+
+    @app_commands.command(name="loja", description="Abre a loja de equipamentos")
+    async def loja(self, interaction: discord.Interaction):
+        view = LojaView(self)
+        await interaction.response.send_message(view=view)
 
 
 async def setup(bot):

@@ -100,9 +100,6 @@ class Birthday(commands.Cog):
         self.config_col = bot.db.birthday_config 
         self.birthday_check.start()
 
-    # =========================
-    # 🔁 TASK DIÁRIA
-    # =========================
     @tasks.loop(minutes=60)
     async def birthday_check(self):
         await self.bot.wait_until_ready()
@@ -289,8 +286,6 @@ class Birthday(commands.Cog):
 
         embed.set_footer(text=f"Página {page + 1}")
         return embed
-
-
 
 
     # -------------------------

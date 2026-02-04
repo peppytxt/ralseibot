@@ -164,9 +164,6 @@ class VoiceXP(commands.Cog):
     def col(self):
         return self.bot.get_cog("XP").col
 
-    # ------------------------------
-    # UTIL
-    # ------------------------------
     def is_valid_member(self, member: discord.Member) -> bool:
         if member.bot:
             return False
@@ -199,12 +196,10 @@ class VoiceXP(commands.Cog):
 
         user_id = member.id
 
-        # Saiu da call
         if before.channel and not after.channel:
             self.voice_sessions.pop(user_id, None)
             return
 
-        # Entrou ou mudou estado
         if after.channel:
             channel = after.channel
 
@@ -219,9 +214,6 @@ class VoiceXP(commands.Cog):
                 self.voice_sessions.pop(user_id, None)
 
 
-    # ------------------------------
-    # LOOP DE XP
-    # ------------------------------
     @tasks.loop(seconds=30)
     async def voice_xp_loop(self):
         now = time.time()

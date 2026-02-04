@@ -20,7 +20,6 @@ ACHIEVEMENTS_BY_CATEGORY = {
     "eco": ["coins_100000"],
 }
 
-# --- VIEW V2 (LAYOUT) ---
 class AchievementsView(ui.LayoutView):
     def __init__(self, cog, user):
         super().__init__(timeout=120)
@@ -61,7 +60,6 @@ class AchievementsView(ui.LayoutView):
         header.add_item(ui.TextDisplay(f"Olá {self.user.display_name}, veja seu progresso abaixo:"))
         self.add_item(header)
 
-        # 2. Container de Conteúdo (Lista de Achievements)
         unlocked = set(self.user_data.get("achievements", []))
         achievements_list = ACHIEVEMENTS_BY_CATEGORY.get(self.active_tab, [])
 
@@ -74,14 +72,12 @@ class AchievementsView(ui.LayoutView):
                 if key not in ACHIEVEMENTS: continue
                 data = ACHIEVEMENTS[key]
                 status = "✅" if key in unlocked else "🔒"
-                # No V2, TextDisplay suporta Markdown
                 content_container.add_item(
                     ui.TextDisplay(f"{status} **{data['title']}**\n└ {data['description']}")
                 )
         
         self.add_item(content_container)
 
-        # 3. Action Row para os Botões (Seleção de Abas)
         button_row = ui.ActionRow()
         for key, tab_info in self.tabs.items():
             is_active = (key == self.active_tab)
@@ -96,7 +92,6 @@ class AchievementsView(ui.LayoutView):
         
         self.add_item(button_row)
 
-        # 4. Botão de Refresh em uma linha separada
         refresh_row = ui.ActionRow()
         refresh_btn = ui.Button(label="Atualizar Dados", style=discord.ButtonStyle.primary, emoji="🎯")
         refresh_btn.callback = self.refresh_button
@@ -119,7 +114,6 @@ class AchievementsView(ui.LayoutView):
             return False
         return True
 
-# --- COG ---
 class AchievementsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -136,7 +130,6 @@ class AchievementsCog(commands.Cog):
             print("AVISO: Conexão com o banco de dados não encontrada no objeto 'bot'.")
             
     async def give_achievement(self, user_id: int, achievement_key: str):
-        """Função central para registrar a conquista no banco de dados."""
         if self.col is None:
             return
 
@@ -161,7 +154,6 @@ class AchievementsCog(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
-        # Adicione o AWAIT aqui no início
         user_doc = await self.col.find_one_and_update(
             {"_id": message.author.id},
             {"$inc": {"message_count": 1}},
