@@ -61,11 +61,12 @@ class ChallengeConfigView(ui.LayoutView):
 
     def build_interface(self):
         self.clear_items()
-        
-        color = discord.Color.green() if self.config["enabled"] else discord.Color.red()
+
+        enabled = self.config.get("enabled", False)
+        color = discord.Color.green() if enabled else discord.Color.red()
         container = ui.Container(accent_color=color)
         
-        status_str = "✅ **Ativado**" if self.config["enabled"] else "❌ **Desativado**"
+        status_str = "✅ **Ativado**" if enabled else "❌ **Desativado**"
         canal_obj = self.guild.get_channel(self.config["channel_id"])
         canal_str = canal_obj.mention if canal_obj else "`Canal Atual`"
         
@@ -76,11 +77,10 @@ class ChallengeConfigView(ui.LayoutView):
             f"Canal: {canal_str}"
         ))
         
-        row_buttons = ui.ActionRow()
-        
+        row_btns = ui.ActionRow()
         btn_toggle = ui.Button(
-            label="Desativar" if self.config["enabled"] else "Ativar",
-            style=discord.ButtonStyle.danger if self.config["enabled"] else discord.ButtonStyle.success,
+            label="Desativar" if enabled else "Ativar",
+            style=discord.ButtonStyle.danger if enabled else discord.ButtonStyle.success,
             emoji="🔌"
         )
         btn_toggle.callback = self.toggle_enabled
@@ -88,11 +88,11 @@ class ChallengeConfigView(ui.LayoutView):
         btn_int = ui.Button(label="Intervalo", style=discord.ButtonStyle.secondary, emoji="🔢")
         btn_int.callback = self.open_interval_modal
         
-        row_buttons.add_item(btn_toggle)
-        row_buttons.add_item(btn_int)
-        
-        container.add_item(row_buttons)
+        row_btns.add_item(btn_toggle)
+        row_btns.add_item(btn_int)
+        container.add_item(row_btns)
 
+        row_select = ui.ActionRow()
         select_canal = ui.ChannelSelect(
             placeholder="Selecione o canal para os desafios...",
             channel_types=[discord.ChannelType.text],
@@ -100,9 +100,10 @@ class ChallengeConfigView(ui.LayoutView):
             max_values=1
         )
         select_canal.callback = self.update_channel
+        row_select.add_item(select_canal)
 
         self.add_item(container)
-        self.add_item(select_canal)
+        self.add_item(row_select)
 
     async def update_channel(self, interaction: discord.Interaction):
         canal_id = interaction.data['values'][0]
