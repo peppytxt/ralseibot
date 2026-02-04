@@ -106,15 +106,15 @@ class ChallengeConfigView(ui.LayoutView):
         self.add_item(container)
 
     async def update_channel(self, interaction: discord.Interaction):
-        canal = interaction.data['values'][0]
-        self.config["channel_id"] = int(canal)
+        canal_id = interaction.data['values'][0]
+        self.config["channel_id"] = int(canal_id)
         
         await self.cog.col.update_one(
             {"_id": self.guild.id},
-            {"$set": {"challenge_channel_id": int(canal)}},
+            {"$set": {"challenge_channel_id": int(canal_id)}},
             upsert=True
         )
-        
+
         self.build_interface()
         await interaction.response.edit_message(view=self)
 
