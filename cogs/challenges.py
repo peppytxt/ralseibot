@@ -48,68 +48,92 @@ class IntervalModal(ui.Modal, title="Configurar Intervalo"):
         except ValueError:
             await interaction.response.send_message("❌ Digite apenas números!", ephemeral=True)
 
-class ChallengeConfigView(ui.View):
+class ChallengeConfigView(ui.LayoutView):
     def __init__(self, cog, guild, config):
         super().__init__(timeout=300)
         self.cog = cog
         self.guild = guild
-        self.config = config or {
-            "challenge_enabled": False, 
-            "challenge_interval": 100
+        # Garante que as chaves existam
+        self.config = {
+            "enabled": config.get("challenge_enabled", False),
+            "interval": config.get("challenge_interval", 100),
+            "channel_id": config.get("challenge_channel_id", None)
         }
 
     def build_interface(self):
         self.clear_items()
         
-        enabled = self.config.get("challenge_enabled", False)
-        interval = self.config.get("challenge_interval", 100)
+        # Container Principal
+        color = discord.Color.green() if self.config["enabled"] else discord.Color.red()
+        container = ui.Container(accent_color=color)
         
-        # Criamos um Embed para o status
-        embed = discord.Embed(
-            title="⚙️ Painel de Controle: Desafios",
-            description="Configure a frequência e o estado dos desafios automáticos.",
-            color=discord.Color.green() if enabled else discord.Color.red()
-        )
-        embed.add_field(name="Status", value="✅ Ativado" if enabled else "❌ Desativado", inline=True)
-        embed.add_field(name="Intervalo", value=f"`{interval}` mensagens", inline=True)
-        embed.set_footer(text=f"Servidor: {self.guild.name}")
+        container.add_item(ui.TextDisplay("## ⚙️ Painel de Desafios", style=ui.TextStyle.heading))
+        
+        status_str = "✅ **Ativado**" if self.config["enabled"] else "❌ **Desativado**"
+        canal_obj = self.guild.get_channel(self.config["channel_id"])
+        canal_str = canal_obj.mention if canal_obj else "`Não definido (usa o canal atual)`"
+        
+        container.add_item(ui.TextDisplay(
+            f"Configure onde e com que frequência os desafios aparecem.\n\n"
+            f"**Status:** {status_str}\n"
+            f"**Intervalo:** `{self.config['interval']}` mensagens\n"
+            f"**Canal:** {canal_str}"
+        ))
 
-        # Botão Ligar/Desligar
+        # Dropdown de Canais (Select V2)
+        # Filtramos apenas canais de texto
+        select_canal = ui.ChannelSelect(
+            placeholder="Escolha o canal dos desafios...",
+            channel_types=[discord.ChannelType.text],
+            min_values=1,
+            max_values=1
+        )
+        select_canal.callback = self.update_channel
+        container.add_item(select_canal)
+
+        # Linha de Ação para Botões
+        row = ui.ActionRow()
+        
         btn_toggle = ui.Button(
-            label="Desligar" if enabled else "Ligar",
-            style=discord.ButtonStyle.danger if enabled else discord.ButtonStyle.success,
+            label="Desativar" if self.config["enabled"] else "Ativar",
+            style=discord.ButtonStyle.danger if self.config["enabled"] else discord.ButtonStyle.success,
             emoji="🔌"
         )
         btn_toggle.callback = self.toggle_enabled
-        self.add_item(btn_toggle)
-
-        # Botão Intervalo
-        btn_int = ui.Button(
-            label="Ajustar Mensagens", 
-            style=discord.ButtonStyle.secondary, 
-            emoji="🔢"
-        )
-        btn_int.callback = self.open_interval_modal
-        self.add_item(btn_int)
-
-        return embed
-
-    async def save_and_refresh(self, interaction: discord.Interaction):
-        # Salva no MongoDB
-        if self.cog.col is not None:
-            await self.cog.col.update_one(
-                {"_id": self.guild.id},
-                {"$set": self.config},
-                upsert=True
-            )
         
-        # Gera o novo embed e edita a mensagem
-        embed = self.build_interface()
-        await interaction.response.edit_message(embed=embed, view=self)
+        btn_int = ui.Button(label="Ajustar Intervalo", style=discord.ButtonStyle.secondary, emoji="🔢")
+        btn_int.callback = self.open_interval_modal
+        
+        row.add_item(btn_toggle)
+        row.add_item(btn_int)
+        
+        container.add_item(row)
+        self.add_item(container)
+
+    async def update_channel(self, interaction: discord.Interaction):
+        canal = interaction.data['values'][0] # ID do canal selecionado
+        self.config["channel_id"] = int(canal)
+        
+        await self.cog.col.update_one(
+            {"_id": self.guild.id},
+            {"$set": {"challenge_channel_id": int(canal)}},
+            upsert=True
+        )
+        
+        self.build_interface()
+        await interaction.response.edit_message(view=self)
 
     async def toggle_enabled(self, interaction: discord.Interaction):
-        self.config["challenge_enabled"] = not self.config.get("challenge_enabled", False)
-        await self.save_and_refresh(interaction)
+        self.config["enabled"] = not self.config["enabled"]
+        
+        await self.cog.col.update_one(
+            {"_id": self.guild.id},
+            {"$set": {"challenge_enabled": self.config["enabled"]}},
+            upsert=True
+        )
+        
+        self.build_interface()
+        await interaction.response.edit_message(view=self)
 
     async def open_interval_modal(self, interaction: discord.Interaction):
         await interaction.response.send_modal(IntervalModal(self))
@@ -148,15 +172,12 @@ class Challenges(commands.Cog):
     )
     @app_commands.default_permissions(administrator=True)
     async def challengeconfig(self, interaction: discord.Interaction):
-        if self.col is None:
-            return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
-
         config = await self.col.find_one({"_id": interaction.guild.id}) or {}
         
         view = ChallengeConfigView(self, interaction.guild, config)
-        embed = view.build_interface()
-        
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        view.build_interface()
+
+        await interaction.response.send_message(view=view, ephemeral=True)
 
     @app_commands.command(name="challengerank", description="Ranking de desafios")
     async def challenge_rank(self, interaction: discord.Interaction):
