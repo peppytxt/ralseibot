@@ -25,12 +25,12 @@ CTRLV_MESSAGES = [
     "🚫 Ctrl+C + Ctrl+V não aumenta QI, só digita 😉",
 ]
 
-class IntervalModal(ui.Modal, title="Configurar Intervalo"):
-    interval = ui.TextInput(
-        label="Quantidade de Mensagens",
-        placeholder="Ex: 50, 100, 200...",
+class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
+    intervalo = ui.TextInput(
+        label="Número de mensagens",
+        placeholder="Ex: 100",
         min_length=1,
-        max_length=5
+        max_length=4
     )
 
     def __init__(self, view):
@@ -39,14 +39,18 @@ class IntervalModal(ui.Modal, title="Configurar Intervalo"):
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
-            val = int(self.interval.value)
-            if val < MIN_MESSAGES_INTERVAL:
-                return await interaction.response.send_message(f"❌ Mínimo de {MIN_MESSAGES_INTERVAL} mensagens.", ephemeral=True)
-            
-            self.view.config["challenge_interval"] = val
+            valor = int(self.intervalo.value)
+            if valor < 1: raise ValueError
+
+            self.view.config["interval"] = valor
+
             await self.view.save_and_refresh(interaction)
+            
         except ValueError:
-            await interaction.response.send_message("❌ Digite apenas números!", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ Por favor, insira um número válido maior que 0.", 
+                ephemeral=True
+            )
 
 class ChallengeConfigView(ui.LayoutView):
     def __init__(self, cog, guild, config):
@@ -129,6 +133,20 @@ class ChallengeConfigView(ui.LayoutView):
         
         self.build_interface()
         await interaction.response.edit_message(view=self)
+
+    async def save_and_refresh(self, interaction: discord.Interaction):
+        await self.cog.col.update_one(
+            {"_id": self.guild.id},
+            {"$set": {"challenge_interval": self.config["interval"]}},
+            upsert=True
+        )
+
+        self.build_interface()
+        
+        if interaction.response.is_done():
+            await interaction.edit_original_response(view=self)
+        else:
+            await interaction.response.edit_message(view=self)
 
     async def open_interval_modal(self, interaction: discord.Interaction):
         await interaction.response.send_modal(IntervalModal(self))
