@@ -161,14 +161,10 @@ class Challenges(commands.Cog):
 
     # ------------- CONFIG COMMAND ------------------
 
-    @app_commands.command(
-        name="challengeconfig",
-        description="Painel visual de configuração dos desafios"
-    )
+    @app_commands.command(name="challengeconfig", description="Configura os desafios")
     @app_commands.default_permissions(administrator=True)
     async def challengeconfig(self, interaction: discord.Interaction):
         config = await self.col.find_one({"_id": interaction.guild.id}) or {}
-        
         view = ChallengeConfigView(self, interaction.guild, config)
         view.build_interface()
 
