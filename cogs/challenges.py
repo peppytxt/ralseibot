@@ -412,33 +412,34 @@ class Challenges(commands.Cog):
             if challenge.get("solved"):
                 return
 
+            # A correção está aqui: tudo o que é premiação DEVE estar dentro deste IF
             if normalize(message.content) == normalize(challenge["answer"]):
                 challenge["solved"] = True
 
-            reward = random.randint(REWARD_MIN, REWARD_MAX)
-            response_time = time.time() - challenge["spawned_at"]
+                reward = random.randint(REWARD_MIN, REWARD_MAX)
+                response_time = time.time() - challenge["spawned_at"]
 
-            await message.add_reaction("✅")
+                await message.add_reaction("✅")
 
-            await self.col.update_one(
-                {"_id": message.author.id},
-                {"$inc": {"challenge_wins": 1, "challenge_earnings": reward}},
-                upsert=True
-            )
+                await self.col.update_one(
+                    {"_id": message.author.id},
+                    {"$inc": {"challenge_wins": 1, "challenge_earnings": reward}},
+                    upsert=True
+                )
 
-            await message.channel.send(
-                f"🎉 {message.author.mention} acertou! "
-                f"Você ganhou **{reward} ralcoins!**"
-            )
+                await message.channel.send(
+                    f"🎉 {message.author.mention} acertou! "
+                    f"Você ganhou **{reward} ralcoins!**"
+                )
 
-            self.active_challenges.pop(guild_id, None)
-            self.warned_users.clear()
+                self.active_challenges.pop(guild_id, None)
+                self.warned_users.clear()
 
-            asyncio.create_task(self.send_speed_message(message.channel, message.author, response_time))
+                asyncio.create_task(self.send_speed_message(message.channel, message.author, response_time))
 
-            achievements_cog = self.bot.get_cog("AchievementsCog") 
-            if achievements_cog:
-                await achievements_cog.give_achievement(message.author.id, "challenge_first_win")
+                achievements_cog = self.bot.get_cog("AchievementsCog") 
+                if achievements_cog:
+                    await achievements_cog.give_achievement(message.author.id, "challenge_first_win")
 
     # ------------- GENERATE CHALLENGE -------------
 
