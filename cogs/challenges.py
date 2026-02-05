@@ -40,15 +40,19 @@ class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
     async def on_submit(self, interaction: discord.Interaction):
         try:
             valor = int(self.intervalo.value)
-            if valor < 1: raise ValueError
-
+            
+            if valor < 50:
+                return await interaction.response.send_message(
+                    "⚠️ O intervalo mínimo permitido é de **50 mensagens** para evitar spam.", 
+                    ephemeral=True
+                )
+            
             self.view.config["interval"] = valor
-
             await self.view.save_and_refresh(interaction)
             
         except ValueError:
             await interaction.response.send_message(
-                "❌ Por favor, insira um número válido maior que 0.", 
+                "❌ Digite apenas números inteiros válidos.", 
                 ephemeral=True
             )
 
@@ -180,8 +184,14 @@ class Challenges(commands.Cog):
     # ------------- CONFIG COMMAND ------------------
 
     @app_commands.command(name="challengeconfig", description="Configura os desafios")
-    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def challengeconfig(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message(
+                "❌ Apenas administradores podem usar este painel!", 
+                ephemeral=True
+            )
+
         config = await self.col.find_one({"_id": interaction.guild.id}) or {}
         view = ChallengeConfigView(self, interaction.guild, config)
         view.build_interface()
