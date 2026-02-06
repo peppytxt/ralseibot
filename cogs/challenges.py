@@ -452,7 +452,6 @@ class Challenges(commands.Cog):
             if challenge.get("solved"):
                 return
 
-            # A correção está aqui: tudo o que é premiação DEVE estar dentro deste IF
             if normalize(message.content) == normalize(challenge["answer"]):
                 challenge["solved"] = True
 
