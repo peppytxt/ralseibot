@@ -572,7 +572,7 @@ class Economy(commands.Cog):
             {"$inc": {"coins": -quantidade}}
         )
 
-        result = os.urandom(["cara", "coroa"])
+        result = random.choice(["cara", "coroa"])
 
         if result != side.value:
             self.col.update_one(
