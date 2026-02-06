@@ -92,6 +92,7 @@ class Admin(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="embedpanel", description="Abre o painel de criação de embeds (Admin)")
+    @app_commands.default_permissions(administrator=True)
     @app_commands.checks.has_permissions(administrator=True)
     async def embed_panel(self, interaction: discord.Interaction):
         if not interaction.user.guild_permissions.administrator:

@@ -463,7 +463,13 @@ class Challenges(commands.Cog):
 
                 await self.col.update_one(
                     {"_id": message.author.id},
-                    {"$inc": {"challenge_wins": 1, "challenge_earnings": reward}},
+                    {
+                        "$inc": {
+                            "challenge_wins": 1, 
+                            "challenge_earnings": reward,
+                            "coins": reward
+                        }
+                    },
                     upsert=True
                 )
 
