@@ -77,7 +77,7 @@ class CoinflipView(discord.ui.View):
         # Usuário recebe
         self.cog.col.update_one(
             {"_id": self.author_id},
-            {"$inc": {"coins": +self.amount}}
+            {"$inc": {"coins": 2*self.amount}}
         )
 
         embed = discord.Embed(
