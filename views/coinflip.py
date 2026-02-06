@@ -37,7 +37,6 @@ class CoinflipView(discord.ui.View):
         self.rounds += 1
 
         if random.random() < WIN_CHANCE:
-            # Usuário ganhou → valor dobra
             self.amount *= 2
 
             embed = discord.Embed(
@@ -52,7 +51,6 @@ class CoinflipView(discord.ui.View):
             await interaction.response.send_message(embed=embed)
 
         else:
-            # Usuário perdeu → bot recebe o valor atual
             self.cog.col.update_one(
                 {"_id": BOT_ECONOMY_ID},
                 {"$inc": {"coins": self.amount}}
@@ -71,7 +69,6 @@ class CoinflipView(discord.ui.View):
     @discord.ui.button(label="🛑 Parar", style=discord.ButtonStyle.danger)
     async def stop_bet(self, interaction: discord.Interaction, button: discord.ui.Button):
 
-        # Bot paga o valor final
         self.cog.col.update_one(
             {"_id": BOT_ECONOMY_ID},
             {"$inc": {"coins": -self.amount}}

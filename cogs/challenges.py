@@ -432,7 +432,6 @@ class Challenges(commands.Cog):
         if guild_id not in self.locks:
             self.locks[guild_id] = asyncio.Lock()
 
-        # anti ctrl+c ctrl+v
         if "\u200b" in message.content:
             key = (guild_id, message.author.id)
 
@@ -442,7 +441,6 @@ class Challenges(commands.Cog):
                 warning = random.choice(CTRLV_MESSAGES)
                 msg = await message.reply(warning, mention_author=False)
 
-                # apagar depois de 7 segundos
                 await asyncio.sleep(7)
                 await msg.delete()
 
@@ -487,7 +485,7 @@ class Challenges(commands.Cog):
                     await achievements_cog.give_achievement(message.author.id, "challenge_first_win")
 
     # ------------- GENERATE CHALLENGE -------------
-    
+
     def generate_challenge(self):
         typ = random.choice(["math", "rewrite"])
 
