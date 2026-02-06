@@ -42,7 +42,6 @@ class ChannelSelectView(ui.View):
         await self.parent_view.refresh_data_and_ui(interaction)
         await interaction.response.edit_message(content=f"✅ Canal definido para: {channel.mention}", view=None)
 
-# --- VIEW PRINCIPAL (DASHBOARD V2) ---
 class WelcomeConfigView(ui.LayoutView):
     def __init__(self, cog, guild_id):
         super().__init__(timeout=None)

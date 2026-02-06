@@ -293,13 +293,21 @@ class Birthday(commands.Cog):
     # -------------------------
     @birthday.command(name="remove", description="Remover seu aniversário")
     async def birthday_remove(self, interaction: discord.Interaction):
+        user_data = self.col.find_one({"_id": interaction.user.id})
+
+        if not user_data or "birthday" not in user_data:
+            return await interaction.response.send_message(
+                "❌ Você ainda não tem um aniversário definido para remover!", 
+                ephemeral=True
+            )
+        
         self.col.update_one(
             {"_id": interaction.user.id},
             {"$unset": {"birthday": ""}}
         )
 
         await interaction.response.send_message(
-            "🗑️ Seu aniversário foi removido."
+            "🗑️ Seu aniversário foi removido com sucesso."
         )
 
     # -------------------------
