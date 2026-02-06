@@ -77,8 +77,10 @@ class CoinflipView(discord.ui.View):
         # Usuário recebe
         self.cog.col.update_one(
             {"_id": self.author_id},
-            {"$inc": {"coins": 2*self.amount}}
+            {"$inc": {"coins": self.amount}}
         )
+
+        print(f"{interaction.user} ganhou {self.amount} ralcoins no coinflip!")
 
         embed = discord.Embed(
             title="🏁 Aposta finalizada",

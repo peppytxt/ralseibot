@@ -2,6 +2,7 @@ import discord
 from discord import app_commands, ui
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
+import os
 import random
 import time
 from cogs.xp import RankView
@@ -571,7 +572,7 @@ class Economy(commands.Cog):
             {"$inc": {"coins": -quantidade}}
         )
 
-        result = random.choice(["cara", "coroa"])
+        result = os.urandom(["cara", "coroa"])
 
         if result != side.value:
             self.col.update_one(
