@@ -594,7 +594,7 @@ class Economy(commands.Cog):
             title="🪙 Coinflip - Vitória!",
             description=(
                 f"🪙 Caiu **{result}**\n\n"
-                f"💰 Você ganhou **{quantidade*2} ralcoins**!\n"
+                f"💰 Você ganhou **+{quantidade} ralcoins**!\n"
                 f"Quer dobrar ou parar?"
             ),
             color=discord.Color.green()
