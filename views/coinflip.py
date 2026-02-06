@@ -74,10 +74,12 @@ class CoinflipView(discord.ui.View):
             {"$inc": {"coins": -self.amount}}
         )
 
+        print(f"{interaction.user} ganhou {self.amount} ralcoins no coinflip! ANTES DO USUÁRIO RECEBER")
+
         # Usuário recebe
         self.cog.col.update_one(
             {"_id": self.author_id},
-            {"$inc": {"coins": self.amount}}
+            {"$inc": {"coins": +self.amount}}
         )
 
         print(f"{interaction.user} ganhou {self.amount} ralcoins no coinflip!")
