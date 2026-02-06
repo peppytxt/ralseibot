@@ -595,7 +595,7 @@ class Economy(commands.Cog):
             title="🪙 Coinflip - Vitória!",
             description=(
                 f"🪙 Caiu **{result}**\n\n"
-                f"💰 Você ganhou **+{quantidade} ralcoins**!\n"
+                f"💰 Você ganhou **+{quantidade*2} ralcoins**!\n"
                 f"Quer dobrar ou parar?"
             ),
             color=discord.Color.green()
@@ -604,7 +604,7 @@ class Economy(commands.Cog):
         view = CoinflipView(
             self,
             interaction,
-            amount=quantidade
+            amount=quantidade*2
         )
 
         await interaction.response.send_message(
