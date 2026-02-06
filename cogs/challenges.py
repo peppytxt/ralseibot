@@ -487,22 +487,7 @@ class Challenges(commands.Cog):
                     await achievements_cog.give_achievement(message.author.id, "challenge_first_win")
 
     # ------------- GENERATE CHALLENGE -------------
-
-    @app_commands.command(name="sync_coins", description="Sincroniza ganhos antigos (Apenas Dono)")
-    async def sync_coins(self, interaction: discord.Interaction):
-        if interaction.user.id != 274645285634834434:
-            return await interaction.response.send_message("❌ Comando restrito.", ephemeral=True)
-
-        await interaction.response.defer(ephemeral=True)
-        result = await self.col.update_many(
-            {"challenge_earnings": {"$exists": True, "$gt": 0}},
-            [{"$set": {"coins": {"$add": [{"$ifNull": ["$coins", 0]}, "$challenge_earnings"]}}}]
-        )
-
-        await interaction.followup.send(
-            f"✅ Sincronização concluída! {result.modified_count} usuários foram atualizados."
-        )
-
+    
     def generate_challenge(self):
         typ = random.choice(["math", "rewrite"])
 
