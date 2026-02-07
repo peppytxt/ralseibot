@@ -24,7 +24,7 @@ class CoinflipView(discord.ui.View):
             return False
         return True
     
-    async def end_game(self, interaction, win_amount):
+    def end_game(self, interaction, win_amount):
         self.cog.col.update_one(
             {"_id": self.author_id},
             {"$inc": {"coins": win_amount}}
@@ -33,7 +33,7 @@ class CoinflipView(discord.ui.View):
 
     async def on_timeout(self):
         win_total = self.amount  * 2
-        await self.cog.col.update_one({"_id": self.author_id},{"$inc": {"coins": win_total}})
+        self.cog.col.update_one({"_id": self.author_id},{"$inc": {"coins": win_total}})
 
         if self.message:
             try:
@@ -114,8 +114,3 @@ class CoinflipView(discord.ui.View):
 
         await interaction.response.send_message(embed=embed)
         self.stop()
-
-
-    async def on_timeout(self):
-        if self.message:
-            await self.message.edit(view=None)
