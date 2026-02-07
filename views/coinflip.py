@@ -91,7 +91,8 @@ class CoinflipView(discord.ui.View):
 
     @discord.ui.button(label="🛑 Parar", style=discord.ButtonStyle.danger)
     async def stop_bet(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.author_id: return
+        if interaction.user.id != self.author_id: 
+            return await interaction.response.send_message("Não é seu jogo! Vaza daqui OwO", ephemeral=True)
 
         self.cog.col.update_one(
             {"_id": BOT_ECONOMY_ID},
@@ -101,7 +102,7 @@ class CoinflipView(discord.ui.View):
         print(f"{interaction.user} ganhou {self.amount} ralcoins no coinflip! ANTES DO USUÁRIO RECEBER")
 
         win_total = self.amount * 2
-        await self.end_game(interaction, win_total)
+        self.end_game(interaction, win_total)
         
         print(f"{interaction.user} ganhou {win_total} ralcoins no coinflip!")
 
