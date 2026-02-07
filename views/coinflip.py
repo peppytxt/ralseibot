@@ -57,6 +57,10 @@ class CoinflipView(discord.ui.View):
         bot_data = self.cog.col.find_one({"_id": BOT_ECONOMY_ID}) or {}
         if bot_data.get("coins", 0) < current_pot:
             return await interaction.response.send_message("🏦 O bot não tem saldo para bancar a próxima rodada.")
+        
+        user_data = self.cog.col.find_one({"_id": self.author_id}) or {}
+        if user_data.get("coins", 0) < current_pot:
+            return await interaction.response.send_message("❌ Você não tem ralcoins suficientes para dobrar.")
 
         result = random.choice(["cara", "coroa"])
 
