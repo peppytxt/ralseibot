@@ -58,10 +58,10 @@ class CoinflipView(discord.ui.View):
             return await interaction.response.send_message("🏦 O bot não tem saldo para bancar a próxima rodada.")
 
         result = random.choice(["cara", "coroa"])
-        self.rounds += 1
 
         if result == self.side:
             self.amount *= 2
+            self.rounds += 1
 
             embed = discord.Embed(
                 title="🪙 Coinflip - Vitória!",
@@ -82,7 +82,7 @@ class CoinflipView(discord.ui.View):
 
             embed = discord.Embed(
                 title="💥 Coinflip - Derrota!",
-                description=f"Você perdeu **{self.amount*2} ralcoins** 😢",
+                description=f"Você perdeu **{2*self.amount} ralcoins** 😢",
                 color=discord.Color.red()
             )
 
