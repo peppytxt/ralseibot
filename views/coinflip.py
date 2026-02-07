@@ -80,6 +80,11 @@ class CoinflipView(discord.ui.View):
                 {"$inc": {"coins": self.amount}} 
             )
 
+            self.cog.col.update_one(
+                {"_id": self.author_id},
+                {"$inc": {"coins": -self.amount}}
+            )
+
             embed = discord.Embed(
                 title="💥 Coinflip - Derrota!",
                 description=f"Você perdeu **{2*self.amount} ralcoins** 😢",
