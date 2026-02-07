@@ -32,7 +32,7 @@ class CoinflipView(discord.ui.View):
         self.stop()
 
     async def on_timeout(self):
-        win_total = self.amount  * 2
+        win_total = self.amount * 2
         self.cog.col.update_one({"_id": self.author_id},{"$inc": {"coins": win_total}})
 
         if self.message:
@@ -51,9 +51,10 @@ class CoinflipView(discord.ui.View):
 
     @discord.ui.button(label="🔁 Dobrar", style=discord.ButtonStyle.success)
     async def double(self, interaction: discord.Interaction, button: discord.ui.Button):
+        current_pot = self.amount * 2
 
         bot_data = self.cog.col.find_one({"_id": BOT_ECONOMY_ID}) or {}
-        if bot_data.get("coins", 0) < self.amount * 2:
+        if bot_data.get("coins", 0) < current_pot:
             return await interaction.response.send_message("🏦 O bot não tem saldo para bancar a próxima rodada.")
 
         result = random.choice(["cara", "coroa"])
@@ -76,7 +77,7 @@ class CoinflipView(discord.ui.View):
         else:
             self.cog.col.update_one(
                 {"_id": BOT_ECONOMY_ID},
-                {"$inc": {"coins": self.amount}}
+                {"$inc": {"coins": self.amount}} 
             )
 
             embed = discord.Embed(
@@ -91,6 +92,7 @@ class CoinflipView(discord.ui.View):
 
     @discord.ui.button(label="🛑 Parar", style=discord.ButtonStyle.danger)
     async def stop_bet(self, interaction: discord.Interaction, button: discord.ui.Button):
+        win_total = self.amount * 2
         if interaction.user.id != self.author_id: 
             return await interaction.response.send_message("Não é seu jogo! Vaza daqui OwO", ephemeral=True)
 
@@ -100,8 +102,7 @@ class CoinflipView(discord.ui.View):
         )
 
         print(f"{interaction.user} ganhou {self.amount} ralcoins no coinflip! ANTES DO USUÁRIO RECEBER")
-
-        win_total = self.amount * 2
+        
         self.end_game(interaction, win_total)
         
         print(f"{interaction.user} ganhou {win_total} ralcoins no coinflip!")
