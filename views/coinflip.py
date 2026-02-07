@@ -82,7 +82,7 @@ class CoinflipView(discord.ui.View):
 
             embed = discord.Embed(
                 title="💥 Coinflip - Derrota!",
-                description=f"Você perdeu **{self.amount} ralcoins** 😢",
+                description=f"Você perdeu **{self.amount*2} ralcoins** 😢",
                 color=discord.Color.red()
             )
 
@@ -102,7 +102,7 @@ class CoinflipView(discord.ui.View):
         )
 
         print(f"{interaction.user} ganhou {self.amount} ralcoins no coinflip! ANTES DO USUÁRIO RECEBER")
-        
+
         self.end_game(interaction, win_total)
         
         print(f"{interaction.user} ganhou {win_total} ralcoins no coinflip!")
