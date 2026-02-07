@@ -25,7 +25,7 @@ class CoinflipView(discord.ui.View):
         return True
     
     async def end_game(self, interaction, win_amount):
-        await self.cog.col.update_one(
+        self.cog.col.update_one(
             {"_id": self.author_id},
             {"$inc": {"coins": win_amount}}
         )
