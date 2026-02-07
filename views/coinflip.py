@@ -6,12 +6,12 @@ MAX_DOUBLES = 5
 BOT_ECONOMY_ID = 0
 
 class CoinflipView(discord.ui.View):
-    def __init__(self, cog, interaction, amount, side):
+    def __init__(self, cog, interaction, amount, side, valor_inicial):
         super().__init__(timeout=30)
         self.cog = cog
         self.author_id = interaction.user.id
         self.amount = amount
-        self.valor_inicial = amount
+        self.valor_inicial = valor_inicial
         self.side = side
         self.rounds = 0
         self.message = None
