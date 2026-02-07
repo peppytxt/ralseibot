@@ -492,9 +492,7 @@ class Economy(commands.Cog):
 
         if sender_coins < quantidade:
             return await interaction.response.send_message(
-                "❌ Você não tem ralcoins suficientes.",
-                ephemeral=True
-            )
+                "❌ Você não tem ralcoins suficientes para essa transação.")
 
         embed = discord.Embed(
             title="⚠️ Confirmação de pagamento",
@@ -525,25 +523,15 @@ class Economy(commands.Cog):
 
     
     @bet.command(name="coinflip", description="Aposte no cara ou coroa")
-    @app_commands.describe(
-        side="Escolha cara ou coroa",
-        quantidade="Valor da aposta"
-    )
-    @app_commands.choices(
-        side=[
-            app_commands.Choice(name="Cara", value="cara"),
-            app_commands.Choice(name="Coroa", value="coroa")
-        ]
-    )
-    async def bet_coinflip(
-        self,
-        interaction: discord.Interaction,
-        side: app_commands.Choice[str],
-        quantidade: app_commands.Range[int, 100, 100_000]
-    ):
+    @app_commands.describe(side="Escolha cara ou coroa", quantidade="Valor da aposta")
+    @app_commands.choices(side=[app_commands.Choice(name="Cara", value="cara"), app_commands.Choice(name="Coroa", value="coroa")])
+    async def bet_coinflip(self, interaction: discord.Interaction, side: app_commands.Choice[str], quantidade: app_commands.Range[int, 100, 100_000]):
+        user_id = interaction.user.id
+        data = self.col.find_one({"_id": user_id}) or {}
+
         if quantidade < 100:
             return await interaction.response.send_message(
-                "❌ A aposta mínima é de **100 ralcoins**.",
+                "❌ A aposta mínima é de **100 ralcoins** :3.",
                 ephemeral=True
             )
 
@@ -552,25 +540,12 @@ class Economy(commands.Cog):
 
         if bot_coins < quantidade:
             return await interaction.response.send_message(
-                "🏦 O bot não tem saldo suficiente para bancar essa aposta.",
-                ephemeral=True
-            )
+                "🏦 O bot não tem saldo suficiente para bancar essa aposta.", ephemeral=True)
 
-        user_id = interaction.user.id
+        if data.get("coins", 0) < quantidade:
+            return await interaction.response.send_message("❌ Você não tem ralcoins suficientes.")
 
-        data = self.col.find_one({"_id": user_id}) or {}
-        coins = data.get("coins", 0)
-
-        if coins < quantidade:
-            return await interaction.response.send_message(
-                "❌ Você não tem ralcoins suficientes.",
-                ephemeral=True
-            )
-
-        self.col.update_one(
-            {"_id": user_id},
-            {"$inc": {"coins": -quantidade}}
-        )
+        self.col.update_one({"_id": user_id}, {"$inc": {"coins": -quantidade}})
 
         result = random.choice(["cara", "coroa"])
 
@@ -591,6 +566,8 @@ class Economy(commands.Cog):
 
             return await interaction.response.send_message(embed=embed)
 
+        view = CoinflipView(self, interaction, amount=quantidade, side=side.value)
+
         embed = discord.Embed(
             title="🪙 Coinflip - Vitória!",
             description=(
@@ -599,12 +576,6 @@ class Economy(commands.Cog):
                 f"Quer dobrar ou parar?"
             ),
             color=discord.Color.green()
-        )
-
-        view = CoinflipView(
-            self,
-            interaction,
-            amount=quantidade*2
         )
 
         await interaction.response.send_message(
