@@ -76,7 +76,7 @@ class CoinflipView(discord.ui.View):
 
         else:
             print(self.amount)
-            self.amount *= 2
+            self.amount *= 4
             self.cog.col.update_one(
                 {"_id": BOT_ECONOMY_ID},
                 {"$inc": {"coins": self.amount}} 
@@ -89,7 +89,7 @@ class CoinflipView(discord.ui.View):
 
             embed = discord.Embed(
                 title="💥 Coinflip - Derrota!",
-                description=f"Você perdeu **{2*self.amount} ralcoins** 😢",
+                description=f"Você perdeu **{self.amount} ralcoins** 😢",
                 color=discord.Color.red()
             )
 
