@@ -75,7 +75,7 @@ class CoinflipView(discord.ui.View):
             await interaction.response.send_message(embed=embed)
 
         else:
-            self.amount *= 2
+            self.amount *= 4
             self.cog.col.update_one(
                 {"_id": BOT_ECONOMY_ID},
                 {"$inc": {"coins": self.amount}} 
