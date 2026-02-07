@@ -527,6 +527,7 @@ class Economy(commands.Cog):
     @app_commands.choices(side=[app_commands.Choice(name="Cara", value="cara"), app_commands.Choice(name="Coroa", value="coroa")])
     async def bet_coinflip(self, interaction: discord.Interaction, side: app_commands.Choice[str], quantidade: app_commands.Range[int, 100, 100_000]):
         user_id = interaction.user.id
+        valor_inicial = quantidade
         data = self.col.find_one({"_id": user_id}) or {}
 
         if quantidade < 100:
@@ -566,7 +567,7 @@ class Economy(commands.Cog):
 
             return await interaction.response.send_message(embed=embed)
 
-        view = CoinflipView(self, interaction, amount=quantidade, side=side.value)
+        view = CoinflipView(self, interaction, amount=quantidade, side=side.value, valor_inicial=valor_inicial)
 
         embed = discord.Embed(
             title="🪙 Coinflip - Vitória!",

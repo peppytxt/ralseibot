@@ -11,6 +11,7 @@ class CoinflipView(discord.ui.View):
         self.cog = cog
         self.author_id = interaction.user.id
         self.amount = amount
+        self.valor_inicial = amount
         self.side = side
         self.rounds = 0
         self.message = None
@@ -76,7 +77,7 @@ class CoinflipView(discord.ui.View):
 
         else:
             print(self.amount)
-            self.amount *= 4
+            self.amount = self.amount * 4 - self.valor_inicial
             self.cog.col.update_one(
                 {"_id": BOT_ECONOMY_ID},
                 {"$inc": {"coins": self.amount}} 
