@@ -41,11 +41,12 @@ class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
         try:
             valor = int(self.intervalo.value)
             
-            if valor < 50:
-                return await interaction.response.send_message(
-                    "⚠️ O intervalo mínimo permitido é de **50 mensagens** para evitar spam.", 
-                    ephemeral=True
-                )
+
+#            if valor < 50:
+#                return await interaction.response.send_message(
+#                     "⚠️ O intervalo mínimo permitido é de **50 mensagens**.", 
+#                     ephemeral=True
+#                )
             
             self.view.config["interval"] = valor
             await self.view.save_and_refresh(interaction)
@@ -179,7 +180,7 @@ class Challenges(commands.Cog):
     @property
     def col(self):
         database = getattr(self.bot, "db", None)
-        return database.users if database is not None else None
+        return database.xp if database is not None else None
 
     # ------------- CONFIG COMMAND ------------------
 
