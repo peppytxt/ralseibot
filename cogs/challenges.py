@@ -520,20 +520,7 @@ class Challenges(commands.Cog):
 
         elif typ == "rewrite":
             phrases = [
-                "O cavaleiro foi até a lua em seu cavalo",
-                "A raposa marrom rápida pula sobre o cão preguiçoso",
-                "Um rato roeu a roupa do rei de roma",
-                "Dia de chuva é dia de poesia",
-                "Ralsei é muito fofu",
-                "Dois passos para frente, três passos para trás!",
-                "Sua mão é fria como a neve e a minha queima como fogo",
-                "Ralsei é meu sonho de consumo",
-                "Ralsei adora fazer bolos",
-                "Eu prefiro morrer do que perder a vida",
-                "Correndo sempre da saudade, por isso que eu sempre me movo",
-                "Bebam água, faz bem a saúde",
                 "Fiquei envergonhado de mim mesmo quando percebi que a vida era uma festa à fantasia, e eu participei com meu rosto verdadeiro",
-                "Explorando o dark world!"
             ]
 
             phrase = random.choice(phrases)
