@@ -129,7 +129,7 @@ class ChallengeConfigView(ui.LayoutView):
     async def toggle_enabled(self, interaction: discord.Interaction):
         self.config["enabled"] = not self.config["enabled"]
         
-        await self.cog.col.update_one(
+        await self.cog.colxp.update_one(
             {"_id": self.guild.id},
             {"$set": {"challenge_enabled": self.config["enabled"]}},
             upsert=True
@@ -186,6 +186,7 @@ class Challenges(commands.Cog):
     @app_commands.command(name="challengeconfig", description="Configura os desafios")
     @app_commands.checks.has_permissions(administrator=True)
     async def challengeconfig(self, interaction: discord.Interaction):
+
         if not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message(
                 "❌ Apenas administradores podem usar este painel!", 
@@ -487,7 +488,7 @@ class Challenges(commands.Cog):
     # ------------- GENERATE CHALLENGE -------------
 
     def generate_challenge(self):
-        typ = random.choice(["math", "rewrite"])
+        typ = random.choice(["math", "rewrite", "guess"])
 
         if typ == "math":
             math_type = random.choice(["add", "sub", "mul"])
@@ -517,7 +518,7 @@ class Challenges(commands.Cog):
                 "answer": answer
             }
 
-        else:
+        elif typ == "rewrite":
             phrases = [
                 "O cavaleiro foi até a lua em seu cavalo",
                 "A raposa marrom rápida pula sobre o cão preguiçoso",
@@ -542,6 +543,15 @@ class Challenges(commands.Cog):
                 "question": f"Reescreva a frase exatamente:\n`{disguised}`",
                 "answer": phrase,
                 "token_positions": token_positions
+            }
+        elif typ == "guess":
+            min_num = random.randint(1, 100)
+            max_num = min_num + random.randint(5, 7)
+            secret = random.randint(min_num, max_num)
+
+            return {
+                "question": f"🔢 **Entre **{min_num} e {max_num}**, qual número estou pensando? :3",
+                "answer": str(secret)
             }
 
 
