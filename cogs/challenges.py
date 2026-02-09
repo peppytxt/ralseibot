@@ -551,7 +551,7 @@ class Challenges(commands.Cog):
             secret = random.randint(min_num, max_num)
 
             return {
-                "question": f"🔢 Entre **{min_num} e {max_num}**, qual número estou pensando? :3",
+                "question": f"Entre **{min_num} e {max_num}**, qual número estou pensando? :3",
                 "answer": str(secret)
             }
 
