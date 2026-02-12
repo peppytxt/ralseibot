@@ -97,7 +97,7 @@ class Admin(commands.Cog):
     async def embed_panel(self, interaction: discord.Interaction):
         if not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message(
-                "❌ Apenas administradores podem usar este painel!", 
+                "Apenas administradores podem usar este painel! Cai fora >:3", 
                 ephemeral=True
             )
         
