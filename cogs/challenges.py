@@ -206,7 +206,7 @@ class Challenges(commands.Cog):
 
     @app_commands.command(name="challengerank", description="Ranking de desafios")
     async def challenge_rank(self, interaction: discord.Interaction):
-        if self.col is None: 
+        if self.col_users is None: 
             return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
             
         await interaction.response.defer()
