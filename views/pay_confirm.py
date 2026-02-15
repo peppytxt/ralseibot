@@ -17,13 +17,11 @@ class PayConfirmView(discord.ui.View):
         return self.sender_confirmed and self.receiver_confirmed
 
     async def finalize(self, interaction: discord.Interaction):
-        # 💸 Debita pagador
         self.cog.col.update_one(
             {"_id": self.sender.id},
             {"$inc": {"coins": -self.amount}}
         )
 
-        # 💰 Credita receptor
         self.cog.col.update_one(
             {"_id": self.receiver.id},
             {"$inc": {"coins": self.amount}},

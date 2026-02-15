@@ -93,7 +93,14 @@ class Admin(commands.Cog):
 
     @app_commands.command(name="embedpanel", description="Abre o painel de criação de embeds (Admin)")
     @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def embed_panel(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message(
+                "Apenas administradores podem usar este painel! Cai fora >:3", 
+                ephemeral=True
+            )
+        
         view = EmbedControlView(interaction.user)
         await interaction.response.send_message(
             "🛠️ **Painel de Edição de Embed**\nUse os botões abaixo para configurar.",

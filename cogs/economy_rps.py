@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-TAX_RATE = 0.05  # Taxa de 5% 
+TAX_RATE = 0.05
 
 BOT_ECONOMY_ID = 0
 

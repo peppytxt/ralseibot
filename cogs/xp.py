@@ -217,41 +217,34 @@ class VoiceXP(commands.Cog):
     @tasks.loop(seconds=30)
     async def voice_xp_loop(self):
         now = time.time()
-
-        for user_id, session in list(self.voice_sessions.items()):
-            member = self.bot.get_user(user_id)
-            if not member:
+        for user_id in list(self.voice_sessions.keys()):
+            member = None
+            for guild in self.bot.guilds:
+                member = guild.get_member(user_id)
+                if member: break
+            
+            if not member or not member.voice or not member.voice.channel:
                 self.voice_sessions.pop(user_id, None)
                 continue
 
-            guilds = [g for g in self.bot.guilds if g.get_member(user_id)]
-            if not guilds:
-                self.voice_sessions.pop(user_id, None)
+            if not self.is_valid_member(member):
                 continue
 
-            guild = guilds[0]
-            member = guild.get_member(user_id)
-
-            if not member or not self.is_valid_member(member):
-                self.voice_sessions.pop(user_id, None)
+            if not self.has_enough_people(member.voice.channel):
                 continue
 
-            channel = member.voice.channel
-            if not self.has_enough_people(channel):
-                continue
-
+            session = self.voice_sessions[user_id]
             elapsed = now - session["last_tick"]
-            if elapsed >= self.XP_INTERVAL:
-                ticks = int(elapsed // self.XP_INTERVAL)
-                xp = ticks * self.XP_PER_TICK
 
+            if elapsed >= self.XP_INTERVAL:
+                xp = self.XP_PER_TICK
+                
                 self.col.update_one(
                     {"_id": user_id},
                     {"$inc": {"xp_voice": xp}},
                     upsert=True
                 )
-
-                session["last_tick"] = now
+                self.voice_sessions[user_id]["last_tick"] = now
 
 
 class XP(commands.Cog):
@@ -609,35 +602,32 @@ class XP(commands.Cog):
 
 
     async def add_xp(self, user: discord.Member, amount: int):
-        col = self.col
+        guild_id = str(user.guild.id)
+        
+        self.col.update_one(
+            {"_id": user.id},
+            {"$inc": {f"xp_local.{guild_id}.xp": amount}},
+            upsert=True
+        )
 
-        data = col.find_one({"_id": user.id}) or {
-            "xp_global": 0,
-            "coins": 0,
-            "dm_level": True
-        }
-
+        data = self.col.find_one({"_id": user.id})
+        local_data = data.get("xp_local", {})
+        
+        total_xp = sum(info.get("xp", 0) for info in local_data.values())
+        
         old_xp = data.get("xp_global", 0)
         old_level = old_xp // XP_PER_LEVEL
+        new_level = total_xp // XP_PER_LEVEL
 
-        new_xp = old_xp + amount
-        new_level = new_xp // XP_PER_LEVEL
-
-        col.update_one(
+        self.col.update_one(
             {"_id": user.id},
-            {"$set": {"xp_global": new_xp}},
-            upsert=True
+            {"$set": {"xp_global": total_xp}}
         )
 
         if new_level > old_level:
             levels_gained = new_level - old_level
             reward = LEVEL_REWARD * levels_gained
-
-            col.update_one(
-                {"_id": user.id},
-                {"$inc": {"coins": reward}}
-            )
-
+            self.col.update_one({"_id": user.id}, {"$inc": {"coins": reward}})
             if data.get("dm_level", True):
                 await self.send_level_up_dm(user, new_level, reward)
 
