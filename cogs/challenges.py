@@ -198,7 +198,7 @@ class Challenges(commands.Cog):
                 ephemeral=True
             )
 
-        config = await self.col.find_one({"_id": interaction.guild.id}) or {}
+        config = await self.col_config.find_one({"_id": interaction.guild.id}) or {}
         view = ChallengeConfigView(self, interaction.guild, config)
         view.build_interface()
 
@@ -211,7 +211,7 @@ class Challenges(commands.Cog):
             
         await interaction.response.defer()
 
-        cursor = self.col.find(
+        cursor = self.col_users.find(
             {"challenge_wins": {"$gt": 0}}
         ).sort("challenge_wins", -1).limit(10)
         
@@ -263,7 +263,7 @@ class Challenges(commands.Cog):
         interaction: discord.Interaction,
         user: discord.Member | None = None
     ):
-        if self.col is None: 
+        if self.col_users is None: 
             return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
             
         target = user or interaction.user
@@ -274,12 +274,12 @@ class Challenges(commands.Cog):
                 ephemeral=True
             )
 
-        data = await self.col.find_one({"_id": target.id}) or {}
+        data = await self.col_users.find_one({"_id": target.id}) or {}
 
         wins = data.get("challenge_wins", 0)
         earnings = data.get("challenge_earnings", 0)
 
-        rank = await self.col.count_documents({"challenge_wins": {"$gt": wins}}) + 1
+        rank = await self.col_users.count_documents({"challenge_wins": {"$gt": wins}}) + 1
 
         embed = discord.Embed(
             title="📺 Estatísticas de Desafios",
@@ -301,11 +301,10 @@ class Challenges(commands.Cog):
         if message.author.bot or not message.guild or self.col_config is None:
             return
         
-        config = await self.col.find_one({"_id": message.guild.id})
+        config = await self.col_config.find_one({"_id": message.guild.id})
         if not config or not config.get("challenge_enabled"):
             return
 
-        # ********** MODO POR MENSAGENS **********
         key = str(message.guild.id)
         interval = config.get("challenge_interval", DEFAULT_INTERVAL)
 
@@ -316,22 +315,20 @@ class Challenges(commands.Cog):
             self.message_counters[key] = 0
             await self.spawn_challenge(message.guild, config)
 
-            # Adicionado AWAIT
-            await self.col.update_one(
+            await self.col_config.update_one(
                 {"_id": message.guild.id},
                 {"$set": {"challenge_last": time.time()}}
             )
 
-        # ********** CHECAR RESPOSTAS **********
         await self.check_answer(message)
     # ------------- TIMER LOOP ---------------------
 
     @tasks.loop(seconds=60)
     async def challenge_timer(self):
-        if self.col is None: 
+        if self.col_config is None: 
             return
         try: 
-            cursor = self.col.find({"challenge_enabled": True})
+            cursor = self.col_config.find({"challenge_enabled": True})
             
             count = 0
             async for config in cursor:
@@ -351,7 +348,7 @@ class Challenges(commands.Cog):
 
                 if now - last >= interval:
                     await self.spawn_challenge(guild, config)
-                    await self.col.update_one(
+                    await self.col_config.update_one(
                         {"_id": config["_id"]},
                         {"$set": {"challenge_last": now}}
                     )
@@ -376,7 +373,7 @@ class Challenges(commands.Cog):
                     to_remove.append(guild_id)
 
             for guild_id in to_remove:
-                config = await self.col.find_one({"_id": guild_id})
+                config = await self.col_config.find_one({"_id": guild_id})
                 if not config:
                     continue
 
