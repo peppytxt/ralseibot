@@ -298,7 +298,7 @@ class Challenges(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or not message.guild or self.col is None:
+        if message.author.bot or not message.guild or self.col_config is None:
             return
         
         config = await self.col.find_one({"_id": message.guild.id})
@@ -364,7 +364,7 @@ class Challenges(commands.Cog):
             
     @tasks.loop(seconds=5)
     async def challenge_timeout_checker(self):
-        if self.col is None: return
+        if self.col_users is None: return
         try:
             now = time.time()
             to_remove = []
