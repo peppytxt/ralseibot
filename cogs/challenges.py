@@ -137,10 +137,17 @@ class Challenges(commands.Cog):
     
 
     @property
-    def col(self):
+    def db_users(self):
         xp_cog = self.bot.get_cog("XP")
         if xp_cog:
-            return xp_cog.col
+            return xp_cog.col 
+        return None
+
+    @property
+    def db_guilds(self):
+        xp_cog = self.bot.get_cog("XP")
+        if xp_cog:
+            return xp_cog.col.database["guilds"] 
         return None
 
     # ------------- CONFIG COMMAND ------------------
@@ -217,7 +224,7 @@ class Challenges(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
-        config = self.col.find_one({"_id": message.guild.id})
+        config = self.db_guilds.find_one({"_id": message.guild.id})
         if not config or not config.get("challenge_enabled"):
             return
 
