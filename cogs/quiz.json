@@ -1,0 +1,12 @@
+{
+    "quiz_questions": [
+        {
+            "question": "Quem escreveu a obra 'Dom Casmurro'?",
+            "answer": "Machado de Assis"
+        },
+        {
+            "question": "Qual o planeta mais próximo do Sol?",
+            "answer": "Mercurio"
+        }
+    ]
+}

@@ -6,3 +6,4 @@ aiohttp
 requests
 python-dotenv
 motor
+json

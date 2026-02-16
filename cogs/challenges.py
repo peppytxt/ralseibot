@@ -4,6 +4,7 @@ from discord.ext import commands, tasks
 import random
 import time
 import asyncio
+import json
 
 # Configurações padrão
 DEFAULT_INTERVAL = 100
@@ -42,11 +43,11 @@ class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
             valor = int(self.intervalo.value)
             
 
-#            if valor < 50:
-#                return await interaction.response.send_message(
-#                   "⚠️ O intervalo mínimo permitido é de **50 mensagens**.", 
-#                     ephemeral=True
-#                )
+            if valor < 50:
+                return await interaction.response.send_message(
+                   "⚠️ O intervalo mínimo permitido é de **50 mensagens**.", 
+                     ephemeral=True
+                )
             
             self.view.config["interval"] = valor
             await self.view.save_and_refresh(interaction)
@@ -163,6 +164,16 @@ class Challenges(commands.Cog):
         self.warned_users = {}
         self.locks = {}
         self.challenge_timeout_checker.start()
+        self.load_quiz_data()
+
+    def load_quiz_data(self):
+        try:
+            with open("quiz.json", "r", encoding="utf-8") as f:
+                data = json.load(f)
+                self.quiz_questions = data.get("quiz_questions", [])
+        except FileNotFoundError:
+            self.quiz_questions = []
+            print("⚠️ Arquivo quiz.json não encontrado!")
 
     def cog_unload(self):
         self.challenge_timeout_checker.cancel()
@@ -484,7 +495,7 @@ class Challenges(commands.Cog):
     # ------------- GENERATE CHALLENGE -------------
 
     def generate_challenge(self):
-        typ = random.choice(["rewrite", "math", "guess"])
+        typ = random.choice(["rewrite", "math", "guess", "quiz"])
 
         if typ == "math":
             math_type = random.choice(["add", "sub", "mul"])
@@ -548,6 +559,12 @@ class Challenges(commands.Cog):
             return {
                 "question": f"Entre **{min_num} e {max_num}**, qual número estou pensando? :3",
                 "answer": str(secret)
+            }
+        else:
+            item = random.choice(self.quiz_questions)
+            return {
+                "question": f"❓ **PERGUNTA:** {item['question']}",
+                "answer": item['answer']
             }
 
 
