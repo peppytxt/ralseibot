@@ -43,11 +43,11 @@ class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
             valor = int(self.intervalo.value)
             
 
-            if valor < 50:
-                return await interaction.response.send_message(
-                   "⚠️ O intervalo mínimo permitido é de **50 mensagens**.", 
-                     ephemeral=True
-                )
+#            if valor < 50:
+#               return await interaction.response.send_message(
+#                  "⚠️ O intervalo mínimo permitido é de **50 mensagens**.", 
+#                     ephemeral=True
+#                )
             
             self.view.config["interval"] = valor
             await self.view.save_and_refresh(interaction)
@@ -560,7 +560,7 @@ class Challenges(commands.Cog):
                 "question": f"Entre **{min_num} e {max_num}**, qual número estou pensando? :3",
                 "answer": str(secret)
             }
-        else:
+        elif typ == "quiz":
             item = random.choice(self.quiz_questions)
             return {
                 "question": f"**Pergunta:** {item['question']}",
