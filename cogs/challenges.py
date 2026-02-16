@@ -168,7 +168,7 @@ class Challenges(commands.Cog):
 
     def load_quiz_data(self):
         try:
-            with open("quiz.json", "r", encoding="utf-8") as f:
+            with open("cogs/quiz.json", "r", encoding="utf-8") as f:
                 data = json.load(f)
                 self.quiz_questions = data.get("quiz_questions", [])
         except FileNotFoundError:
