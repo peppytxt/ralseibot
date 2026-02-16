@@ -563,7 +563,7 @@ class Challenges(commands.Cog):
         else:
             item = random.choice(self.quiz_questions)
             return {
-                "question": f"❓ **PERGUNTA:** {item['question']}",
+                "question": f"**Pergunta:** {item['question']}",
                 "answer": item['answer']
             }
 
