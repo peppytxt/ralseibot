@@ -9,8 +9,44 @@
             "answer": "Kris"
         },
         {
+            "question": "Em que cidade fica a Torre Eiffel?",
+            "answer": "Paris"
+        },
+        {
+            "question": "Qual o nome do local onde as pessaos podem praticar ginástica e musculação?",
+            "answer": "Academia"
+        },
+        {
+            "question": "Na matemática, qual é o sinal que representa a adição?",
+            "answer": "+"
+        },
+        {
+            "question": "Em que país fica localizado a cidade de Hong Kong?",
+            "answer": "China"
+        },
+        {
+            "question": "O que as aves constroem para se abrigarem e protegerem seus filhotes?",
+            "answer": "Ninho"
+        },
+        {
+            "question": "O sol é uma ___ que fornece luz e calor para a Terra.",
+            "answer": "Estrela"
+        },
+        {
+            "question": "Qual componente quimico é essencial para a respiração celular e é transportado pelo sangue?",
+            "answer": "Oxigênio"
+        },
+        {
+            "question": "Qual o jogo mais famoso onde os jogadores podem construir e explorar mundos virtuais usando blocos?",
+            "answer": "Minecraft"
+        },
+        {
+            "question": "Quem foi o principal filósofo do absurdismo?",
+            "answer": "Albert Camus"
+        },
+        {
             "question": "Qual o planeta mais próximo do Sol?",
-            "answer": "Mercurio"
+            "answer": "Mercúrio"
         }
     ]
 }
