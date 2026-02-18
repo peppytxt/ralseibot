@@ -462,18 +462,113 @@
         },
         {
             "question": "Em qual filme Ariana Grande interpreta Glinda?",
-            "answer": "Thank U, Next",
+            "answer": "Wicked",
             "author_name": "luoisz"
         },
         {
-            "question": "Qual é o nome do álbum de Ariana Grande lançado em 2020 que inclui a música “Stuck With U”?",
-            "answer": "Positions",
+            "question": "Qual edição do BBB teve Juliette como campeã?",
+            "answer": ["BBB 21", "Big Brother Brasil 21"],
             "author_name": "luoisz"
         },
         {
-            "question": "Qual é o nome do álbum de Ariana Grande lançado em 2020 que inclui a música “Rain On Me”?",
-            "answer": ["Chromatica", "Chromatica (Lady Gaga)"],
+            "question": "Qual é o nome da dinâmica em que o público vota para eliminar um participante no Big Brother Brasil?",
+            "answer": "Paredão",
             "author_name": "luoisz"
+        },
+        {
+            "question": "Qual edição ficou marcada pelo maior índice de rejeição da história do Big Brother Brasil? (Karol Conká)",
+            "answer": ["BBB 21", "Big Brother Brasil 21"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome da prova que garante imunidade na semana no Big Brother Brasil?",
+            "answer": ["Prova de Anjo", "Prova do Anjo", "Anjo"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Como se diz a palavra Rei em inglês?",
+            "answer": "King",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Como se diz a palavra Rainha em inglês?",
+            "answer": "Queen",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "O Português pertence a qual família linguística?",
+            "answer": ["Indo-europeia", "Indo Europeia"],
+            "author_name": "kod_zuken8243"
+        },
+        {
+            "question": "Qual civilização antiga construiu as pirâmides de Gizé?",
+            "answer": ["Egípcia", "Egipciana", "Egípcios"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que ano o homem pisou na Lua?",
+            "answer": "1969",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem criou o álbum Syro em 2014?",
+            "answer": "Aphex Twin",
+            "author_name": "polkatt."
+        },
+        {
+            "question": "Qual o nome do álbum do Aphex Twin lançado em 1997?",
+            "answer": "Come to Daddy",
+            "author_name": "polkatt."
+        },
+        {
+            "question": "Qual o nome da primeira musica do álbum Black Sabbath feito pela banda Black sabbath em 1970?",
+            "answer": "Black Sabbath",
+            "author_name": "polkatt."
+        },
+        {
+            "question": "Qual é o elemento base do rpg do Cellbit?",
+            "answer": "Medo",
+            "author_name": "polkatt."
+        },
+        {
+            "question": "Em que equipe Fernando Alonso estreou na formula 1?",
+            "answer": "Minardi",
+            "author_name": "polkatt."
+        },
+        {
+            "question": "Quem foi o criador do primeiro ritual na lore de Ordem Paranormal?",
+            "answer": "Kian",
+            "author_name": "polkatt."
+        },
+        {
+            "question": "Qual o personagem Brasileiro em overwatch?",
+            "answer": ["Lúcio", "Lucio Correia dos Santos"],
+            "author_name": "polkatt."
+        },
+        {
+            "question": "Em Castlevânia, quem foi o primeiro belmont?",
+            "answer": "Leon Belmont",
+            "author_name": "tfdwbr122323"
+        },
+        {
+            "question": "Em Castlevânia, quem foi o ultimo belmont?",
+            "answer": "Julius Belmont",
+            "author_name": "tfdwbr122323"
+        },
+        {
+            "question": "Em Castlevânia, quem fala essa frase \"If you will fight, then stand resolute.\"?",
+            "answer": "Simon Belmont",
+            "author_name": "tfdwbr122323"
+        },
+        {
+            "question": "Em Deltarune, qual personagens gosta de fazer bolos?",
+            "answer": "Ralsei",
+            "author_name": "tfdwbr122323"
+        },
+        {
+            "question": "Em Castlevânia, quem fala essa frase: \"Feel the might of House Belmont!\"",
+            "answer": "Richter Belmont",
+            "author_name": "tfdwbr122323"
         }
     ]
 }
