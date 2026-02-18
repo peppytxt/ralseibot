@@ -2,55 +2,68 @@
     "quiz_questions": [
         {
             "question": "Quem escreveu a obra 'Dom Casmurro'?",
-            "answer": "Machado de Assis"
+            "answer": "Machado de Assis",
+            "author_name": "thepeppy"
         },
         {
             "question": "Quem é o protagonista de Deltarune?",
-            "answer": "Kris"
+            "answer": "Kris",
+            "author_name": "thepeppy"
         },
         {
             "question": "Em que cidade fica a Torre Eiffel?",
-            "answer": "Paris"
+            "answer": "Paris",
+            "author_name": "thepeppy"
         },
         {
             "question": "Qual o nome do local onde as pessoas podem praticar ginástica e musculação?",
-            "answer": "Academia"
+            "answer": "Academia",
+            "author_name": "thepeppy"
         },
         {
             "question": "Na matemática, qual é o sinal que representa a adição?",
-            "answer": "+"
+            "answer": "+",
+            "author_name": "thepeppy"
         },
         {
             "question": "Em que país fica localizado a cidade de Hong Kong?",
-            "answer": "China"
+            "answer": "China",
+            "author_name": "thepeppy"
         },
         {
             "question": "O que as aves constroem para se abrigarem e protegerem seus filhotes?",
-            "answer": "Ninho"
+            "answer": "Ninho",
+            "author_name": "thepeppy"
         },
         {
-            "question": "O sol é uma ___ que fornece luz e calor para a Terra.",
-            "answer": "Estrela"
+            "question": "O sol é uma (sua resposta) que fornece luz e calor para a Terra.",
+            "answer": "Estrela",
+            "author_name": "thepeppy"
         },
         {
             "question": "Qual componente quimico é essencial para a respiração celular e é transportado pelo sangue?",
-            "answer": "Oxigênio"
+            "answer": "Oxigênio",
+            "author_name": "thepeppy"
         },
         {
             "question": "Qual o jogo mais famoso onde os jogadores podem construir e explorar mundos virtuais usando blocos?",
-            "answer": "Minecraft"
+            "answer": "Minecraft",
+            "author_name": "thepeppy"
         },
         {
             "question": "Quem foi o principal filósofo do absurdismo?",
-            "answer": "Albert Camus"
+            "answer": "Albert Camus",
+            "author_name": "polkatt."
         },
         {
             "question": "Quem foi o campeão mundial da Fórmula 1 de 2007?",
-            "answer": "Kimi Raikkonen"
+            "answer": "Kimi Raikkonen",
+            "author_name": "liminaspace"
         },
         {
             "question": "Qual o planeta mais próximo do Sol?",
-            "answer": "Mercúrio"
+            "answer": "Mercúrio",
+            "author_name": "thepeppy"
         }
     ]
 }

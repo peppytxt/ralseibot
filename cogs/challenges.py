@@ -431,7 +431,14 @@ class Challenges(commands.Cog):
             color=discord.Color.blue()
         )
 
-        embed.set_footer(text="Responda corretamente para ganhar pontos!")
+        if challenge.get("author_name"):
+            embed.set_footer(
+                text=f"Sugerido por {challenge['author_name']}",
+                icon_url=challenge.get("author_icon")
+            )
+        else:
+            embed.set_footer(text="Responda corretamente para ganhar pontos!")
+
         await channel.send(embed=embed)
 
     # ------------- CHECK ANSWER -------------
@@ -563,7 +570,8 @@ class Challenges(commands.Cog):
             item = random.choice(self.quiz_questions)
             return {
                 "question": f"**Pergunta:** {item['question']}",
-                "answer": item['answer']
+                "answer": item['answer'],
+                "author_name": item.get("author_name")
             }
 
 
