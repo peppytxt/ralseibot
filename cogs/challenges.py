@@ -5,6 +5,7 @@ import random
 import time
 import asyncio
 import json
+import unicodedata
 
 # Configurações padrão
 DEFAULT_INTERVAL = 100
@@ -469,8 +470,15 @@ class Challenges(commands.Cog):
         async with self.locks[guild_id]:
             if challenge.get("solved"):
                 return
+            
+            respostas_permitidas = challenge["answer"]
 
-            if normalize(message.content) == normalize(challenge["answer"]):
+            if isinstance(respostas_permitidas, str):
+                respostas_permitidas = [respostas_permitidas]
+
+            user_answer = normalize(message.content)
+
+            if any(user_answer == normalize(r) for r in respostas_permitidas):
                 challenge["solved"] = True
 
                 reward = random.randint(REWARD_MIN, REWARD_MAX)
@@ -589,6 +597,8 @@ def add_invisible_chars(text: str):
     return result, token_positions
 
 def normalize(text: str) -> str:
+    text = unicodedata.normalize('NFD', text)
+    text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
     return (
         text.lower()
         .replace("\u200b", "")

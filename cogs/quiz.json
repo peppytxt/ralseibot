@@ -64,6 +64,231 @@
             "question": "Qual o planeta mais próximo do Sol?",
             "answer": "Mercúrio",
             "author_name": "thepeppy"
+        },
+        {
+            "question": "Qual a série mais reproduzida da Netflix?",
+            "answer": "Round 6",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome do bot ao qual você está respondendo agora?",
+            "answer": "Ralsei",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem é o maior jogador de futebol que já existiu no Brasil? ",
+            "answer": "Pelé",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem é o artista considerado o \"Rei do Pop\"?",
+            "answer": "Michael Jackson",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem é a artista considerada a \"Rainha do Pop\"?",
+            "answer": "Madonna",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem é a artista considerada a \"Princesa do Pop\"?",
+            "answer": "Britney Spears",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o nome da franquia de livros que se passa sua história na Escola de Magia e Bruxaria de Hogwarts?",
+            "answer": "Harry Potter",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "QQual o primeiro filme brasileiro a ganhar um Oscar?",
+            "answer": "Ainda estou aqui",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o nome da franquia de livros onde sua história se passa em meio ao Acampamento Meio-Sangue?",
+            "answer": "Percy Jackson",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o maior bot do discord feito por um brasileiro?",
+            "answer": "Loritta",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o nome do maior reality show do Brasil onde pessoas são selecionadas e confinadas dentro de uma casa?",
+            "answer": "Big Brother Brasil",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o maior canal do YouTube em número de inscritos?",
+            "answer": ["Mr Beast", "MrBeast"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o nome do RPG do Cellbit?",
+            "answer": "Ordem Paranormal",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a pessoa mais seguida do Instagram?",
+            "answer": "Cristiano Ronaldo",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a música que detém o recorde de mais tempo no topo da Hot100 dos Estados Unidos?",
+            "answer": "All I Want For Christmas",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a música que detém o recorde de mais tempo no topo do Spotify Global? Sendo este 201 dias não-consecutivos.",
+            "answer": "Die With a Smile",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a música que detém o maior número de reproduções no Spotify (maior plataforma de música da atualidade)?",
+            "answer": "Blinding Lights",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o maior país em território do mundo? ",
+            "answer": "Rússia",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o país mais rico do mundo com um PIB avaliado em 28 trilhões de dólares em 2025?",
+            "answer": ["Estados Unidos", "EUA", "Estados Unidos da América"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a artista que mais vezes ganhou o prêmio de Álbum do Ano no Grammy? (Com 4 vitórias até então)",
+            "answer": "Taylor Swift",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a capital do Brasil?",
+            "answer": "Brasília",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que ano o Brasil foi descoberto/invadido?",
+            "answer": "1500",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem foi o primeiro presidente do Brasil?",
+            "answer": ["Marechal Deodoro da Fonseca", "Deodoro da Fonseca"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o maior estado do Brasil em território?",
+            "answer": "Amazonas",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o rio mais extenso do Brasil?",
+            "answer": ["Rio Amazonas", "Amazonas"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a moeda oficial do Brasil?",
+            "answer": "Real",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em qual região fica o estado da Bahia?",
+            "answer": "Nordeste",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o esporte mais popular no Brasil?",
+            "answer": "Futebol",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome da floresta tropical mais famosa do Brasil?",
+            "answer": "Floresta Amazônica",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a capital do estado de São Paulo?",
+            "answer": "São Paulo",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o feriado comemorado em 7 de setembro?",
+            "answer": "Independência do Brasil",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem foi o líder da Inconfidência Mineira?",
+            "answer": "Tiradentes",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o animal símbolo do Brasil?",
+            "answer": ["Sabiá-laranjeira", "Sabiá Laranjeira"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a maior festa popular do Brasil?",
+            "answer": "Carnaval",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a capital de Minas Gerais?",
+            "answer": "Belo Horizonte",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem proclamou a Independência do Brasil?",
+            "answer": "Dom Pedro I",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o maior bioma brasileiro?",
+            "answer": ["Amazônia", "Floresta Amazônica"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que continente o Brasil está localizado?",
+            "answer": "América do Sul",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o ponto mais alto do Brasil?",
+            "answer": "Pico da Neblina",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o idioma oficial do Brasil?",
+            "answer": ["Português", "Portugues"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o estado brasileiro mais populoso?",
+            "answer": "São Paulo",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a capital do Rio de Janeiro (estado)?",
+            "answer": "Rio de Janeiro",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem foi o autor de Os Sertões?",
+            "answer": "Euclides da Cunha",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o maior arquipélago brasileiro famoso pelo turismo e preservação ambiental?",
+            "answer": "Fernando de Noronha",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome do atual sistema de governo do Brasil?",
+            "answer": ["República Presidencialista", "Republica Presidencialista"],
+            "author_name": "luoisz"
         }
     ]
 }
