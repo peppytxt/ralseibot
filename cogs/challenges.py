@@ -42,11 +42,11 @@ class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
         try:
             valor = int(self.intervalo.value)
             
-            if valor < 50:
-                return await interaction.response.send_message(
-                  "⚠️ O intervalo mínimo permitido é de **50 mensagens**.", 
-                     ephemeral=True
-                )
+#           if valor < 50:
+#                return await interaction.response.send_message(
+#                  "⚠️ O intervalo mínimo permitido é de **50 mensagens**.", 
+#                     ephemeral=True
+#                )
             
             self.view.config["interval"] = valor
             await self.view.save_and_refresh(interaction)
@@ -391,7 +391,8 @@ class Challenges(commands.Cog):
                 if not guild:
                     continue
 
-                channel = guild.get_channel(config.get("challenge_channel"))
+                channel_id = config.get("challenge_channel_id") or config.get("challenge_channel")
+                channel = guild.get_channel(channel_id)
                 if channel:
                     await channel.send(
                         "⏰ **Tempo esgotado!**\n"
@@ -410,7 +411,7 @@ class Challenges(commands.Cog):
         if guild.id in self.active_challenges:
             return
 
-        channel_id = config.get("challenge_channel")
+        channel_id = config.get("challenge_channel_id") or config.get("challenge_channel")
         channel = guild.get_channel(channel_id)
         if not channel:
             return
