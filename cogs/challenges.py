@@ -214,8 +214,12 @@ class Challenges(commands.Cog):
 
         await interaction.response.send_message(view=view, ephemeral=True)
 
-    @app_commands.command(name="challengerank", description="Ranking de desafios")
-    async def challenge_rank(self, interaction: discord.Interaction):
+        
+
+    rank_group = app_commands.Group(name="challengerank", description="Ranking de desafios")
+
+    @rank_group.command(name="global", description="Ranking global de vitórias")
+    async def rank_global(self, interaction: discord.Interaction):
         if self.col_users is None: 
             return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
             
@@ -228,40 +232,45 @@ class Challenges(commands.Cog):
         data_list = await cursor.to_list(length=10)
 
         if not data_list:
-            return await interaction.followup.send("❌ Ainda ninguém completou desafios.")
+            return await interaction.followup.send("Ainda ninguém completou desafios globais :(")
 
-        desc = ""
-        rank_pos = 1
+        desc = await self._build_rank_description(data_list, "challenge_wins")
         
-        for data in data_list:
-            user_id = data["_id"]
-            
-            wins = data.get("challenge_wins", 0)
-
-            user = self.bot.get_user(user_id)
-            if not user:
-                try:
-                    user = await self.bot.fetch_user(user_id)
-                except:
-                    continue
-
-            if user.bot:
-                continue
-
-            name = user.display_name
-            desc += f"**#{rank_pos} - {name}** • 📺 {wins} vitórias\n"
-            rank_pos += 1
-
-        if not desc:
-            return await interaction.followup.send("❌ Nenhum usuário válido encontrado no ranking.")
-
-        embed = discord.Embed(
-            title="🏆 Ranking de Desafios", 
-            description=desc, 
-            color=0x5865F2
-        )
-        
+        embed = discord.Embed(title="🏆 Ranking Global de Desafios", description=desc, color=0x5865F2)
         await interaction.followup.send(embed=embed)
+
+    @rank_group.command(name="local", description="Ranking de vitórias neste servidor")
+    async def rank_local(self, interaction: discord.Interaction):
+        database = getattr(self.bot, "db", None)
+        if database is None:
+            return await interaction.response.send_message("Banco de dados offline.", ephemeral=True)
+            
+        await interaction.response.defer()
+
+        cursor = database.member_challenges.find(
+            {"guild_id": interaction.guild.id, "local_wins": {"$gt": 0}}
+        ).sort("local_wins", -1).limit(10)
+        
+        data_list = await cursor.to_list(length=10)
+
+        if not data_list:
+            return await interaction.followup.send("Ninguém venceu desafios neste servidor ainda :(")
+        
+        desc = await self._build_rank_description(data_list, "local_wins", is_local=True)
+
+        embed = discord.Embed(title=f"🏆 Ranking Local - {interaction.guild.name}", description=desc, color=0x2ecc71)
+        await interaction.followup.send(embed=embed)
+
+    async def _build_rank_description(self, data_list, win_field, is_local=False):
+        desc = ""
+        for i, data in enumerate(data_list, 1):
+            user_id = data["user_id"] if is_local else data["_id"]
+            wins = data.get(win_field, 0)
+
+            user = self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
+            if user and not user.bot:
+                desc += f"**#{i} - {user.display_name}** • 📺 {wins} vitórias\n"
+        return desc
         
     @app_commands.command(
         name="challengestats",
@@ -491,6 +500,17 @@ class Challenges(commands.Cog):
                     {"$inc": {"challenge_wins": 1, "challenge_earnings": reward, "coins": reward}},
                     upsert=True
                 )
+
+                database = getattr(self.bot, "db", None)
+                if database is not None:
+                    await database.member_challenges.update_one(
+                        {
+                            "guild_id": message.guild.id, 
+                            "user_id": message.author.id
+                        },
+                        {"$inc": {"local_wins": 1}},
+                        upsert=True
+                    )
 
                 await message.channel.send(
                     f"🎉 {message.author.mention} acertou! "
