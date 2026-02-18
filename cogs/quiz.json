@@ -289,6 +289,191 @@
             "question": "Qual é o nome do atual sistema de governo do Brasil?",
             "answer": ["República Presidencialista", "Republica Presidencialista"],
             "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a capital do Paraná?",
+            "answer": "Curitiba",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o menor estado do Brasil em território?",
+            "answer": "Sergipe",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a região mais populosa do Brasil?",
+            "answer": "Sudeste",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a capital do Ceará?",
+            "answer": "Fortaleza",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o único estado brasileiro que fica totalmente no Hemisfério Norte?",
+            "answer": "Amapá",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o estado brasileiro conhecido pelas Cataratas do Iguaçu?",
+            "answer": "Paraná",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome do planalto onde fica a capital do Brasil?",
+            "answer": "Planalto Central",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o maior lago do Brasil em volume de água?",
+            "answer": "Lagoa dos Patos",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a capital do Amazonas?",
+            "answer": "Manaus",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o estado brasileiro que faz fronteira com mais países?",
+            "answer": "Amazonas",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o único estado da Região Sul que não faz fronteira com outro país?",
+            "answer": "Mineirão",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome do famoso estádio de futebol localizado em Salvador, Bahia?",
+            "answer": "Arena Fonte Nova",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome do famoso estádio de futebol localizado em Recife, Pernambuco?",
+            "answer": "Arena Pernambuco",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome do famoso estádio de futebol localizado em Fortaleza, Ceará?",
+            "answer": "Arena Castelão",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual artista é conhecido como “Rainha dos Baixinhos”?",
+            "answer": "Xuxa",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual artista é conhecida como \"Rainha da Sofrência\"?",
+            "answer": "Carmen Miranda",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que ano aconteceu a Proclamação da República no Brasil?",
+            "answer": "1889",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome do processo pelo qual as plantas produzem seu próprio alimento?",
+            "answer": "Fotossíntese",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual cantora lançou o álbum 1989 em 2014?",
+            "answer": "Taylor Swift",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem canta o hit “Bad Romance”?",
+            "answer": "Lady Gaga",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual artista lançou o álbum Teenage Dream?",
+            "answer": "Katy Perry",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual artista ficou famosa pela música \"Espresso\" (2024)?",
+            "answer": "Sabrina Carpenter",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o nome do criador do bot Ralsei (bot que você está respondendo)? ",
+            "answer": "Peppy",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o nome do criador do Facebook?",
+            "answer": "Mark Zuckerberg",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o homem mais rico do mundo?",
+            "answer": "Elon Musk",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a empresa criadora do iPhone?",
+            "answer": "Apple",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a empresa famosa por criar o dispositivo chamado \"Alexa\"?",
+            "answer": "Amazon",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em qual série da Nickelodeon Ariana Grande interpretou Cat Valentine?",
+            "answer": ["Victorious", "Sam e Cat"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual foi o primeiro álbum de estúdio lançado por Ariana Grande em 2013?",
+            "answer": "Yours Truly",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual música de Ariana Grande tem o título igual ao refrão “Thank u, next”?",
+            "answer": ["Thank U, Next", "TUN", "Thank U Next"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual álbum de Ariana Grande inclui as músicas “7 rings” e “break up with your girlfriend, i’m bored”?",
+            "answer": ["Thank U, Next", "TUN", "Thank U Next"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual música de Ariana Grande inclui a frase “God is a woman”?",
+            "answer": "God Is a Woman",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que ano Ariana Grande lançou o álbum Dangerous Woman?",
+            "answer": "2016",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual artista canta “Rain On Me” com Ariana Grande?",
+            "answer": "Lady Gaga",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em qual filme Ariana Grande interpreta Glinda?",
+            "answer": "Thank U, Next",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome do álbum de Ariana Grande lançado em 2020 que inclui a música “Stuck With U”?",
+            "answer": "Positions",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é o nome do álbum de Ariana Grande lançado em 2020 que inclui a música “Rain On Me”?",
+            "answer": ["Chromatica", "Chromatica (Lady Gaga)"],
+            "author_name": "luoisz"
         }
     ]
 }

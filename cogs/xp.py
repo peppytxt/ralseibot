@@ -655,31 +655,6 @@ class XP(commands.Cog):
                 return i
 
         return None
-
-    async def send_level_up_dm(self, user: discord.Member, level: int, reward: int):
-        xp_rank = self.get_xp_rank(user.id)
-        coin_rank = self.get_coin_rank(user.id)
-
-        embed = discord.Embed(
-            title="🎉 Você subiu de nível!",
-            description=(
-                f"✨ **Novo nível:** {level}\n"
-                f"💰 **Recompensa:** {reward} ralcoins\n\n"
-                f"🏆 **Rank de XP:** #{xp_rank}\n"
-                f"🏦 **Rank de Saldo:** #{coin_rank}\n\n"
-                "🔕 Não quer receber essa DM?\n"
-                "Use `/leveldm off`"
-            ),
-            color=discord.Color.gold()
-        )
-
-        embed.set_footer(text="Continue interagindo para ganhar mais recompensas!")
-
-        try:
-            await user.send(embed=embed)
-        except discord.Forbidden:
-            pass
-        
         
     @app_commands.command(name="leveldm", description="Ativar ou desativar DM ao subir de nível")
     @app_commands.choices(
