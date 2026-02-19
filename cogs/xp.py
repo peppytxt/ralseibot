@@ -628,8 +628,6 @@ class XP(commands.Cog):
             levels_gained = new_level - old_level
             reward = LEVEL_REWARD * levels_gained
             self.col.update_one({"_id": user.id}, {"$inc": {"coins": reward}})
-            if data.get("dm_level", True):
-                await self.send_level_up_dm(user, new_level, reward)
 
 
 
