@@ -170,8 +170,10 @@ class Challenges(commands.Cog):
             with open("cogs/quiz.json", "r", encoding="utf-8") as f:
                 data = json.load(f)
                 self.quiz_questions = data.get("quiz_questions", [])
+                self.rewrite_phrases = data.get("rewrite_phrases", [])
         except FileNotFoundError:
             self.quiz_questions = []
+            self.rewrite_phrases = []
             print("⚠️ Arquivo quiz.json não encontrado!")
 
     def cog_unload(self):
@@ -560,28 +562,15 @@ class Challenges(commands.Cog):
             }
 
         elif typ == "rewrite":
-            phrases = [
-                "O cavaleiro foi até a lua em seu cavalo",
-                "A raposa marrom rápida pula sobre o cão preguiçoso",
-                "Um rato roeu a roupa do rei de roma",
-                "Dia de chuva é dia de poesia",
-                "Ralsei é muito fofu",
-                "Dois passos para frente, três passos para trás!",
-                "Sua mão é fria como a neve e a minha queima como fogo",
-                "Ralsei é meu sonho de consumo",
-                "Ralsei adora fazer bolos",
-                "Eu prefiro morrer do que perder a vida",
-                "Correndo sempre da saudade, por isso que eu sempre me movo",
-                "Bebam água, faz bem a saúde",
-                "Fiquei envergonhado de mim mesmo quando percebi que a vida era uma festa à fantasia, e eu participei com meu rosto verdadeiro",
-                "Explorando o dark world!"
-            ]
+            if not self.rewrite_phrases:
+                phrase = "Ralsei é muito fofinho!"
+            else:
+                phrase = random.choice(self.rewrite_phrases)
 
-            phrase = random.choice(phrases)
             disguised, token_positions = add_invisible_chars(phrase)
 
             return {
-                "question": f"Reescreva a frase exatamente:\n`{disguised}`",
+                "question": f"⌨️ **REESCREVA:**\n`{disguised}`",
                 "answer": phrase,
                 "token_positions": token_positions
             }
