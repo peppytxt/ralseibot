@@ -467,7 +467,7 @@
         },
         {
             "question": "Qual edição do BBB teve Juliette como campeã?",
-            "answer": ["BBB 21", "Big Brother Brasil 21"],
+            "answer": ["BBB 21", "Big Brother Brasil 21", "BBB21", "2021"],
             "author_name": "luoisz"
         },
         {
@@ -477,7 +477,7 @@
         },
         {
             "question": "Qual edição ficou marcada pelo maior índice de rejeição da história do Big Brother Brasil? (Karol Conká)",
-            "answer": ["BBB 21", "Big Brother Brasil 21"],
+            "answer": ["BBB 21", "Big Brother Brasil 21", "BBB21", "2021"],
             "author_name": "luoisz"
         },
         {
@@ -569,6 +569,391 @@
             "question": "Em Castlevânia, quem fala essa frase: \"Feel the might of House Belmont!\"",
             "answer": "Richter Belmont",
             "author_name": "tfdwbr122323"
+        },
+        {
+            "question": "Uma planta dobra de tamanho a cada dia. Se no dia 30 ela cobre o lago inteiro, em qual dia ela cobria metade do lago?",
+            "answer": "29",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Um pai tem 40 anos e seu filho tem 10. Daqui a quantos anos a idade do pai será exatamente o dobro da idade do filho?",
+            "answer": "20",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em uma corrida, se você ultrapassa o segundo colocado, em qual posição você fica?",
+            "answer": ["Segundo lugar", "2º lugar", "Segundo", "2", "2°", "Segundo Colocado"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Alguns meses têm 30 dias, outros têm 31. Quantos meses têm 28 dias?",
+            "answer": ["Todos", "12", "Doze", "12 Meses"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos animais de cada espécie Moisés levou na arca?",
+            "answer": ["0", "Nenhum", "Nenhuma", "Nenhum animal"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o nome do artista criador da música \"Meninos e Meninas\" do álbum \"Pirata\"?",
+            "answer": "Jão",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que ano a escravidão foi abolida no Brasil?",
+            "answer": "1888",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem assinou a Lei Áurea?",
+            "answer": ["Princesa Isabel", "Isabel"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "O Brasil é uma monarquia ou uma república atualmente?",
+            "answer": "República",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual povo já vivia no Brasil antes da chegada dos portugueses?",
+            "answer": ["Tupi", "Tupis", "Indígenas", "Povos Indígenas"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem foi o primeiro imperador do Brasil?",
+            "answer": "Dom Pedro I",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos lados tem um triângulo?",
+            "answer": "3",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o maior planeta do Sistema Solar?",
+            "answer": "Júpiter",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos dias tem uma semana?",
+            "answer": ["7", "Sete", "7 dias"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o nome do satélite natural da Terra?",
+            "answer": "Lua",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual animal é conhecido como \"rei da selva\"?",
+            "answer": ["Leão", "Leão Rei"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantas cores tem o arco-íris?",
+            "answer": ["7", "Sete", "7 cores", "Sete Cores"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem inventou a lâmpada?",
+            "answer": ["Thomas Edison", "Edison"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos jogadores tem um time de futebol?",
+            "answer": ["11", "Onze", "11 jogadores"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o planeta vermelho?",
+            "answer": "Marte",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos continentes existem?",
+            "answer": ["7", "Sete"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o doce brasileiro clássico?",
+            "answer": "Brigadeiro",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "\"Penso, logo...\"?",
+            "answer": "Existo",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos tentáculos tem um polvo?",
+            "answer": ["8", "Oito"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o filhote do sapo?",
+            "answer": "Girino",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a montanha mais alta do mundo?",
+            "answer": ["Monte Everest", "Everest"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o inventor do avião no Brasil?",
+            "answer": "Santos Dumont",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o maior oceano do mundo?",
+            "answer": ["Oceano Pacífico", "Pacífico"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a capital da Argentina?",
+            "answer": "Buenos Aires",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que dia é Independência do Brasil?",
+            "answer": ["7 de Setembro", "7", "Sete de Setembro", "Sete", "07/09"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "O que é H2O?",
+            "answer": "Água",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantas patas tem uma aranha?",
+            "answer": ["8", "Oito", "8 patas", "Oito patas"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a ciência que estuda os seres vivos?",
+            "answer": ["Biologia", "Biológica", "Ciência Biológica"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o símbolo da paz?",
+            "answer": "Pomba",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos anéis olímpicos existem?",
+            "answer": ["5", "Cinco"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a cor resultante da mistura de vermelho e amarelo?",
+            "answer": "Laranja",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Laranja é o nome de uma fruta, mas o \"Laranja\" pode ser usado para o que mais?",
+            "answer": "Cor",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantas estações do ano existem?",
+            "answer": ["4", "Quatro"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual super-herói é conhecido como Homem-Morcego?",
+            "answer": "Batman",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos corações tem um polvo?",
+            "answer": ["3", "Três", "3 corações", "Três Corações"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que temperatura a água ferve?",
+            "answer": ["100 graus Celsius", "100°C", "100", "100 Graus", "Cem"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o maior órgão do corpo humano?",
+            "answer": "Pele",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o país mais populoso do mundo?",
+            "answer": "India",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "O que os pandas comem?",
+            "answer": ["Bambu", "Bambus"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual foi a primeira capital do Brasil?",
+            "answer": "Salvador",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos lados tem um dado?",
+            "answer": ["6", "Seis"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem pintou a Mona Lisa?",
+            "answer": ["Leonardo da Vinci", "Da Vinci"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o navio que afundou em 1912?",
+            "answer": "Titanic",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantas regiões existem no Brasil?",
+            "answer": ["5", "Cinco"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o mamífero que voa?",
+            "answer": "Morcego",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que país fica a Estátua da Liberdade?",
+            "answer": ["Estados Unidos", "EUA", "Estados Unidos da América"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o plural de chapéu?",
+            "answer": ["chapéus", "chapéus"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos jogadores existem em um time de basquete?",
+            "answer": ["5", "Cinco"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o fruto da oliveira?",
+            "answer": "Azeitona",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em quanto tempo a Terra gira em torno de si mesma?",
+            "answer": ["24 horas", "24h", "um dia"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual instrumento musical possui teclas?",
+            "answer": "Piano",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o monumento inclinado?",
+            "answer": ["Torre de Pisa", "Pisa"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "O que é sal de cozinha?",
+            "answer": "Cloreto de sódio",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantas Copas do Mundo o Brasil ganhou?",
+            "answer": ["5", "Cinco"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o nome da galáxia em que a Terra e o Sistema Solar se encontra?",
+            "answer": "Via Láctea",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que país fica Copacabana?",
+            "answer": "Brasil",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que cidade fica o Coliseu?",
+            "answer": "Roma",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em qual conto a princesa acorda com um beijo?",
+            "answer": "Bela Adormecida",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual a fraqueza do Super-Homem?",
+            "answer": "Kryptonita",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o animal mais alto do mundo?",
+            "answer": "Girafa",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos anos tem um século?",
+            "answer": ["100", "Cem"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Em que país ficava o Muro de Berlim?",
+            "answer": "Alemanha",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantas são as fases principais da Lua?",
+            "answer": ["4", "Quatro"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual personagem mais famosa da Turma da Mônica?",
+            "answer": "Mônica",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual era a nacionalidade de Napoleão?",
+            "answer": ["França", "Francês", "Francesa"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual evento importante aconteceu no Brasil em 1822?",
+            "answer": ["Independência do Brasil", "Independência", "Brasil independente"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual é a cor da lixeira para reciclagem de papel?",
+            "answer": "Azul",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quem formulou a lei da gravidade?",
+            "answer": ["Isaac Newton", "Newton"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Quantos sentidos o ser humano possui tradicionalmente?",
+            "answer": ["5", "Cinco"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Na França qual é a língua falada?",
+            "answer": "Francês",
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o nome da série em que uma garota careca chamada Eleven foge de um laboratório secreto em Hawkins?",
+            "answer": ["Stranger Things", "ST"],
+            "author_name": "luoisz"
+        },
+        {
+            "question": "Qual o personagem conhecido por ser um ouriço azul e com super velocidade?",
+            "answer": ["Sonic", "Sonic the Hedgehog"],
+            "author_name": "luoisz"
         }
     ],
     "rewrite_phrases": [
