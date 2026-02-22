@@ -7,14 +7,12 @@ import asyncio
 import json
 import unicodedata
 
-# Configurações padrão
 DEFAULT_INTERVAL = 100
 DEFAULT_MODE = "messages"
 REWARD_MIN = 1500
 REWARD_MAX = 4000
 CHALLENGE_TIMEOUT = 60
 
-MIN_MEMBERS = 50
 MIN_MESSAGES_INTERVAL = 50
 MIN_TIME_INTERVAL = 600 
 
@@ -207,6 +205,14 @@ class Challenges(commands.Cog):
         if not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message(
                 "❌ Apenas administradores podem usar este painel!", 
+                ephemeral=True
+            )
+        
+        human_count = count_human_members(interaction.guild)
+        if human_count < 50:
+            return await interaction.response.send_message(
+                f"Este servidor possui apenas `{human_count}` membros :(\n"
+                "Para ativar os desafios, o servidor precisa de pelo menos **50 membros** (sem contar bots).",
                 ephemeral=True
             )
 
@@ -436,7 +442,6 @@ class Challenges(commands.Cog):
             "solved": False
         }
 
-
         embed = discord.Embed(
             title="📺 IT'S TV TIME!!",
             description=challenge["question"],
@@ -591,6 +596,8 @@ class Challenges(commands.Cog):
                 "author_name": item.get("author_name")
             }
 
+def count_human_members(guild: discord.Guild) -> int:
+    return len([m for m in guild.members if not m.bot])
 
 def add_invisible_chars(text: str):
     ZERO_WIDTH = "\u200b"
