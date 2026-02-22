@@ -177,7 +177,7 @@
         },
         {
             "question": "Quem foi o primeiro presidente do Brasil?",
-            "answer": ["Marechal Deodoro da Fonseca", "Deodoro da Fonseca"],
+            "answer": ["Marechal Deodoro da Fonseca", "Deodoro da Fonseca", "Marechal Deodoro"],
             "author_name": "luoisz"
         },
         {
@@ -717,7 +717,7 @@
         },
         {
             "question": "Qual o símbolo da paz?",
-            "answer": "Pomba",
+            "answer": ["Pomba", "Pombo"],
             "author_name": "luoisz"
         },
         {
