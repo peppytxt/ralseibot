@@ -570,7 +570,7 @@ class Challenges(commands.Cog):
             disguised, token_positions = add_invisible_chars(phrase)
 
             return {
-                "question": f"⌨️ **REESCREVA:**\n`{disguised}`",
+                "question": f"⌨️ **Reescreva** a frase exatamente:\n`{disguised}`",
                 "answer": phrase,
                 "token_positions": token_positions
             }
