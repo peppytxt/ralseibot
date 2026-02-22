@@ -11,7 +11,7 @@ from discord.ext import tasks
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-COMMAND_PREFIX = os.getenv("COMMAND_PREFIX", ".aa")
+COMMAND_PREFIX = os.getenv("COMMAND_PREFIX", "aa")
 DATA_DIR = os.getenv("DATA_DIR", "data")
 MONGO_URL = os.getenv("MONGO_URL")
 
