@@ -143,7 +143,7 @@ class ChallengeConfigView(ui.LayoutView):
             {"$set": {"challenge_interval": self.config["interval"]}},
             upsert=True
         )
-
+#
         self.build_interface()
         if interaction.response.is_done():
             await interaction.edit_original_response(view=self)
