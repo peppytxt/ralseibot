@@ -95,14 +95,46 @@ class ConfessionsCog(commands.Cog):
         await interaction.response.send_message("✅ Painel configurado!", ephemeral=True)
 
 
+# Substitua sua função handle_confession_submission por esta:
+
 async def handle_confession_submission(interaction: discord.Interaction, text, img_url, is_reply, message_id):
     db = interaction.client.db 
+    # DEFINA O ID DO SEU CANAL DE LOGS AQUI
+    LOG_CHANNEL_ID = 123456789012345678  
+    log_channel = interaction.guild.get_channel(LOG_CHANNEL_ID)
+    
+    # Informações do autor para o log
+    author = interaction.user
     
     if not is_reply:
         num = await get_next_confession_number(db, interaction.guild.id)
-        layout = ConfessionLayout(text, num, img_url)
-        await interaction.channel.send(view=layout)
+        
+        embed = None
+        if img_url and img_url.startswith(("http", "https")):
+            embed = discord.Embed()
+            embed.set_image(url=img_url)
+
+        layout = ConfessionLayout(text, num) 
+        
+        confession_msg = await interaction.channel.send(embed=embed, view=layout)
         await interaction.response.send_message(f"Sua confissão **#{num:03d}** foi enviada!", ephemeral=True)
+
+        if log_channel:
+            log_embed = discord.Embed(
+                title=f"📝 Log de Confissão #{num:03d}",
+                description=f"**Conteúdo:**\n{text}",
+                color=discord.Color.red(),
+                timestamp=datetime.now()
+            )
+            log_embed.add_field(name="👤 Autor", value=f"{author.mention} ({author.name})", inline=True)
+            log_embed.add_field(name="🆔 ID do Autor", value=f"`{author.id}`", inline=True)
+            log_embed.add_field(name="🔗 Link", value=f"[Ir para confissão]({confession_msg.jump_url})", inline=False)
+            
+            if img_url:
+                log_embed.add_field(name="🖼️ URL da Imagem", value=img_url, inline=False)
+            
+            await log_channel.send(embed=log_embed)
+
     else:
         target_msg = await interaction.channel.fetch_message(message_id)
         if target_msg.thread is None:
@@ -113,14 +145,22 @@ async def handle_confession_submission(interaction: discord.Interaction, text, i
         reply_layout = ui.LayoutView()
         cont = ui.Container(accent_color=discord.Color.blue())
         cont.add_item(ui.TextDisplay(f"**Resposta Anônima:**\n{text}"))
-        if img_url:
-            gal = ui.MediaGallery()
-            gal.add_item(ui.Image(url=img_url))
-            cont.add_item(gal)
-        
         reply_layout.add_item(cont)
+        
         await thread.send(view=reply_layout)
         await interaction.response.send_message("Resposta enviada!", ephemeral=True)
+
+        if log_channel:
+            log_reply = discord.Embed(
+                title="💬 Log de Resposta Anônima",
+                description=f"**Resposta:**\n{text}",
+                color=discord.Color.blue(),
+                timestamp=datetime.now()
+            )
+            log_reply.add_field(name="👤 Autor", value=f"{author.mention}", inline=True)
+            log_reply.add_field(name="📌 Na Confissão", value=f"[Ir para mensagem]({target_msg.jump_url})", inline=True)
+            
+            await log_channel.send(embed=log_reply)
 
 async def get_next_confession_number(db, guild_id):
     result = await db.col_counters.find_one_and_update(
