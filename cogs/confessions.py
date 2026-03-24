@@ -13,12 +13,12 @@ class ConfessionStarterLayout(ui.LayoutView):
         ))
         
         row = ui.ActionRow()
-        btn_start = ui.Button(label="Enviar Desabafo", style=discord.ButtonStyle.primary, emoji="📝", custom_id="btn_confesstest")
+        btn_start = ui.Button(label="Enviar Desabafo", style=discord.ButtonStyle.primary, emoji="📝", custom_id="btn_confess")
         row.add_item(btn_start)
         container.add_item(row)
         self.add_item(container)
 
-    @ui.button(label="Enviar Desabafo", custom_id="btn_confesstest", style=discord.ButtonStyle.primary, emoji="📝")
+    @ui.button(label="Enviar Desabafo", custom_id="btn_confess", style=discord.ButtonStyle.primary, emoji="📝")
     async def start_confess(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(ConfessionModal(title="Nova Confissão"))
 
@@ -44,7 +44,7 @@ class ConfessionLayout(ui.LayoutView):
         container.add_item(row)
         self.add_item(container)
 
-    @ui.button(custom_id="btn_reply")
+    @ui.button(custom_id="btn_reply", style=discord.ButtonStyle.secondary, label="Responder")
     async def reply_callback(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(ConfessionModal(title="Responder Confissão", is_reply=True, message_id=interaction.message.id))
 
