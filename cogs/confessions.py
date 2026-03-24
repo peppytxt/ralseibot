@@ -31,9 +31,10 @@ class ConfessionLayout(ui.LayoutView):
         container.add_item(ui.TextDisplay(f"## 👤 Confissão Anônima (#{num:03d})\n\n{text}"))
         
         if img_url and img_url.startswith(("http", "https")):
-            gallery = ui.MediaGallery()
-            gallery.add_item(ui.Image(url=img_url))
-            container.add_item(gallery)
+            img_embed = discord.Embed()
+            img_embed.set_image(url=img_url)
+            
+            container.add_item(ui.EmbedDisplay(img_embed))
             
         row = ui.ActionRow()
         
