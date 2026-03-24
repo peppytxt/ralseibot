@@ -5,6 +5,7 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from cogs.moeda import setup as economia_setup
+from cogs.confessions import ConfessionStarterLayout, ConfessionLayout
 from motor.motor_asyncio import AsyncIOMotorClient
 from discord.ext import tasks
 
@@ -75,22 +76,24 @@ async def on_ready():
         status_task.start()
     print(f"Bot online como {bot.user} :3 (ID: {bot.user.id})")
 
-@bot.event
-async def setup_hook():
+async def my_setup_hook():
     await load_all_extensions()
+    
+    bot.add_view(ConfessionStarterLayout())
+    bot.add_view(ConfessionLayout(text="", num=0))
 
-    # Carregar comandos da economia
     try:
         economia_setup(bot.tree)
     except Exception as e:
         print("Erro economia:", e)
 
-    # Sincronizar slash commands
     try:
         await bot.tree.sync()
         print("Slash commands sincronizados!")
     except Exception as e:
         print("Erro ao sincronizar:", e)
+
+bot.setup_hook = my_setup_hook
 
 @bot.event
 async def on_message(message):
