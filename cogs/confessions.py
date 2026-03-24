@@ -76,7 +76,7 @@ class ConfessionModal(ui.Modal):
         self.message_id = message_id
 
         self.content = ui.TextInput(label="Sua Confissão", style=discord.TextStyle.paragraph, required=True)
-        self.image_url = ui.TextInput(label="URL da Imagem (Opcional)", required=False)
+        self.image_url = ui.TextInput(label="URL da Imagem (NÃO FUNCIONA!!!)", required=False)
         self.add_item(self.content)
         self.add_item(self.image_url)
 
