@@ -88,14 +88,12 @@ class ConfessionsCog(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="setup_confissoes", description="Envia o painel inicial de confissões anônimas")
+    @app_commands.guilds(discord.Object(id=1410006076400599235))
     @app_commands.checks.has_permissions(administrator=True)
     async def setup_confissoes(self, interaction: discord.Interaction):
         view = ConfessionStarterLayout()
         await interaction.channel.send(view=view)
         await interaction.response.send_message("✅ Painel configurado!", ephemeral=True)
-
-
-# Substitua sua função handle_confession_submission por esta:
 
 async def handle_confession_submission(interaction: discord.Interaction, text, img_url, is_reply, message_id):
     db = interaction.client.db 
