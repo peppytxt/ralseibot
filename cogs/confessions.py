@@ -36,18 +36,36 @@ class ConfessionLayout(ui.LayoutView):
             container.add_item(gallery)
             
         row = ui.ActionRow()
-        btn_new = ui.Button(label="Desabafar", style=discord.ButtonStyle.success, emoji="🔒", custom_id="btn_confess")
-        btn_reply = ui.Button(label="Responder", style=discord.ButtonStyle.secondary, emoji="💬", custom_id="btn_reply")
+        
+        btn_new = ui.Button(
+            label="Desabafar", 
+            style=discord.ButtonStyle.success, 
+            emoji="🔒", 
+            custom_id="btn_confess"
+        )
+        btn_new.callback = self.start_confess_new
+
+        btn_reply = ui.Button(
+            label="Responder", 
+            style=discord.ButtonStyle.secondary, 
+            emoji="💬", 
+            custom_id="btn_reply"
+        )
+        btn_reply.callback = self.reply_callback
         
         row.add_item(btn_new)
         row.add_item(btn_reply)
         container.add_item(row)
         self.add_item(container)
 
-    @ui.button(custom_id="btn_reply", style=discord.ButtonStyle.secondary, label="Responder")
-    async def reply_callback(self, interaction: discord.Interaction, button: ui.Button):
-        await interaction.response.send_modal(ConfessionModal(title="Responder Confissão", is_reply=True, message_id=interaction.message.id))
+    async def start_confess_new(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(ConfessionModal(title="Nova Confissão"))
 
+    async def reply_callback(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(
+            ConfessionModal(title="Responder Confissão", is_reply=True, message_id=interaction.message.id)
+        )
+        
 class ConfessionModal(ui.Modal):
     def __init__(self, title, is_reply=False, message_id=None):
         super().__init__(title=title)
