@@ -14,7 +14,7 @@ class ConfessionStarterLayout(ui.LayoutView):
         
         self.add_item(container)
 
-    @ui.button(custom_id="btn_confess", style=discord.ButtonStyle.primary, label="Enviar Desabafo")
+    @ui.button(label="Enviar Desabafo", custom_id="btn_confess", style=discord.ButtonStyle.primary, emoji="📝")
     async def start_confess(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(ConfessionModal(title="Nova Confissão"))
 
