@@ -55,6 +55,7 @@ COGS = [
     "cogs.help",
     "cogs.ship",
     "cogs.admin",
+    "cogs.confessions"
 ]
 
 async def load_all_extensions():
