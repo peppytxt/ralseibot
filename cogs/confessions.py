@@ -9,13 +9,9 @@ class ConfessionStarterLayout(ui.LayoutView):
         container = ui.Container(accent_color=discord.Color.blurple())
         container.add_item(ui.TextDisplay(
             "## 🤫 Mural de Confissões Anônimas\n"
-            "Clique no botão abaixo para enviar seu desabafo ou confissão.\n\n"
-            "*Respeite as regras da comunidade.*"
+            "Clique abaixo para enviar sua confissão.\n\n"
         ))
-        row = ui.ActionRow()
-        btn_start = ui.Button(label="Enviar Desabafo", style=discord.ButtonStyle.primary, emoji="📝", custom_id="btn_confess")
-        row.add_item(btn_start)
-        container.add_item(row)
+        
         self.add_item(container)
 
     @ui.button(custom_id="btn_confess", style=discord.ButtonStyle.primary, label="Enviar Desabafo")
