@@ -13,12 +13,14 @@ class ConfessionStarterLayout(ui.LayoutView):
         ))
         row = ui.ActionRow()
         btn_start = ui.Button(label="Enviar Desabafo", custom_id="btn_confess", style=discord.ButtonStyle.primary, emoji="📝")
+        
+        btn_start.callback = self.start_confess
+        
         row.add_item(btn_start)
         container.add_item(row)
         self.add_item(container)
 
-    @ui.button(custom_id="btn_confess")
-    async def start_confess(self, interaction: discord.Interaction, button: ui.Button):
+    async def start_confess(self, interaction: discord.Interaction):
         print("o botão foi apertado?")
         await interaction.response.send_modal(ConfessionModal(title="Nova Confissão"))
 
