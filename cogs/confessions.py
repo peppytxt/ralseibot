@@ -1,5 +1,6 @@
 import discord
 from discord import ui, app_commands
+from discord.ext import commands
 from datetime import datetime
 
 class ConfessionStarterLayout(ui.LayoutView):
@@ -11,14 +12,13 @@ class ConfessionStarterLayout(ui.LayoutView):
             "Clique no botão abaixo para enviar seu desabafo ou confissão.\n\n"
             "*Respeite as regras da comunidade.*"
         ))
-        
         row = ui.ActionRow()
         btn_start = ui.Button(label="Enviar Desabafo", style=discord.ButtonStyle.primary, emoji="📝", custom_id="btn_confess")
         row.add_item(btn_start)
         container.add_item(row)
         self.add_item(container)
 
-    @ui.button(label="Enviar Desabafo", custom_id="btn_confess", style=discord.ButtonStyle.primary, emoji="📝")
+    @ui.button(custom_id="btn_confess", style=discord.ButtonStyle.primary, label="Enviar Desabafo")
     async def start_confess(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(ConfessionModal(title="Nova Confissão"))
 
@@ -34,9 +34,7 @@ class ConfessionLayout(ui.LayoutView):
             container.add_item(gallery)
             
         row = ui.ActionRow()
-        
         btn_new = ui.Button(label="Desabafar", style=discord.ButtonStyle.success, emoji="🔒", custom_id="btn_confess")
-        
         btn_reply = ui.Button(label="Responder", style=discord.ButtonStyle.secondary, emoji="💬", custom_id="btn_reply")
         
         row.add_item(btn_new)
@@ -54,35 +52,32 @@ class ConfessionModal(ui.Modal):
         self.is_reply = is_reply
         self.message_id = message_id
 
-        self.content = ui.TextInput(
-            label="Sua Confissão",
-            style=discord.TextStyle.paragraph,
-            placeholder="Escreva aqui...",
-            required=True
-        )
-        self.image_url = ui.TextInput(
-            label="URL da Imagem (Opcional)",
-            required=False
-        )
+        self.content = ui.TextInput(label="Sua Confissão", style=discord.TextStyle.paragraph, required=True)
+        self.image_url = ui.TextInput(label="URL da Imagem (Opcional)", required=False)
         self.add_item(self.content)
         self.add_item(self.image_url)
 
     async def on_submit(self, interaction: discord.Interaction):
-        await handle_confession_submission(
-            interaction, 
-            self.content.value,
-            self.image_url.value,
-            self.is_reply,
-            self.message_id
-        )
+        await handle_confession_submission(interaction, self.content.value, self.image_url.value, self.is_reply, self.message_id)
 
-async def handle_confession_submission(interaction, text, img_url, is_reply, message_id):
+class ConfessionsCog(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(name="setup_confissoes", description="Envia o painel inicial de confissões anônimas")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def setup_confissoes(self, interaction: discord.Interaction):
+        view = ConfessionStarterLayout()
+        await interaction.channel.send(view=view)
+        await interaction.response.send_message("✅ Painel configurado!", ephemeral=True)
+
+
+async def handle_confession_submission(interaction: discord.Interaction, text, img_url, is_reply, message_id):
     db = interaction.client.db 
     
     if not is_reply:
         num = await get_next_confession_number(db, interaction.guild.id)
         layout = ConfessionLayout(text, num, img_url)
-        
         await interaction.channel.send(view=layout)
         await interaction.response.send_message(f"Sua confissão **#{num:03d}** foi enviada!", ephemeral=True)
     else:
@@ -103,7 +98,7 @@ async def handle_confession_submission(interaction, text, img_url, is_reply, mes
         reply_layout.add_item(cont)
         await thread.send(view=reply_layout)
         await interaction.response.send_message("Resposta enviada!", ephemeral=True)
-                
+
 async def get_next_confession_number(db, guild_id):
     result = await db.col_counters.find_one_and_update(
         {"_id": guild_id, "type": "confession"},
@@ -113,17 +108,6 @@ async def get_next_confession_number(db, guild_id):
     )
     return result.get("count", 1)
 
-@app_commands.command(name="setup_confissoes", description="Envia o painel inicial de confissões anônimas")
-@app_commands.checks.has_permissions(administrator=True)
-async def setup_confissoes(self, interaction: discord.Interaction):
-    view = ConfessionStarterLayout()
-    
-    await interaction.channel.send(view=view)
 
-    await interaction.response.send_message(
-        "✅ Painel de confissões configurado com sucesso neste canal!", 
-        ephemeral=True
-    )
-    
 async def setup(bot):
-    await bot.add_cog(ConfessionStarterLayout(bot))
+    await bot.add_cog(ConfessionsCog(bot))
