@@ -35,20 +35,17 @@ class BirthdayView(discord.ui.View):
         )
         await interaction.response.edit_message(embed=embed, view=self)
 
-    # ⬅️ Página anterior
     @discord.ui.button(label="⬅️", style=discord.ButtonStyle.secondary)
     async def previous(self, interaction, button):
         if self.page > 0:
             self.page -= 1
         await self.update(interaction)
 
-    # ➡️ Próxima página
     @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
     async def next(self, interaction, button):
         self.page += 1
         await self.update(interaction)
 
-    # 📅 Dropdown de meses
     @discord.ui.select(
         placeholder="📅 Escolha um mês",
         row=1,
