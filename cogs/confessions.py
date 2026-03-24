@@ -32,7 +32,7 @@ class ConfessionLayout(ui.LayoutView):
         
         if img_url and img_url.startswith(("http", "https")):
             gallery = ui.MediaGallery()
-            gallery.add_item(ui.MediaItem(url=img_url))
+            gallery.add_item(ui.Image(url=img_url))
             container.add_item(gallery)
             
         row = ui.ActionRow()
@@ -113,7 +113,7 @@ async def handle_confession_submission(interaction: discord.Interaction, text, i
         cont.add_item(ui.TextDisplay(f"**Resposta Anônima:**\n{text}"))
         if img_url:
             gal = ui.MediaGallery()
-            gal.add_item(ui.MediaItem(url=img_url))
+            gal.add_item(ui.Image(url=img_url))
             cont.add_item(gal)
         
         reply_layout.add_item(cont)
