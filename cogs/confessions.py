@@ -124,3 +124,6 @@ async def setup_confissoes(self, interaction: discord.Interaction):
         "✅ Painel de confissões configurado com sucesso neste canal!", 
         ephemeral=True
     )
+    
+async def setup(bot):
+    await bot.add_cog(ConfessionStarterLayout(bot))
