@@ -88,6 +88,7 @@ class ConfessionsCog(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="setup_confissoes", description="Envia o painel inicial de confissões anônimas")
+    @app_commands.checks.has_permissions(administrator=True)
     async def setup_confissoes(self, interaction: discord.Interaction):
         view = ConfessionStarterLayout()
         await interaction.channel.send(view=view)
