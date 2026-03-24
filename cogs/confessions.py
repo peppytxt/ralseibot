@@ -99,11 +99,9 @@ class ConfessionsCog(commands.Cog):
 
 async def handle_confession_submission(interaction: discord.Interaction, text, img_url, is_reply, message_id):
     db = interaction.client.db 
-    # DEFINA O ID DO SEU CANAL DE LOGS AQUI
-    LOG_CHANNEL_ID = 123456789012345678  
+    LOG_CHANNEL_ID = 1442962186120069234
     log_channel = interaction.guild.get_channel(LOG_CHANNEL_ID)
-    
-    # Informações do autor para o log
+
     author = interaction.user
     
     if not is_reply:
