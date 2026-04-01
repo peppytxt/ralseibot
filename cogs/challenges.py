@@ -213,7 +213,7 @@ class Challenges(commands.Cog):
 #           return await interaction.response.send_message(
 #               f"Este servidor possui apenas `{human_count}` membros :(\n"
 #               "Para ativar os desafios, o servidor precisa de pelo menos **50 membros** (sem contar bots).",
-#               ephemeral=True
+#               ephemeral=True.
 #           )
 
         config = await self.col_config.find_one({"_id": interaction.guild.id}) or {}
