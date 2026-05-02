@@ -84,7 +84,9 @@ class ChallengeConfigView(ui.LayoutView):
             f"Canal: {canal_str}"
         ))
         
+        # --- FILA DE BOTÕES 1 ---
         row_btns = ui.ActionRow()
+        
         btn_toggle = ui.Button(
             label="Desativar" if enabled else "Ativar",
             style=discord.ButtonStyle.danger if enabled else discord.ButtonStyle.success,
@@ -94,19 +96,22 @@ class ChallengeConfigView(ui.LayoutView):
         
         btn_int = ui.Button(label="Intervalo", style=discord.ButtonStyle.secondary, emoji="🔢")
         btn_int.callback = self.open_interval_modal
-        
-        row_btns.add_item(btn_toggle)
-        row_btns.add_item(btn_int)
-        container.add_item(row_btns)
 
+        # Adicionamos o botão de Ralcoins nesta mesma fileira
         btn_ralcoins = ui.Button(
-            label="Configurar Ralcoins",
+            label="Ralcoins",
             style=discord.ButtonStyle.secondary,
             emoji="🪙"
         )
         btn_ralcoins.callback = self.ralcoin_config_callback
-        self.add_item(btn_ralcoins)
+        
+        row_btns.add_item(btn_toggle)
+        row_btns.add_item(btn_int)
+        row_btns.add_item(btn_ralcoins)
+        
+        container.add_item(row_btns) # Adicionamos a fileira ao container
 
+        # --- FILA DE SELEÇÃO DE CANAL ---
         row_select = ui.ActionRow()
         select_canal = ui.ChannelSelect(
             placeholder="Selecione o canal para os desafios...",
@@ -117,6 +122,7 @@ class ChallengeConfigView(ui.LayoutView):
         select_canal.callback = self.update_channel
         row_select.add_item(select_canal)
 
+        # Adicionamos o container e depois o seletor à View principal
         self.add_item(container)
         self.add_item(row_select)
 
