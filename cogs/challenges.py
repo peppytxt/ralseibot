@@ -7,8 +7,6 @@ import asyncio
 import json
 import unicodedata
 
-import config
-
 DEFAULT_INTERVAL = 100
 DEFAULT_MODE = "messages"
 REWARD_MIN = 1500
