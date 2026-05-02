@@ -7,6 +7,8 @@ import asyncio
 import json
 import unicodedata
 
+import config
+
 DEFAULT_INTERVAL = 100
 DEFAULT_MODE = "messages"
 REWARD_MIN = 1500
@@ -43,7 +45,7 @@ class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
             
             if valor < 50:
                 return await interaction.response.send_message(
-                  "⚠️ O intervalo mínimo permitido é de **50 mensagens**.",                      ephemeral=True
+                  "⚠️ O intervalo mínimo permitido é de **50 mensagens**.", ephemeral=True
                 )
             
             self.view.config["interval"] = valor
@@ -99,6 +101,14 @@ class ChallengeConfigView(ui.LayoutView):
         row_btns.add_item(btn_int)
         container.add_item(row_btns)
 
+        btn_ralcoins = ui.Button(
+            label="Configurar Ralcoins",
+            style=discord.ButtonStyle.secondary,
+            emoji="🪙"
+        )
+        btn_ralcoins.callback = self.ralcoin_config_callback
+        self.add_item(btn_ralcoins)
+
         row_select = ui.ActionRow()
         select_canal = ui.ChannelSelect(
             placeholder="Selecione o canal para os desafios...",
@@ -150,8 +160,57 @@ class ChallengeConfigView(ui.LayoutView):
         else:
             await interaction.response.edit_message(view=self)
 
+    async def ralcoin_config_callback(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(RalcoinSettingsModal(self.cog, self.guild.id))
+
     async def open_interval_modal(self, interaction: discord.Interaction):
         await interaction.response.send_modal(IntervalModal(self))
+
+class RalcoinSettingsModal(ui.Modal, title="Configurar Ganhos de Ralcoins"):
+    # TextInput para o valor mínimo
+    min_val = ui.TextInput(
+        label="Valor Mínimo",
+        placeholder="Ex: 5",
+        min_length=1,
+        max_length=5,
+        default="5"
+    )
+    # TextInput para o valor máximo
+    max_val = ui.TextInput(
+        label="Valor Máximo",
+        placeholder="Ex: 20",
+        min_length=1,
+        max_length=5,
+        default="20"
+    )
+
+    def __init__(self, cog, guild_id):
+        super().__init__()
+        self.cog = cog
+        self.guild_id = guild_id
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            # Converte para inteiro e valida
+            mini = int(self.min_val.value)
+            maxi = int(self.max_val.value)
+
+            if mini > maxi:
+                return await interaction.response.send_message("O mínimo não pode ser maior que o máximo!", ephemeral=True)
+
+            # Salva no banco de dados (col_config que você já usa)
+            await self.cog.col_config.update_one(
+                {"_id": self.guild_id},
+                {"$set": {"min_ralcoins": mini, "max_ralcoins": maxi}},
+                upsert=True
+            )
+
+            await interaction.response.send_message(
+                f"✅ Configurações salvas!\n**Mínimo:** {mini} 🪙\n**Máximo:** {maxi} 🪙", 
+                ephemeral=True
+            )
+        except ValueError:
+            await interaction.response.send_message("Por favor, insira apenas números inteiros!", ephemeral=True)
 
 class Challenges(commands.Cog):
     def __init__(self, bot):
@@ -495,9 +554,14 @@ class Challenges(commands.Cog):
             user_answer = normalize(message.content)
 
             if any(user_answer == normalize(r) for r in respostas_permitidas):
-                challenge["solved"] = True
+                challenge["solved"] = True      
 
-                reward = random.randint(REWARD_MIN, REWARD_MAX)
+                config_db = await self.col_config.find_one({"_id": message.guild.id}) or {}
+
+                min_ganho = config_db.get("min_ralcoins", REWARD_MIN)
+                max_ganho = config_db.get("max_ralcoins", REWARD_MAX)
+
+                reward = random.randint(min_ganho, max_ganho)
                 response_time = time.time() - challenge["spawned_at"]
 
                 await message.add_reaction("✅")
