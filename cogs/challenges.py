@@ -109,7 +109,7 @@ class ChallengeConfigView(ui.LayoutView):
         row_btns.add_item(btn_int)
         row_btns.add_item(btn_ralcoins)
         
-        container.add_item(row_btns) # Adicionamos a fileira ao container
+        container.add_item(row_btns)
 
         # --- FILA DE SELEÇÃO DE CANAL ---
         row_select = ui.ActionRow()
