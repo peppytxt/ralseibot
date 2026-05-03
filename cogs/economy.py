@@ -250,7 +250,7 @@ class LojaView(ui.LayoutView):
 
         await interaction.response.send_message(f"☕ **Gole!** Você está energizado! Seu cooldown agora é de 30s até <t:{expires_at}:t>!", ephemeral=True)
 
-class RankCoinsView(ui.LayoutView):build_interface
+class RankCoinsView(ui.LayoutView):
     def __init__(self, cog, interaction, is_local):
         super().__init__(timeout=120)
         self.cog = cog
