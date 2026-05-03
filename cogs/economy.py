@@ -411,11 +411,8 @@ class Economy(commands.Cog):
             member_ids = [m.id for m in interaction.guild.members]
             query["_id"] = {"$in": member_ids, "$ne": BOT_ECONOMY_ID}
 
-        # Use self.col, que é como você definiu no __init__
         cursor = self.col.find(query, {"coins": 1}).sort("coins", -1).skip(skip).limit(page_size)
-        
-        # Como você provavelmente está usando Motor (pelo await), o to_list está correto
-        users = await cursor.to_list(length=page_size)
+        users = list(cursor)
 
         if not users:
             return None
