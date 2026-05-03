@@ -250,7 +250,7 @@ class LojaView(ui.LayoutView):
 
         await interaction.response.send_message(f"☕ **Gole!** Você está energizado! Seu cooldown agora é de 30s até <t:{expires_at}:t>!", ephemeral=True)
 
-class RankCoinsView(ui.LayoutView):
+class RankCoinsView(ui.LayoutView):build_interface
     def __init__(self, cog, interaction, is_local):
         super().__init__(timeout=120)
         self.cog = cog
@@ -261,6 +261,7 @@ class RankCoinsView(ui.LayoutView):
 
     def build_interface(self, title, description):
         self.clear_items()
+        MAX_PAGES = 10
 
         # Define a cor baseada no modo (Ouro para Global, Verde para Local)
         color = discord.Color.gold() if not self.is_local else discord.Color.green()
@@ -277,7 +278,7 @@ class RankCoinsView(ui.LayoutView):
         btn_prev = ui.Button(emoji="⬅️", style=discord.ButtonStyle.gray, disabled=self.page == 0)
         btn_prev.callback = self.prev_page
         btn_current = ui.Button(label=f"Pág {self.page + 1}", style=discord.ButtonStyle.gray, disabled=True)
-        btn_next = ui.Button(emoji="➡️", style=discord.ButtonStyle.gray)
+        btn_next = ui.Button(emoji="➡️", style=discord.ButtonStyle.gray, disabled=self.page >= MAX_PAGES - 1)
         btn_next.callback = self.next_page
         
         row.add_item(btn_prev)
