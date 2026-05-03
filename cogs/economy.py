@@ -268,8 +268,8 @@ class RankCoinsView(ui.LayoutView):
         
         # Adiciona o Embed dentro do Container
         container.add_item(ui.TextDisplay(f"## {title}"))
-        container.add_item(ui.TextDisplay(description))
         container.add_item(ui.Separator())
+        container.add_item(ui.TextDisplay(description))
         
         # Linha de comandos (ActionRow)
         row = ui.ActionRow()
