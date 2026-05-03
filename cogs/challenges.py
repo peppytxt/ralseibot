@@ -97,7 +97,6 @@ class ChallengeConfigView(ui.LayoutView):
         btn_int = ui.Button(label="Intervalo", style=discord.ButtonStyle.secondary, emoji="🔢")
         btn_int.callback = self.open_interval_modal
 
-        # Adicionamos o botão de Ralcoins nesta mesma fileira
         btn_ralcoins = ui.Button(
             label="Ralcoins",
             style=discord.ButtonStyle.secondary,
@@ -171,21 +170,19 @@ class ChallengeConfigView(ui.LayoutView):
         await interaction.response.send_modal(IntervalModal(self))
 
 class RalcoinSettingsModal(ui.Modal, title="Configurar Ganhos de Ralcoins"):
-    # TextInput para o valor mínimo
     min_val = ui.TextInput(
         label="Valor Mínimo",
-        placeholder="Ex: 5",
+        placeholder="Ex: 1500",
         min_length=1,
         max_length=5,
-        default="5"
+        default="1500"
     )
-    # TextInput para o valor máximo
     max_val = ui.TextInput(
         label="Valor Máximo",
-        placeholder="Ex: 20",
+        placeholder="Ex: 4000",
         min_length=1,
         max_length=5,
-        default="20"
+        default="4000"
     )
 
     def __init__(self, cog, guild_id):
@@ -195,14 +192,29 @@ class RalcoinSettingsModal(ui.Modal, title="Configurar Ganhos de Ralcoins"):
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
-            # Converte para inteiro e valida
             mini = int(self.min_val.value)
             maxi = int(self.max_val.value)
+            LIMITE_ABSOLUTO = 5000
 
-            if mini > maxi:
-                return await interaction.response.send_message("O mínimo não pode ser maior que o máximo!", ephemeral=True)
+            # 1. Validação de Limite Máximo Global
+            if maxi > LIMITE_ABSOLUTO or mini > LIMITE_ABSOLUTO:
+                return await interaction.response.send_message(
+                    f"O valor máximo permitido para configuração é de **{LIMITE_ABSOLUTO}** Ralcoins >:3", 
+                    ephemeral=True
+                )
 
-            # Salva no banco de dados (col_config que você já usa)
+            # 2. Validação Mínimo vs Máximo
+            if mini >= maxi:
+                return await interaction.response.send_message(
+                    "O valor **mínimo** deve ser obrigatoriamente **menor** que o valor máximo >:3", 
+                    ephemeral=True
+                )
+            
+            # 3. Validação de números negativos
+            if mini < 0:
+                return await interaction.response.send_message("O valor não pode ser negativo! Rsrs", ephemeral=True)
+
+            # Se passar em tudo, salva no banco
             await self.cog.col_config.update_one(
                 {"_id": self.guild_id},
                 {"$set": {"min_ralcoins": mini, "max_ralcoins": maxi}},
@@ -210,11 +222,12 @@ class RalcoinSettingsModal(ui.Modal, title="Configurar Ganhos de Ralcoins"):
             )
 
             await interaction.response.send_message(
-                f"✅ Configurações salvas!\n**Mínimo:** {mini} 🪙\n**Máximo:** {maxi} 🪙", 
+                f"✅ **Configurações salvas!**\nMínimo: `{mini}` :coin: \n Máximo: `{maxi}` :coin:", 
                 ephemeral=True
             )
+
         except ValueError:
-            await interaction.response.send_message("Por favor, insira apenas números inteiros!", ephemeral=True)
+            await interaction.response.send_message("❌ Por favor, insira apenas números inteiros!", ephemeral=True)
 
 class Challenges(commands.Cog):
     def __init__(self, bot):
