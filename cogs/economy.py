@@ -287,14 +287,16 @@ class RankCoinsView(ui.LayoutView):
         self.add_item(container)
 
     async def update_display(self, interaction: discord.Interaction):
-        embed = await self.cog.build_rankcoins_embed(interaction, self.page, self.page_size, self.is_local)
+        result = await self.cog.build_rankcoins_embed(interaction, self.page, self.page_size, self.is_local)
         
-        # Se por acaso a próxima página estiver vazia, volta uma
-        if not embed and self.page > 0:
-            self.page -= 1
-            return # Ou você pode enviar um aviso efêmero
+        if not result:
+            if self.page > 0:
+                self.page -= 1
+            return await interaction.response.send_message("❌ Não há mais páginas!", ephemeral=True)
 
-        self.build_interface("Ranking de Ralcoins", embed)
+        titulo, descricao = result 
+
+        self.build_interface(titulo, descricao)
         await interaction.response.edit_message(view=self)
 
     async def next_page(self, interaction: discord.Interaction):
