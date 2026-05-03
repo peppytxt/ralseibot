@@ -269,6 +269,7 @@ class RankCoinsView(ui.LayoutView):
         # Adiciona o Embed dentro do Container
         container.add_item(ui.TextDisplay(f"## {title}"))
         container.add_item(ui.TextDisplay(description))
+        container.add_item(ui.Separator())
         
         # Linha de comandos (ActionRow)
         row = ui.ActionRow()
@@ -283,6 +284,7 @@ class RankCoinsView(ui.LayoutView):
         row.add_item(btn_current)
         row.add_item(btn_next)
         
+        container.add_item(ui.Separator())
         container.add_item(row)
         self.add_item(container)
 
@@ -400,8 +402,7 @@ class Economy(commands.Cog):
             page = 0
 
         skip = page * page_size
-        
-        # Filtro base: usamos BOT_ECONOMY_ID
+
         query = {
             "coins": {"$exists": True},
             "_id": {"$ne": BOT_ECONOMY_ID} 
@@ -440,7 +441,6 @@ class Economy(commands.Cog):
                 desc += f"**#{pos} - {name}** • {coins} ralcoins\n"
 
         titulo = "🏦 Rank Local de Ralcoins" if is_local else "🏦 Rank Global de Ralcoins"
-        cor = discord.Color.green() if is_local else discord.Color.gold()
 
         return titulo, desc
         
