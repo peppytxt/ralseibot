@@ -477,6 +477,12 @@ class Economy(commands.Cog):
 
     # Função auxiliar para evitar repetição de código
     async def _send_rank(self, interaction: discord.Interaction, page: int, is_local: bool):
+        MAX_PAGES = 10 # Define o limite aqui
+        
+        if page > MAX_PAGES:
+            return await interaction.response.send_message(
+                f"O ranking é limitado às primeiras {MAX_PAGES} páginas uwu", ephemeral=True)
+        
         page_index = page - 1
         page_size = 10
 
