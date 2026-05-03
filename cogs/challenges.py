@@ -222,7 +222,7 @@ class RalcoinSettingsModal(ui.Modal, title="Configurar Ganhos de Ralcoins"):
             )
 
             await interaction.response.send_message(
-                f"✅ **Configurações salvas!**\nMínimo: `{mini}` :coin: \n Máximo: `{maxi}` :coin:", 
+                f"✅ **Configurações salvas!**\nMínimo: {mini} :coin: \nMáximo: {maxi} :coin:", 
                 ephemeral=True
             )
 
