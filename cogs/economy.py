@@ -259,7 +259,7 @@ class RankCoinsView(ui.LayoutView):
         self.page = 0
         self.page_size = 5
 
-    def build_interface(self, embed):
+    def build_interface(self, title, description):
         self.clear_items()
 
         # Define a cor baseada no modo (Ouro para Global, Verde para Local)
@@ -267,17 +267,15 @@ class RankCoinsView(ui.LayoutView):
         container = ui.Container(accent_color=color)
         
         # Adiciona o Embed dentro do Container
-        container.add_item(ui.TextDisplay(embed=embed))
+        container.add_item(ui.TextDisplay(f"## {title}"))
+        container.add_item(ui.TextDisplay(description))
         
         # Linha de comandos (ActionRow)
         row = ui.ActionRow()
         
         btn_prev = ui.Button(emoji="⬅️", style=discord.ButtonStyle.gray, disabled=self.page == 0)
         btn_prev.callback = self.prev_page
-        
-        # Botão central que mostra a página atual
         btn_current = ui.Button(label=f"Pág {self.page + 1}", style=discord.ButtonStyle.gray, disabled=True)
-        
         btn_next = ui.Button(emoji="➡️", style=discord.ButtonStyle.gray)
         btn_next.callback = self.next_page
         
@@ -296,7 +294,7 @@ class RankCoinsView(ui.LayoutView):
             self.page -= 1
             return # Ou você pode enviar um aviso efêmero
 
-        self.build_interface(embed)
+        self.build_interface("Ranking de Ralcoins", embed)
         await interaction.response.edit_message(view=self)
 
     async def next_page(self, interaction: discord.Interaction):
@@ -442,14 +440,7 @@ class Economy(commands.Cog):
         titulo = "🏦 Rank Local de Ralcoins" if is_local else "🏦 Rank Global de Ralcoins"
         cor = discord.Color.green() if is_local else discord.Color.gold()
 
-        embed = discord.Embed(
-            title=titulo,
-            description=desc,
-            color=cor
-        )
-
-        embed.set_footer(text=f"Página {page + 1} • {interaction.guild.name if is_local else 'Global'}")
-        return embed
+        return titulo, desc
         
     
     def get_coin_rank(self, user_id: int) -> int | None:
@@ -485,18 +476,18 @@ class Economy(commands.Cog):
     # Função auxiliar para evitar repetição de código
     async def _send_rank(self, interaction: discord.Interaction, page: int, is_local: bool):
         page_index = page - 1
-        page_size = 5
+        page_size = 10
 
-        # Busca o embed inicial
-        embed = await self.build_rankcoins_embed(interaction, page_index, page_size, is_local)
+        # Título e descrição
+        result = await self.build_rankcoins_embed(interaction, page_index, page_size, is_local)
         
-        if not embed:
-            return await interaction.response.send_message("❌ Não há dados suficientes para exibir este ranking.", ephemeral=True)
+        if not result:
+            return await interaction.response.send_message("❌ Sem dados.", ephemeral=True)
 
-        # Cria a View v2
+        titulo, descricao = result
         view = RankCoinsView(self, interaction, is_local)
         view.page = page_index
-        view.build_interface(embed)
+        view.build_interface(titulo, descricao) 
 
         await interaction.response.send_message(view=view)
         
