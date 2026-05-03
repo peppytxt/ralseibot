@@ -257,7 +257,7 @@ class RankCoinsView(ui.LayoutView):
         self.interaction = interaction
         self.is_local = is_local
         self.page = 0
-        self.page_size = 5
+        self.page_size = 10
 
     def build_interface(self, title, description):
         self.clear_items()
