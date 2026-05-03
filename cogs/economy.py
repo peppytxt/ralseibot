@@ -250,6 +250,63 @@ class LojaView(ui.LayoutView):
 
         await interaction.response.send_message(f"☕ **Gole!** Você está energizado! Seu cooldown agora é de 30s até <t:{expires_at}:t>!", ephemeral=True)
 
+class RankCoinsView(ui.LayoutView):
+    def __init__(self, cog, interaction, is_local):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.interaction = interaction
+        self.is_local = is_local
+        self.page = 0
+        self.page_size = 5
+
+    def build_interface(self, embed):
+        self.clear_items()
+
+        # Define a cor baseada no modo (Ouro para Global, Verde para Local)
+        color = discord.Color.gold() if not self.is_local else discord.Color.green()
+        container = ui.Container(accent_color=color)
+        
+        # Adiciona o Embed dentro do Container
+        container.add_item(ui.TextDisplay(embed=embed))
+        
+        # Linha de comandos (ActionRow)
+        row = ui.ActionRow()
+        
+        btn_prev = ui.Button(emoji="⬅️", style=discord.ButtonStyle.gray, disabled=self.page == 0)
+        btn_prev.callback = self.prev_page
+        
+        # Botão central que mostra a página atual
+        btn_current = ui.Button(label=f"Pág {self.page + 1}", style=discord.ButtonStyle.gray, disabled=True)
+        
+        btn_next = ui.Button(emoji="➡️", style=discord.ButtonStyle.gray)
+        btn_next.callback = self.next_page
+        
+        row.add_item(btn_prev)
+        row.add_item(btn_current)
+        row.add_item(btn_next)
+        
+        container.add_item(row)
+        self.add_item(container)
+
+    async def update_display(self, interaction: discord.Interaction):
+        embed = await self.cog.build_rankcoins_embed(interaction, self.page, self.page_size, self.is_local)
+        
+        # Se por acaso a próxima página estiver vazia, volta uma
+        if not embed and self.page > 0:
+            self.page -= 1
+            return # Ou você pode enviar um aviso efêmero
+
+        self.build_interface(embed)
+        await interaction.response.edit_message(view=self)
+
+    async def next_page(self, interaction: discord.Interaction):
+        self.page += 1
+        await self.update_display(interaction)
+
+    async def prev_page(self, interaction: discord.Interaction):
+        self.page = max(0, self.page - 1)
+        await self.update_display(interaction)
+
 class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -338,25 +395,27 @@ class Economy(commands.Cog):
         )
 
                
-    async def build_rankcoins_embed(self, interaction, page: int, page_size: int):
+    async def build_rankcoins_embed(self, interaction, page: int, page_size: int, is_local: bool = False):
         if page < 0:
             page = 0
 
         skip = page * page_size
+        
+        # Filtro base: usamos BOT_ECONOMY_ID
+        query = {
+            "coins": {"$exists": True},
+            "_id": {"$ne": BOT_ECONOMY_ID} 
+        }
 
-        users = list(
-            self.col.find(
-                {
-                    "coins": {"$exists": True},
-                    "_id": {"$ne": BOT_ECONOMY_ID}
-                },
-                {"coins": 1}
-            )
-            .sort("coins", -1)
-            .skip(skip)
-            .limit(page_size)
-        )
+        if is_local:
+            member_ids = [m.id for m in interaction.guild.members]
+            query["_id"] = {"$in": member_ids, "$ne": BOT_ECONOMY_ID}
 
+        # Use self.col, que é como você definiu no __init__
+        cursor = self.col.find(query, {"coins": 1}).sort("coins", -1).skip(skip).limit(page_size)
+        
+        # Como você provavelmente está usando Motor (pelo await), o to_list está correto
+        users = await cursor.to_list(length=page_size)
 
         if not users:
             return None
@@ -370,6 +429,12 @@ class Economy(commands.Cog):
             coins = u.get("coins", 0)
 
             user = interaction.client.get_user(uid)
+            if not user:
+                try:
+                    user = await interaction.client.fetch_user(uid)
+                except:
+                    user = None
+            
             name = user.display_name if user else f"Usuário {uid}"
 
             if uid == interaction.user.id:
@@ -377,16 +442,18 @@ class Economy(commands.Cog):
             else:
                 desc += f"**#{pos} - {name}** • {coins} ralcoins\n"
 
+        titulo = "🏦 Rank Local de Ralcoins" if is_local else "🏦 Rank Global de Ralcoins"
+        cor = discord.Color.green() if is_local else discord.Color.gold()
 
         embed = discord.Embed(
-            title="🏦 Rank Global de Ralcoins",
+            title=titulo,
             description=desc,
-            color=discord.Color.gold()
+            color=cor
         )
 
-        embed.set_footer(text=f"Página {page + 1}")
+        embed.set_footer(text=f"Página {page + 1} • {interaction.guild.name if is_local else 'Global'}")
         return embed
-    
+        
     
     def get_coin_rank(self, user_id: int) -> int | None:
         cursor = self.col.find(
@@ -405,44 +472,36 @@ class Economy(commands.Cog):
         return None
 
 
-      # ------------------ RANK GLOBAL ------------------
-    @app_commands.command(name="rankcoins", description="Ranking global de ralcoins")
-    @app_commands.describe(page="Página do ranking (1–50)")
-    async def rankcoins(
-        self,
-        interaction: discord.Interaction,
-        page: app_commands.Range[int, 1, 50] | None = None
-    ):
+    # Grupo principal /rankcoins
+    rankcoins_group = app_commands.Group(name="rankcoins", description="Visualizar o ranking de Ralcoins")
+
+    @rankcoins_group.command(name="global", description="Ranking global de Ralcoins")
+    @app_commands.describe(page="Página do ranking")
+    async def rank_global(self, interaction: discord.Interaction, page: app_commands.Range[int, 1, 50] = 1):
+        await self._send_rank(interaction, page, is_local=False)
+
+    @rankcoins_group.command(name="local", description="Ranking de Ralcoins neste servidor")
+    @app_commands.describe(page="Página do ranking")
+    async def rank_local(self, interaction: discord.Interaction, page: app_commands.Range[int, 1, 50] = 1):
+        await self._send_rank(interaction, page, is_local=True)
+
+    # Função auxiliar para evitar repetição de código
+    async def _send_rank(self, interaction: discord.Interaction, page: int, is_local: bool):
+        page_index = page - 1
         page_size = 5
-        page_index = (page - 1) if page else 0
 
-        embed = await self.build_rankcoins_embed(
-            interaction,
-            page_index,
-            page_size
-        )
+        # Busca o embed inicial
+        embed = await self.build_rankcoins_embed(interaction, page_index, page_size, is_local)
+        
+        if not embed:
+            return await interaction.response.send_message("❌ Não há dados suficientes para exibir este ranking.", ephemeral=True)
 
-        if embed is None:
-            return await interaction.response.send_message(
-                "❌ Não há dados para essa página.",
-                ephemeral=True
-            )
+        # Cria a View v2
+        view = RankCoinsView(self, interaction, is_local)
+        view.page = page_index
+        view.build_interface(embed)
 
-        view = RankView(
-            cog=self,
-            interaction=interaction,
-            page=page_index,
-            page_size=page_size,
-            build_func=self.build_rankcoins_embed,
-            get_rank_func=self.get_coin_rank
-        )
-
-        await interaction.response.send_message(
-            embed=embed,
-            view=view
-        )
-
-        view.message = await interaction.original_response()
+        await interaction.response.send_message(view=view)
         
     bet = app_commands.Group(
         name="bet",
