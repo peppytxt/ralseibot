@@ -239,6 +239,42 @@ class Challenges(commands.Cog):
         self.challenge_timeout_checker.start()
         self.load_quiz_data()
 
+        self.config_cache = {} 
+        self.update_cache.start()
+
+        self.challenge_timeout_checker.start()
+        self.load_quiz_data()
+
+        def cog_unload(self):
+            self.challenge_timeout_checker.cancel()
+            self.update_cache.cancel()
+
+        @tasks.loop(minutes=5)
+        async def update_cache(self):
+            """Atualiza as configurações de todos os servidores na memória do bot"""
+            if self.col_config is None:
+                return
+            
+            try:
+                new_cache = {}
+                # Busca apenas servidores que têm o desafio ativado
+                cursor = self.col_config.find({"challenge_enabled": True})
+                async for doc in cursor:
+                    new_cache[doc["_id"]] = doc
+                
+                self.config_cache = new_cache
+                # print(f"DEBUG: Cache de desafios atualizado para {len(new_cache)} servidores.")
+            except Exception as e:
+                print(f"❌ Erro ao atualizar cache de desafios: {e}")
+
+        @update_cache.before_loop
+        async def before_update_cache(self):
+            await self.bot.wait_until_ready()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print(f"Cog de Desafios carregado e monitorando servidores uwu")
+
     def load_quiz_data(self):
         try:
             with open("cogs/quiz.json", "r", encoding="utf-8") as f:
@@ -401,29 +437,32 @@ class Challenges(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or not message.guild or self.col_config is None:
+        if message.author.bot or not message.guild:
             return
         
-        config = await self.col_config.find_one({"_id": message.guild.id})
+        config = self.config_cache.get(message.guild.id)
+        
         if not config or not config.get("challenge_enabled"):
             return
 
-        key = str(message.guild.id)
-        interval = config.get("challenge_interval", DEFAULT_INTERVAL)
+        try:
+            key = str(message.guild.id)
+            interval = config.get("challenge_interval", DEFAULT_INTERVAL)
 
-        self.message_counters[key] = self.message_counters.get(key, 0) + 1
-        current = self.message_counters[key]
+            self.message_counters[key] = self.message_counters.get(key, 0) + 1
+            
+            if self.message_counters[key] >= interval:
+                self.message_counters[key] = 0
+                await self.spawn_challenge(message.guild, config)
+                
+                await self.col_config.update_one(
+                    {"_id": message.guild.id},
+                    {"$set": {"challenge_last": time.time()}}
+                )
 
-        if self.message_counters[key] >= interval:
-            self.message_counters[key] = 0
-            await self.spawn_challenge(message.guild, config)
-
-            await self.col_config.update_one(
-                {"_id": message.guild.id},
-                {"$set": {"challenge_last": time.time()}}
-            )
-
-        await self.check_answer(message)
+            await self.check_answer(message)
+        except Exception as e:
+            print(f"⚠️ Erro no processamento de desafio em {message.guild.id}: {e}")
     # ------------- TIMER LOOP ---------------------
 
     @tasks.loop(seconds=60)
@@ -509,30 +548,35 @@ class Challenges(commands.Cog):
         if not channel:
             return
 
-        challenge = self.generate_challenge()
+        try:
+            challenge = self.generate_challenge()
 
-        self.active_challenges[guild.id] = {
-            "answer": challenge["answer"],
-            "spawned_at": time.time(),
-            "token_positions": challenge.get("token_positions"),
-            "solved": False
-        }
+            self.active_challenges[guild.id] = {
+                "answer": challenge["answer"],
+                "spawned_at": time.time(),
+                "token_positions": challenge.get("token_positions"),
+                "solved": False
+            }
 
-        embed = discord.Embed(
-            title="📺 IT'S TV TIME!!",
-            description=challenge["question"],
-            color=discord.Color.blue()
-        )
-
-        if challenge.get("author_name"):
-            embed.set_footer(
-                text=f"Sugerido por {challenge['author_name']}",
-                icon_url=challenge.get("author_icon")
+            embed = discord.Embed(
+                title="📺 IT'S TV TIME!!",
+                description=challenge["question"],
+                color=discord.Color.blue()
             )
-        else:
-            embed.set_footer(text="Responda corretamente para ganhar pontos!")
 
-        await channel.send(embed=embed)
+            if challenge.get("author_name"):
+                embed.set_footer(
+                    text=f"Sugerido por {challenge['author_name']}",
+                    icon_url=challenge.get("author_icon")
+                )
+            else:
+                embed.set_footer(text="Responda corretamente para ganhar pontos!")
+
+            await channel.send(embed=embed)
+
+        except discord.HTTPException as e:
+            print(f"❌ Erro de API ao enviar desafio em {guild.id}: {e}")
+            self.active_challenges.pop(guild.id, None)
 
     # ------------- CHECK ANSWER -------------
 
