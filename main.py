@@ -2,6 +2,7 @@ import os
 import discord
 import random
 from discord.ext import commands, tasks
+from cogs.confessions import ConfessionLayout, ConfessionStarterLayout
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from cogs.moeda import setup as economia_setup
@@ -64,6 +65,11 @@ async def load_all_extensions():
             print(f"Carregado: {cog}")
         except Exception as e:
             print(f"Falha ao carregar {cog}: {e}")
+
+async def my_setup_hook():
+    await load_all_extensions()
+    bot.add_view(ConfessionStarterLayout())
+    bot.add_view(ConfessionLayout(text="", num=0))
 
 # ================================
 #         EVENTOS
