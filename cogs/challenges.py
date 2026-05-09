@@ -240,6 +240,13 @@ class Challenges(commands.Cog):
         self.load_quiz_data()
 
         self.config_cache = {} 
+
+        @tasks.loop(minutes=5)
+        async def update_cache(self):
+            cursor = self.col_config.find({"challenge_enabled": True})
+            async for doc in cursor:
+                self.config_cache[doc["_id"]] = doc
+                
         self.update_cache.start()
 
         self.challenge_timeout_checker.start()
@@ -454,7 +461,7 @@ class Challenges(commands.Cog):
             if self.message_counters[key] >= interval:
                 self.message_counters[key] = 0
                 await self.spawn_challenge(message.guild, config)
-                
+
                 await self.col_config.update_one(
                     {"_id": message.guild.id},
                     {"$set": {"challenge_last": time.time()}}
