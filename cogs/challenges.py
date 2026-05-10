@@ -136,6 +136,7 @@ class ChallengeConfigView(ui.LayoutView):
         )
 
         self.build_interface()
+        await self.cog.update_cache()
         await interaction.response.edit_message(view=self)
 
     async def toggle_enabled(self, interaction: discord.Interaction):
@@ -148,6 +149,7 @@ class ChallengeConfigView(ui.LayoutView):
         )
         
         self.build_interface()
+        await self.cog.update_cache()
         await interaction.response.edit_message(view=self)
 
     async def save_and_refresh(self, interaction: discord.Interaction):
@@ -158,6 +160,7 @@ class ChallengeConfigView(ui.LayoutView):
         )
 
         self.build_interface()
+        await self.cog.update_cache()
         if interaction.response.is_done():
             await interaction.edit_original_response(view=self)
         else:
@@ -236,47 +239,68 @@ class Challenges(commands.Cog):
         self.active_challenges = {}
         self.warned_users = {}
         self.locks = {}
-        self.challenge_timeout_checker.start()
-        self.load_quiz_data()
-
         self.config_cache = {} 
 
-        @tasks.loop(minutes=5)
-        async def update_cache(self):
-            cursor = self.col_config.find({"challenge_enabled": True})
-            async for doc in cursor:
-                self.config_cache[doc["_id"]] = doc
-                
         self.update_cache.start()
-
         self.challenge_timeout_checker.start()
+
         self.load_quiz_data()
 
-        def cog_unload(self):
-            self.challenge_timeout_checker.cancel()
-            self.update_cache.cancel()
-
-        @tasks.loop(minutes=5)
-        async def update_cache(self):
-            """Atualiza as configurações de todos os servidores na memória do bot"""
-            if self.col_config is None:
-                return
+    @tasks.loop(minutes=5)
+    async def update_cache(self):
+        if self.col_config is None:
+            return
+        
+        try:
+            new_cache = {}
+            # Busca apenas servidores que têm o desafio ativado
+            cursor = self.col_config.find({"challenge_enabled": True})
+            async for doc in cursor:
+                new_cache[doc["_id"]] = doc
             
-            try:
-                new_cache = {}
-                # Busca apenas servidores que têm o desafio ativado
-                cursor = self.col_config.find({"challenge_enabled": True})
-                async for doc in cursor:
-                    new_cache[doc["_id"]] = doc
-                
-                self.config_cache = new_cache
-                # print(f"DEBUG: Cache de desafios atualizado para {len(new_cache)} servidores.")
-            except Exception as e:
-                print(f"❌ Erro ao atualizar cache de desafios: {e}")
+            self.config_cache = new_cache
+        except Exception as e:
+            print(f"Erro ao atualizar cache de desafios: {e}")
 
-        @update_cache.before_loop
-        async def before_update_cache(self):
-            await self.bot.wait_until_ready()
+    @update_cache.before_loop
+    async def before_update_cache(self):
+        await self.bot.wait_until_ready()
+    
+    @tasks.loop(seconds=5)
+    async def challenge_timeout_checker(self):
+        if self.col_users is None: return
+        try:
+            now = time.time()
+            to_remove = []
+
+            for guild_id, challenge in self.active_challenges.items():
+                if challenge.get("solved"):
+                    continue
+                if now - challenge["spawned_at"] >= CHALLENGE_TIMEOUT:
+                    to_remove.append(guild_id)
+
+            for guild_id in to_remove:
+                config = await self.col_config.find_one({"_id": guild_id})
+                if not config:
+                    continue
+
+                guild = self.bot.get_guild(guild_id)
+                if not guild:
+                    continue
+
+                channel_id = config.get("challenge_channel_id") or config.get("challenge_channel")
+                channel = guild.get_channel(channel_id)
+                if channel:
+                    await channel.send(
+                        "⏰ **Tempo esgotado!**\n"
+                        "Ninguém respondeu o desafio a tempo 😢"
+                    )
+
+                self.active_challenges.pop(guild_id, None)     
+                    
+        except Exception as e:
+            print("❌ ERRO NO challenge_timeout_checker:", e)
+
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -508,41 +532,6 @@ class Challenges(commands.Cog):
         except Exception as e:
             print("❌ ERRO NO challenge_timer:", e)
             
-    @tasks.loop(seconds=5)
-    async def challenge_timeout_checker(self):
-        if self.col_users is None: return
-        try:
-            now = time.time()
-            to_remove = []
-
-            for guild_id, challenge in self.active_challenges.items():
-                if challenge.get("solved"):
-                    continue
-                if now - challenge["spawned_at"] >= CHALLENGE_TIMEOUT:
-                    to_remove.append(guild_id)
-
-            for guild_id in to_remove:
-                config = await self.col_config.find_one({"_id": guild_id})
-                if not config:
-                    continue
-
-                guild = self.bot.get_guild(guild_id)
-                if not guild:
-                    continue
-
-                channel_id = config.get("challenge_channel_id") or config.get("challenge_channel")
-                channel = guild.get_channel(channel_id)
-                if channel:
-                    await channel.send(
-                        "⏰ **Tempo esgotado!**\n"
-                        "Ninguém respondeu o desafio a tempo 😢"
-                    )
-
-                self.active_challenges.pop(guild_id, None)     
-                    
-        except Exception as e:
-            print("❌ ERRO NO challenge_timeout_checker:", e)
-
 
     # ------------- SPAWN CHALLENGE -------------
 
@@ -624,10 +613,9 @@ class Challenges(commands.Cog):
             if any(user_answer == normalize(r) for r in respostas_permitidas):
                 challenge["solved"] = True      
 
-                config_db = await self.col_config.find_one({"_id": message.guild.id}) or {}
-
-                min_ganho = config_db.get("min_ralcoins", REWARD_MIN)
-                max_ganho = config_db.get("max_ralcoins", REWARD_MAX)
+                config_cache = self.config_cache.get(message.guild.id, {})
+                min_ganho = config_cache.get("min_ralcoins", REWARD_MIN)
+                max_ganho = config_cache.get("max_ralcoins", REWARD_MAX)
 
                 reward = random.randint(min_ganho, max_ganho)
                 response_time = time.time() - challenge["spawned_at"]
