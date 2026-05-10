@@ -129,4 +129,7 @@ async def get_next_confession_number(db, guild_id):
 
 
 async def setup(bot):
+    bot.add_view(ConfessionStarterLayout())
+    bot.add_view(ConfessionLayout(text="", num=0))
+
     await bot.add_cog(ConfessionsCog(bot))
