@@ -234,7 +234,7 @@ class RalcoinSettingsModal(ui.Modal, title="Configurar Ganhos de Ralcoins"):
 
 class SuggestStarterLayout(ui.LayoutView):
     def __init__(self):
-        super().__init__(timeout=None)
+        super().__init__(timeout=None) # Esse garante o botão infinito no canal público!
         
         container = ui.Container(accent_color=discord.Color.blurple())
         container.add_item(ui.TextDisplay(
@@ -293,7 +293,7 @@ class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
         canal_mod = interaction.guild.get_channel(ID_CANAL_MODERACAO)
         if not canal_mod:
             return await interaction.response.send_message(
-                "❌ Canal de moderação não encontrado. Avise um administrador!", 
+                "Canal de moderação não encontrado. Avise um administrador!", 
                 ephemeral=True
             )
 
@@ -303,7 +303,7 @@ class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
             f"## 📥 Nova Sugestão de Pergunta\n"
             f"**Autor:** {interaction.user.mention} (`{interaction.user.name}`)\n\n"
             f"**Pergunta:** {self.pergunta.value}\n"
-            f"**Respostaa:** `{self.resposta.value}`"
+            f"**Resposta:** `{self.resposta.value}`"
         ))
 
         row = ui.ActionRow()
@@ -327,7 +327,6 @@ class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
             "✨ Sua sugestão foi enviada com sucesso! Se for aprovada, entrará na rotação. :3", 
             ephemeral=True
         )
-
 
 class Challenges(commands.Cog):
     def __init__(self, bot):
@@ -459,6 +458,7 @@ class Challenges(commands.Cog):
         await interaction.response.send_message("✅ Painel de sugestões configurado neste canal!", ephemeral=True)
 
     # Callback de Aprovação no MongoDB
+    # Callback de Aprovação no MongoDB (Dentro do Cog Challenges)
     async def approve_question(self, interaction: discord.Interaction, q_text, a_text, author_name):
         IDPeppyuwu = 274645285634834434
         IDLuoisz = 381475458652307466
@@ -486,23 +486,27 @@ class Challenges(commands.Cog):
             # 2. Atualiza a lista da RAM na hora para o bot já poder usar
             self.quiz_questions.append(nova_pergunta)
 
-            # 3. Atualiza a interface da Staff
+            # 3. Atualiza a interface da Staff (Substitui a mensagem removendo os botões)
             container = ui.Container(accent_color=discord.Color.green())
             container.add_item(ui.TextDisplay(
-                f"## ✅ Pergunta Aprovada!\n"
-                f"A pergunta de `{author_name}` foi salva no MongoDB e inserida na rotação ativa.\n\n"
-                f"**Pergunta:** {q_text}"
+                f"## ✅ Pergunta Aprovada por {interaction.user.mention}!\n"
+                f"A pergunta de `{author_name}` foi salva e inserida na rotação ativa.\n\n"
+                f"**Pergunta:** {q_text}\n"
+                f"**Resposta:** `{a_text}`"
             ))
             
+            # Criamos o layout final SEM adicionar botões nele
             layout = ui.LayoutView()
             layout.add_item(container)
-            await interaction.response.send_message(view=layout)
+            
+            # edit_message altera a mensagem onde o botão foi clicado
+            await interaction.response.edit_message(view=layout)
 
         except Exception as e:
             print(f"❌ Erro ao aprovar pergunta no banco: {e}")
             await interaction.response.send_message(f"❌ Erro ao salvar no banco: {e}", ephemeral=True)
 
-    # Callback de Rejeição
+    # Callback de Rejeição (Dentro do Cog Challenges)
     async def deny_question(self, interaction: discord.Interaction):
         IDPeppyuwu = 274645285634834434
         IDLuoisz = 381475458652307466
@@ -514,12 +518,19 @@ class Challenges(commands.Cog):
             )
 
         try:
+            # Atualiza a interface da Staff removendo os botões originais
             container = ui.Container(accent_color=discord.Color.red())
-            container.add_item(ui.TextDisplay("## ❌ Sugestão Recusada\nEsta pergunta foi descartada pela moderação."))
+            container.add_item(ui.TextDisplay(
+                f"## ❌ Sugestão Recusada por {interaction.user.mention}\n"
+                f"Esta pergunta foi descartada e não foi adicionada ao banco de dados."
+            ))
             
+            # Criamos o layout final SEM adicionar botões nele
             layout = ui.LayoutView()
             layout.add_item(container)
-            await interaction.response.send_message(view=layout)
+            
+            # Altera a mensagem original removendo os botões de vez
+            await interaction.response.edit_message(view=layout)
         except Exception as e:
             print(f"❌ Erro ao recusar pergunta: {e}")
     
