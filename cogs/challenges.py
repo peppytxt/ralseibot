@@ -458,10 +458,20 @@ class Challenges(commands.Cog):
         await interaction.channel.send(view=view)
         await interaction.response.send_message("✅ Painel de sugestões configurado neste canal!", ephemeral=True)
 
+    # Callback de Aprovação no MongoDB
     async def approve_question(self, interaction: discord.Interaction, q_text, a_text, author_name):
+        IDPeppyuwu = 274645285634834434
+        IDLuoisz = 381475458652307466
+
+        if interaction.user.id != IDPeppyuwu and interaction.user.id != IDLuoisz:
+            return await interaction.response.send_message(
+                "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar perguntas >:3", 
+                ephemeral=True
+            )
+
         database = getattr(self.bot, "db", None)
         if database is None:
-            return await interaction.response.send_message("Banco de dados offline...", ephemeral=True)
+            return await interaction.response.send_message("Banco de dados offline :(", ephemeral=True)
         
         try:
             nova_pergunta = {
@@ -486,7 +496,7 @@ class Challenges(commands.Cog):
             
             layout = ui.LayoutView()
             layout.add_item(container)
-            await interaction.response.edit_message(view=layout)
+            await interaction.response.send_message(view=layout)
 
         except Exception as e:
             print(f"❌ Erro ao aprovar pergunta no banco: {e}")
@@ -494,13 +504,22 @@ class Challenges(commands.Cog):
 
     # Callback de Rejeição
     async def deny_question(self, interaction: discord.Interaction):
+        IDPeppyuwu = 274645285634834434
+        IDLuoisz = 381475458652307466
+
+        if interaction.user.id != IDPeppyuwu and interaction.user.id != IDLuoisz:
+            return await interaction.response.send_message(
+                "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar perguntas >:3", 
+                ephemeral=True
+            )
+
         try:
             container = ui.Container(accent_color=discord.Color.red())
             container.add_item(ui.TextDisplay("## ❌ Sugestão Recusada\nEsta pergunta foi descartada pela moderação."))
             
             layout = ui.LayoutView()
             layout.add_item(container)
-            await interaction.response.edit_message(view=layout)
+            await interaction.response.send_message(view=layout)
         except Exception as e:
             print(f"❌ Erro ao recusar pergunta: {e}")
     
