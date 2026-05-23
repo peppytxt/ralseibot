@@ -335,12 +335,19 @@ class Challenges(commands.Cog):
         self.active_challenges = {}
         self.warned_users = {}
         self.locks = {}
-        self.config_cache = {} 
+        self.config_cache = {}
+        self.quiz_questions = []
+        self.rewrite_phrases = []
 
+        self.load_quiz_data()
+
+    async def cog_load(self):
         self.update_cache.start()
         self.challenge_timeout_checker.start()
 
-        self.load_quiz_data()
+    def cog_unload(self):
+        self.update_cache.cancel()
+        self.challenge_timeout_checker.cancel()
 
     @tasks.loop(minutes=5)
     async def update_cache(self):
@@ -407,8 +414,6 @@ class Challenges(commands.Cog):
     async def load_data_from_mongodb(self):
         database = getattr(self.bot, "db", None)
         if database is None:
-            self.quiz_questions = []
-            self.rewrite_phrases = []
             return
         
         try:
@@ -425,13 +430,9 @@ class Challenges(commands.Cog):
             print(f"❌ Erro ao carregar dados do MongoDB: {e}")
             self.quiz_questions = []
             self.rewrite_phrases = []
-    
-    def cog_unload(self):
-        self.challenge_timeout_checker.cancel()
         
     async def send_speed_message(self, channel, user, response_time):
         await asyncio.sleep(30)
-
         await channel.send(
             f"💡 **Você sabia?**\n"
             f"{user.mention} respondeu corretamente em "
@@ -458,7 +459,6 @@ class Challenges(commands.Cog):
         await interaction.response.send_message("✅ Painel de sugestões configurado neste canal!", ephemeral=True)
 
     # Callback de Aprovação no MongoDB
-    # Callback de Aprovação no MongoDB (Dentro do Cog Challenges)
     async def approve_question(self, interaction: discord.Interaction, q_text, a_text, author_name):
         IDPeppyuwu = 274645285634834434
         IDLuoisz = 381475458652307466
@@ -469,9 +469,11 @@ class Challenges(commands.Cog):
                 ephemeral=True
             )
 
+        await interaction.response.defer(thinking=False)
+
         database = getattr(self.bot, "db", None)
         if database is None:
-            return await interaction.response.send_message("Banco de dados offline :(", ephemeral=True)
+            return await interaction.followup.send("Banco de dados offline :(", ephemeral=True)
         
         try:
             nova_pergunta = {
@@ -495,18 +497,17 @@ class Challenges(commands.Cog):
                 f"**Resposta:** `{a_text}`"
             ))
             
-            # Criamos o layout final SEM adicionar botões nele
             layout = ui.LayoutView()
             layout.add_item(container)
             
-            # edit_message altera a mensagem onde o botão foi clicado
-            await interaction.response.edit_message(view=layout)
+            # Como usamos defer(), editamos a mensagem original usando edit_original_response
+            await interaction.edit_original_response(view=layout)
 
         except Exception as e:
             print(f"❌ Erro ao aprovar pergunta no banco: {e}")
-            await interaction.response.send_message(f"❌ Erro ao salvar no banco: {e}", ephemeral=True)
+            await interaction.followup.send(f"❌ Erro ao salvar no banco: {e}", ephemeral=True)
 
-    # Callback de Rejeição (Dentro do Cog Challenges)
+    # Callback de Rejeição
     async def deny_question(self, interaction: discord.Interaction):
         IDPeppyuwu = 274645285634834434
         IDLuoisz = 381475458652307466
@@ -518,18 +519,15 @@ class Challenges(commands.Cog):
             )
 
         try:
-            # Atualiza a interface da Staff removendo os botões originais
             container = ui.Container(accent_color=discord.Color.red())
             container.add_item(ui.TextDisplay(
                 f"## ❌ Sugestão Recusada por {interaction.user.mention}\n"
                 f"Esta pergunta foi descartada e não foi adicionada ao banco de dados."
             ))
             
-            # Criamos o layout final SEM adicionar botões nele
             layout = ui.LayoutView()
             layout.add_item(container)
-            
-            # Altera a mensagem original removendo os botões de vez
+
             await interaction.response.edit_message(view=layout)
         except Exception as e:
             print(f"❌ Erro ao recusar pergunta: {e}")
