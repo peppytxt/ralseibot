@@ -354,41 +354,6 @@ class Challenges(commands.Cog):
         return database.xp if database is not None else None
 
     # ------------- CONFIG COMMAND ------------------
-
-    @app_commands.command(name="migrar_json_para_banco", description="Migra os dados do quiz.json para o MongoDB")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def migrar_json_para_banco(self, interaction: discord.Interaction):
-        database = getattr(self.bot, "db", None)
-        if database is None:
-            return await interaction.response.send_message("Banco offline", ephemeral=True)
-            
-        await interaction.response.defer(ephemeral=True)
-        
-        try:
-            with open("cogs/quiz.json", "r", encoding="utf-8") as f:
-                dados = json.load(f)
-                
-            perguntas = dados.get("quiz_questions", [])
-            frases = dados.get("rewrite_phrases", [])
-            
-            # Envia as perguntas (se houver)
-            if perguntas:
-                # Evita duplicar se você rodar duas vezes por acidente
-                await database.quiz_questions.delete_many({}) 
-                await database.quiz_questions.insert_many(perguntas)
-                
-            # Envia as frases formatadas como documentos
-            if frases:
-                await database.rewrite_phrases.delete_many({})
-                frases_formatadas = [{"phrase": f} for f in frases]
-                await database.rewrite_phrases.insert_many(frases_formatadas)
-                
-            # Recarrega a memória do bot imediatamente
-            await self.load_data_from_mongodb()
-            
-            await interaction.followup.send("✅ Todos os quizes e frases foram migrados com sucesso para o MongoDB!")
-        except Exception as e:
-            await interaction.followup.send(f"❌ Erro na migração: {e}")
             
 
     @app_commands.command(name="challengeconfig", description="Configura os desafios")
