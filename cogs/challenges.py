@@ -307,16 +307,30 @@ class Challenges(commands.Cog):
         print(f"Cog de Desafios carregado e monitorando servidores uwu")
 
     def load_quiz_data(self):
-        try:
-            with open("cogs/quiz.json", "r", encoding="utf-8") as f:
-                data = json.load(f)
-                self.quiz_questions = data.get("quiz_questions", [])
-                self.rewrite_phrases = data.get("rewrite_phrases", [])
-        except FileNotFoundError:
+        asyncio.create_task(self.load_data_from_mongodb())
+    
+    async def load_data_from_mongodb(self):
+        database = getattr(self.bot, "db", None)
+        if database is None:
             self.quiz_questions = []
             self.rewrite_phrases = []
-            print("⚠️ Arquivo quiz.json não encontrado!")
+            return
+        
+        try:
+            cursor_quiz = database.quiz_questions.find({})
+            self.quiz_questions = await cursor_quiz.to_list(length=2000)
+            
+            cursor_phrases = database.rewrite_phrases.find({})
+            phrases_docs = await cursor_phrases.to_list(length=2000)
 
+            self.rewrite_phrases = [doc["phrase"] for doc in phrases_docs]
+            
+            print(f"✅ Banco de Dados: {len(self.quiz_questions)} perguntas e {len(self.rewrite_phrases)} frases carregadas!")
+        except Exception as e:
+            print(f"❌ Erro ao carregar dados do MongoDB: {e}")
+            self.quiz_questions = []
+            self.rewrite_phrases = []
+    
     def cog_unload(self):
         self.challenge_timeout_checker.cancel()
         
@@ -340,6 +354,42 @@ class Challenges(commands.Cog):
         return database.xp if database is not None else None
 
     # ------------- CONFIG COMMAND ------------------
+
+    @app_commands.command(name="migrar_json_para_banco", description="Migra os dados do quiz.json para o MongoDB")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def migrar_json_para_banco(self, interaction: discord.Interaction):
+        database = getattr(self.bot, "db", None)
+        if database is None:
+            return await interaction.response.send_message("Banco offline", ephemeral=True)
+            
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            with open("cogs/quiz.json", "r", encoding="utf-8") as f:
+                dados = json.load(f)
+                
+            perguntas = dados.get("quiz_questions", [])
+            frases = dados.get("rewrite_phrases", [])
+            
+            # Envia as perguntas (se houver)
+            if perguntas:
+                # Evita duplicar se você rodar duas vezes por acidente
+                await database.quiz_questions.delete_many({}) 
+                await database.quiz_questions.insert_many(perguntas)
+                
+            # Envia as frases formatadas como documentos
+            if frases:
+                await database.rewrite_phrases.delete_many({})
+                frases_formatadas = [{"phrase": f} for f in frases]
+                await database.rewrite_phrases.insert_many(frases_formatadas)
+                
+            # Recarrega a memória do bot imediatamente
+            await self.load_data_from_mongodb()
+            
+            await interaction.followup.send("✅ Todos os quizes e frases foram migrados com sucesso para o MongoDB!")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro na migração: {e}")
+            
 
     @app_commands.command(name="challengeconfig", description="Configura os desafios")
     @app_commands.checks.has_permissions(administrator=True)
@@ -699,6 +749,7 @@ class Challenges(commands.Cog):
                 "answer": phrase,
                 "token_positions": token_positions
             }
+
         elif typ == "guess":
             min_num = random.randint(1, 100)
             max_num = min_num + random.randint(5, 7)
@@ -708,7 +759,14 @@ class Challenges(commands.Cog):
                 "question": f"Entre **{min_num} e {max_num}**, qual número estou pensando? :3",
                 "answer": str(secret)
             }
+
         elif typ == "quiz":
+            if not self.quiz_questions:
+                return {
+                    "question": "**Pergunta:** Quem é o mascote fofinho de Deltarune?",
+                    "answer": "Ralsei"
+                }
+
             item = random.choice(self.quiz_questions)
             return {
                 "question": f"**Pergunta:** {item['question']}",
