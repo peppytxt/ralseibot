@@ -314,7 +314,7 @@ class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
         )
 
         btn_deny = ui.Button(label="Recusar", style=discord.ButtonStyle.danger, emoji="❌")
-        btn_deny.callback = lambda inter: asyncio.create_task(self.cog.deny_question(inter))
+        btn_deny.callback = lambda inter: asyncio.create_task(self.cog.deny_question(inter, self.pergunta.value))
 
         row.add_item(btn_accept)
         row.add_item(btn_deny)
