@@ -297,7 +297,7 @@ class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
                 ephemeral=True
             )
 
-        layout = ui.LayoutView()
+        layout = ui.LayoutView(timeout=None)
         container = ui.Container(accent_color=discord.Color.orange())
         container.add_item(ui.TextDisplay(
             f"## 📥 Nova Sugestão de Pergunta\n"
@@ -522,7 +522,7 @@ class Challenges(commands.Cog):
             container = ui.Container(accent_color=discord.Color.red())
             container.add_item(ui.TextDisplay(
                 f"## ❌ Sugestão Recusada por {interaction.user.mention}\n"
-                f"Esta pergunta foi descartada e não foi adicionada ao banco de dados."
+                f"Esta pergunta foi descartada pela equipe de moderação."
             ))
             
             layout = ui.LayoutView()
