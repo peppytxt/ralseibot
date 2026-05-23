@@ -499,8 +499,7 @@ class Challenges(commands.Cog):
             
             layout = ui.LayoutView()
             layout.add_item(container)
-            
-            # Como usamos defer(), editamos a mensagem original usando edit_original_response
+
             await interaction.edit_original_response(view=layout)
 
         except Exception as e:
@@ -508,7 +507,7 @@ class Challenges(commands.Cog):
             await interaction.followup.send(f"❌ Erro ao salvar no banco: {e}", ephemeral=True)
 
     # Callback de Rejeição
-    async def deny_question(self, interaction: discord.Interaction):
+    async def deny_question(self, interaction: discord.Interaction, q_text: str):
         IDPeppyuwu = 274645285634834434
         IDLuoisz = 381475458652307466
 
@@ -522,7 +521,7 @@ class Challenges(commands.Cog):
             container = ui.Container(accent_color=discord.Color.red())
             container.add_item(ui.TextDisplay(
                 f"## ❌ Sugestão Recusada por {interaction.user.mention}\n"
-                f"Esta pergunta foi descartada pela equipe de moderação."
+                f"Esta pergunta `{q_text}` foi descartada pela equipe de moderação."
             ))
             
             layout = ui.LayoutView()
