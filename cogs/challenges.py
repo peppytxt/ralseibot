@@ -232,6 +232,103 @@ class RalcoinSettingsModal(ui.Modal, title="Configurar Ganhos de Ralcoins"):
         except ValueError:
             await interaction.response.send_message("❌ Por favor, insira apenas números inteiros!", ephemeral=True)
 
+class SuggestStarterLayout(ui.LayoutView):
+    def __init__(self):
+        super().__init__(timeout=None)
+        
+        container = ui.Container(accent_color=discord.Color.blurple())
+        container.add_item(ui.TextDisplay(
+            "## 🧠 Contribua com o nosso Quiz!\n"
+            "Tem alguma ideia de pergunta legal? Clique no botão abaixo para enviar "
+            "sua sugestão para a nossa equipe de moderação.\n\n"
+        ))
+        
+        row = ui.ActionRow()
+        btn_start = ui.Button(
+            label="Sugerir Pergunta", 
+            custom_id="btn_suggest_quiz_trigger", 
+            style=discord.ButtonStyle.primary, 
+            emoji="💡"
+        )
+        
+        btn_start.callback = self.start_suggestion
+        row.add_item(btn_start)
+        container.add_item(row)
+        self.add_item(container)
+
+    async def start_suggestion(self, interaction: discord.Interaction):
+        challenges_cog = interaction.client.get_cog("Challenges")
+        if not challenges_cog:
+            return await interaction.response.send_message(
+                "❌ O sistema de desafios está temporariamente indisponível.", 
+                ephemeral=True
+            )
+        
+        await interaction.response.send_modal(SuggestQuestionModal(challenges_cog))
+
+
+class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
+    pergunta = ui.TextInput(
+        label="Qual é a pergunta?",
+        style=discord.TextStyle.paragraph,
+        placeholder="Ex: Quem é o protagonista de Deltarune?",
+        required=True,
+        max_length=200
+    )
+    resposta = ui.TextInput(
+        label="Qual é a resposta correta?",
+        style=discord.TextStyle.short,
+        placeholder="Ex: Kris",
+        required=True,
+        max_length=100
+    )
+
+    def __init__(self, cog):
+        super().__init__()
+        self.cog = cog
+
+    async def on_submit(self, interaction: discord.Interaction):
+        ID_CANAL_MODERACAO = 1507871453771599964 
+        
+        canal_mod = interaction.guild.get_channel(ID_CANAL_MODERACAO)
+        if not canal_mod:
+            return await interaction.response.send_message(
+                "❌ Canal de moderação não encontrado. Avise um administrador!", 
+                ephemeral=True
+            )
+
+        layout = ui.LayoutView()
+        container = ui.Container(accent_color=discord.Color.orange())
+        container.add_item(ui.TextDisplay(
+            f"## 📥 Nova Sugestão de Pergunta\n"
+            f"**Autor:** {interaction.user.mention} (`{interaction.user.name}`)\n\n"
+            f"**Pergunta:** {self.pergunta.value}\n"
+            f"**Respostaa:** `{self.resposta.value}`"
+        ))
+
+        row = ui.ActionRow()
+        
+        btn_accept = ui.Button(label="Aceitar", style=discord.ButtonStyle.success, emoji="✅")
+        btn_accept.callback = lambda inter: asyncio.create_task(
+            self.cog.approve_question(inter, self.pergunta.value, self.resposta.value, interaction.user.name)
+        )
+
+        btn_deny = ui.Button(label="Recusar", style=discord.ButtonStyle.danger, emoji="❌")
+        btn_deny.callback = lambda inter: asyncio.create_task(self.cog.deny_question(inter))
+
+        row.add_item(btn_accept)
+        row.add_item(btn_deny)
+        container.add_item(row)
+        layout.add_item(container)
+
+        await canal_mod.send(view=layout)
+        
+        await interaction.response.send_message(
+            "✨ Sua sugestão foi enviada com sucesso! Se for aprovada, entrará na rotação. :3", 
+            ephemeral=True
+        )
+
+
 class Challenges(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -253,7 +350,6 @@ class Challenges(commands.Cog):
         
         try:
             new_cache = {}
-            # Busca apenas servidores que têm o desafio ativado
             cursor = self.col_config.find({"challenge_enabled": True})
             async for doc in cursor:
                 new_cache[doc["_id"]] = doc
@@ -354,7 +450,61 @@ class Challenges(commands.Cog):
         return database.xp if database is not None else None
 
     # ------------- CONFIG COMMAND ------------------
+
+    @app_commands.command(name="setup_sugestoes_quiz", description="Envia o painel fixo para sugestões de quiz")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def setup_sugestoes_quiz(self, interaction: discord.Interaction):
+        view = SuggestStarterLayout()
+        await interaction.channel.send(view=view)
+        await interaction.response.send_message("✅ Painel de sugestões configurado neste canal!", ephemeral=True)
+
+    async def approve_question(self, interaction: discord.Interaction, q_text, a_text, author_name):
+        database = getattr(self.bot, "db", None)
+        if database is None:
+            return await interaction.response.send_message("Banco de dados offline...", ephemeral=True)
+        
+        try:
+            nova_pergunta = {
+                "question": q_text,
+                "answer": a_text,
+                "author_name": author_name
+            }
+
+            # 1. Salva direto no MongoDB
+            await database.quiz_questions.insert_one(nova_pergunta)
+
+            # 2. Atualiza a lista da RAM na hora para o bot já poder usar
+            self.quiz_questions.append(nova_pergunta)
+
+            # 3. Atualiza a interface da Staff
+            container = ui.Container(accent_color=discord.Color.green())
+            container.add_item(ui.TextDisplay(
+                f"## ✅ Pergunta Aprovada!\n"
+                f"A pergunta de `{author_name}` foi salva no MongoDB e inserida na rotação ativa.\n\n"
+                f"**Pergunta:** {q_text}"
+            ))
             
+            layout = ui.LayoutView()
+            layout.add_item(container)
+            await interaction.response.edit_message(view=layout)
+
+        except Exception as e:
+            print(f"❌ Erro ao aprovar pergunta no banco: {e}")
+            await interaction.response.send_message(f"❌ Erro ao salvar no banco: {e}", ephemeral=True)
+
+    # Callback de Rejeição
+    async def deny_question(self, interaction: discord.Interaction):
+        try:
+            container = ui.Container(accent_color=discord.Color.red())
+            container.add_item(ui.TextDisplay("## ❌ Sugestão Recusada\nEsta pergunta foi descartada pela moderação."))
+            
+            layout = ui.LayoutView()
+            layout.add_item(container)
+            await interaction.response.edit_message(view=layout)
+        except Exception as e:
+            print(f"❌ Erro ao recusar pergunta: {e}")
+    
+
 
     @app_commands.command(name="challengeconfig", description="Configura os desafios")
     @app_commands.checks.has_permissions(administrator=True)
@@ -449,7 +599,7 @@ class Challenges(commands.Cog):
         user: discord.Member | None = None
     ):
         if self.col_users is None: 
-            return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
+            return await interaction.response.send_message("Banco de dados offline:(", ephemeral=True)
             
         target = user or interaction.user
 
@@ -765,4 +915,5 @@ def normalize(text: str) -> str:
     )
 
 async def setup(bot):
+    bot.add_view(SuggestStarterLayout())
     await bot.add_cog(Challenges(bot))
