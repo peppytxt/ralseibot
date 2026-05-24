@@ -494,7 +494,8 @@ class PhraseStaffDecisionView(ui.LayoutView):
         super().__init__(timeout=None)
         self.cog = cog
 
-        self.peppy = 274645285634834434  
+        self.peppy = 274645285634834434 
+        self.luoisz = 381475458652307466
 
         self.container = ui.Container(accent_color=discord.Color.teal())
         self.row = ui.ActionRow()
@@ -527,7 +528,7 @@ class PhraseStaffDecisionView(ui.LayoutView):
         self.add_item(self.container)
 
     async def press_accept(self, interaction: discord.Interaction):
-        if interaction.user.id != self.peppy:
+        if interaction.user.id not in [self.peppy, self.luoisz]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
                 ephemeral=True
@@ -556,7 +557,7 @@ class PhraseStaffDecisionView(ui.LayoutView):
 
     async def press_deny(self, interaction: discord.Interaction):
         # Validação de segurança
-        if interaction.user.id != self.peppy:
+        if interaction.user.id not in [self.peppy, self.luoisz]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
                 ephemeral=True
