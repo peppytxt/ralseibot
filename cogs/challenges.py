@@ -529,7 +529,7 @@ class PhraseStaffDecisionView(ui.LayoutView):
     async def press_accept(self, interaction: discord.Interaction):
         if interaction.user.id != self.peppy:
             return await interaction.response.send_message(
-                "AO que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
+                "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
                 ephemeral=True
             )
 
@@ -558,7 +558,7 @@ class PhraseStaffDecisionView(ui.LayoutView):
         # Validação de segurança
         if interaction.user.id != self.peppy:
             return await interaction.response.send_message(
-                "AO que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
+                "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
                 ephemeral=True
             )
 
