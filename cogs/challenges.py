@@ -346,7 +346,7 @@ class StaffDecisionView(ui.LayoutView):
 
             q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
         except Exception:
-            q_text = "Pergunta antiga (histórico indisponível)"
+            q_text = "Pergunta antiga (histórico indisponível) :("
 
         await self.cog.deny_question(interaction, q_text)
 
@@ -407,68 +407,130 @@ class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
             ephemeral=True
         )
 
-class PhraseDecisionView(ui.LayoutView):
-    def __init__(self, cog=None, phrase_id: str = None):
-        suffix = phrase_id if phrase_id else "persistent"
+# =======================================================
+#  1. PAINEL INICIAL PARA USUÁRIOS ENVIAREM AS FRASES
+# =======================================================
+class SuggestPhraseStarterLayout(ui.LayoutView):
+    def __init__(self):
+        super().__init__(timeout=None)
+        
+        container = ui.Container(accent_color=discord.Color.blue())
+        container.add_item(ui.TextDisplay(
+            "## 📝 Sugira Frases para Reescrita!\n"
+            "Envie ideias de frases criativas para o nosso banco de reescritas. "
+            "Clique no botão abaixo para abrir o formulário de envio!\n\n"
+        ))
+        
+        row = ui.ActionRow()
+        btn_start = ui.Button(
+            label="Sugerir Frase", 
+            custom_id="btn_suggest_phrase_trigger", 
+            style=discord.ButtonStyle.primary, 
+            emoji="✍️"
+        )
+        
+        btn_start.callback = self.start_suggestion
+        row.add_item(btn_start)
+        container.add_item(row)
+        self.add_item(container)
+
+    async def start_suggestion(self, interaction: discord.Interaction):
+        challenges_cog = interaction.client.get_cog("Challenges")
+        if not challenges_cog:
+            return await interaction.response.send_message(
+                "O sistema de reescritas está temporariamente indisponível :(", 
+                ephemeral=True
+            )
+        
+        await interaction.response.send_modal(SuggestPhraseModal(challenges_cog))
+
+
+# =======================================================
+#  MODAL DE ENVIO DA FRASE
+# =======================================================
+class SuggestPhraseModal(ui.Modal, title="Sugerir Frase para Reescrita"):
+    frase = ui.TextInput(
+        label="Qual é a frase?",
+        style=discord.TextStyle.paragraph,
+        placeholder="Digite aqui a frase a ser enviada...",
+        required=True,
+        max_length=300
+    )
+
+    def __init__(self, cog):
+        super().__init__()
+        self.cog = cog
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # Defina o canal de moderação de frases desejado (pode ser o mesmo ou outro)
+        ID_CANAL_MODERACAO = 1507871453771599964 
+        
+        canal_mod = interaction.guild.get_channel(ID_CANAL_MODERACAO)
+        if not canal_mod:
+            return await interaction.response.send_message(
+                "Canal de moderação de frases não encontrado. Avise um administrador!", 
+                ephemeral=True
+            )
+
+        # Cria a tela de decisão da Staff de forma persistente
+        layout = PhraseStaffDecisionView(self.cog)
+        layout.build_with_data(
+            p_text=self.frase.value,
+            author_name=interaction.user.name,
+            user_mention=interaction.user.mention
+        )
+
+        await canal_mod.send(view=layout)
+        
+        await interaction.response.send_message(
+            "✨ Sua sugestão de frase foi enviada para a moderação com sucesso! :3", 
+            ephemeral=True
+        )
+
+# =======================================================
+#  3. PAINEL DE DECISÃO DA STAFF (PERSISTENTE E RESTRITO)
+# =======================================================
+class PhraseStaffDecisionView(ui.LayoutView):
+    def __init__(self, cog=None):
         super().__init__(timeout=None)
         self.cog = cog
 
-        # Defina aqui o seu ID do Discord (substitua pelo seu ID real)
-        self.DONO_ID = 123456789012345678  
+        self.peppy = 274645285634834434  
 
-        self.container = ui.Container(accent_color=discord.Color.blue())
+        self.container = ui.Container(accent_color=discord.Color.teal())
         self.row = ui.ActionRow()
         
-        self.text_display = ui.TextDisplay(content="**Frase:** -\n**ID:** -")
+        # Estrutura base de texto para evitar erros de leitura se instanciado vazio
+        self.text_display = ui.TextDisplay(content="**Autor:** -\n\n**Frase:** -")
         
         self.btn_accept = ui.Button(
-            label="Aprovar Reescrita", 
+            label="Aceitar Frase", 
             style=discord.ButtonStyle.success, 
-            emoji="📝", 
-            custom_id=f"rewrite_mod_accept_{suffix}"
+            emoji="✅", 
+            custom_id="rewrite_mod_accept_btn"
         )
         self.btn_accept.callback = self.press_accept
 
         self.btn_deny = ui.Button(
-            label="Recusar Reescrita", 
+            label="Recusar Frase", 
             style=discord.ButtonStyle.danger, 
-            emoji="🗑️", 
-            custom_id=f"rewrite_mod_deny_{suffix}"
+            emoji="❌", 
+            custom_id="rewrite_mod_deny_btn"
         )
         self.btn_deny.callback = self.press_deny
 
         self.row.add_item(self.btn_accept)
         self.row.add_item(self.btn_deny)
+
+        # Montagem da árvore no escopo do __init__ garantindo a persistência estável
         self.container.add_item(self.text_display)
         self.container.add_item(self.row)
         self.add_item(self.container)
 
     async def press_accept(self, interaction: discord.Interaction):
-        if interaction.user.id != self.DONO_ID:
+        if interaction.user.id != self.peppy:
             return await interaction.response.send_message(
-                "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
-                ephemeral=True
-            )
-
-        if not self.cog:
-            self.cog = interaction.client.get_cog("Challenges") 
-
-        try:
-            db_id = interaction.custom_id.split("rewrite_mod_accept_")[1]
-            if db_id == "persistent":
-                raw_item = interaction.message.components[0].children[0]
-                content = getattr(raw_item, "content", None) or getattr(raw_item, "value", "")
-                db_id = content.split("**ID do Banco:** `")[1].split("`")[0]
-        except Exception as e:
-            print(f"Erro ao extrair ID da frase: {e}")
-            return await interaction.response.send_message("Não foi possível resgatar o ID desta reescrita.", ephemeral=True)
-
-        await self.cog.approve_rewrite(interaction, db_id)
-
-    async def press_deny(self, interaction: discord.Interaction):
-        if interaction.user.id != self.DONO_ID:
-            return await interaction.response.send_message(
-                "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
+                "AO que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
                 ephemeral=True
             )
 
@@ -476,22 +538,54 @@ class PhraseDecisionView(ui.LayoutView):
             self.cog = interaction.client.get_cog("Challenges")
 
         try:
-            db_id = interaction.custom_id.split("rewrite_mod_deny_")[1]
-            if db_id == "persistent":
-                raw_item = interaction.message.components[0].children[0]
-                content = getattr(raw_item, "content", None) or getattr(raw_item, "value", "")
-                db_id = content.split("**ID do Banco:** `")[1].split("`")[0]
+            message_components = interaction.message.components
+            raw_item = message_components[0].children[0]
+            content = getattr(raw_item, "content", None) or getattr(raw_item, "value", None) or getattr(raw_item, "label", "")
+
+            if not content or "**Frase:**" not in content:
+                content = interaction.message.content or (interaction.message.embeds[0].description if interaction.message.embeds else "")
+
+            p_text = content.split("**Frase:** ")[1]
+            author_name = content.split("(`")[1].split("`)")[0]
+            
+        except Exception as e:
+            print(f"Erro na extração de dados da frase: {e}")
+            return await interaction.response.send_message("Posso ser bobo, mas deu erro ao ler dados da frase antiga no Discord.", ephemeral=True)
+
+        # Aciona o método correspondente no seu Cog enviando os dados limpos
+        await self.cog.approve_rewrite(interaction, p_text, author_name)
+
+    async def press_deny(self, interaction: discord.Interaction):
+        # Validação de segurança
+        if interaction.user.id != self.peppy:
+            return await interaction.response.send_message(
+                "AO que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
+                ephemeral=True
+            )
+
+        if not self.cog:
+            self.cog = interaction.client.get_cog("Challenges")
+
+        try:
+            message_components = interaction.message.components
+            raw_item = message_components[0].children[0]
+            content = getattr(raw_item, "content", None) or getattr(raw_item, "value", None) or getattr(raw_item, "label", "")
+            
+            if not content or "**Frase:**" not in content:
+                content = interaction.message.content or (interaction.message.embeds[0].description if interaction.message.embeds else "")
+
+            p_text = content.split("**Frase:** ")[1]
         except Exception:
-            return await interaction.response.send_message("Não foi possível resgatar o ID desta reescrita.", ephemeral=True)
+            p_text = "Frase antiga (histórico indisponível) :("
 
-        await self.cog.deny_rewrite(interaction, db_id)
+        await self.cog.deny_rewrite(interaction, p_text)
 
-    def build_with_data(self, phrase_text: str, db_id: str, author_mention: str):
+    # Injeta dinamicamente a formatação de texto sem recriar os botões
+    def build_with_data(self, p_text: str, author_name: str, user_mention: str):
         self.text_display.content = (
-            f"## 📝 Nova Sugestão de Reescrita\n"
-            f"**Enviado por:** {author_mention}\n\n"
-            f"**Frase:** \"{phrase_text}\"\n"
-            f"**ID do Banco:** `{db_id}`"
+            f"## 📥 Nova Sugestão de Reescrita\n"
+            f"**Autor:** {user_mention} (`{author_name}`)\n\n"
+            f"**Frase:** {p_text}"
         )
         return self
 
@@ -618,7 +712,10 @@ class Challenges(commands.Cog):
 
     # ------------- CONFIG COMMAND ------------------
 
+
+    ID_SERVIDOR = 1410006076400599235  
     @app_commands.command(name="setup_sugestoes_quiz", description="[Admin] Envia o painel fixo para sugestões de quiz")
+    @app_commands.guilds(discord.Object(id=ID_SERVIDOR))
     @app_commands.checks.has_permissions(administrator=True)
     async def setup_sugestoes_quiz(self, interaction: discord.Interaction):
         view = SuggestStarterLayout()
@@ -709,66 +806,41 @@ class Challenges(commands.Cog):
             print(f"❌ Erro ao recusar pergunta: {e}")
 
 
+    # =======================================================
+    #  COMANDO PARA ENVIAR O PAINEL DE INÍCIO DE FRASES
+    # =======================================================
+    ID_SEU_SERVIDOR = 1410006076400599235  
+    ID_SEU_USER_DISCORD = 274645285634834434
+
     @app_commands.command(
-        name="gerar_painel_frase", 
-        description="[Admin] Puxa uma frase pendente do banco e envia para moderação."
+        name="gerar_painel_frases", 
+        description="[Admin] Envia o painel inicial de sugestão de frases."
     )
-    @app_commands.checks.has_permissions(administrator=True)
-    async def gerar_painel_frase(self, interaction: discord.Interaction):
-        ID_CANAL_MODERACAO_FRASES = 1507871453771599964
-        
-        canal_mod = interaction.guild.get_channel(ID_CANAL_MODERACAO_FRASES)
-        if not canal_mod:
+    @app_commands.guilds(discord.Object(id=ID_SEU_SERVIDOR)) 
+    async def gerar_painel_frase(self, interaction: discord.Interaction, canal: discord.TextChannel):
+        if interaction.user.id != self.ID_SEU_USER_DISCORD:
             return await interaction.response.send_message(
-                "❌ Canal de moderação de frases não encontrado!", 
+                "Você não tem permissão para executar este comando, seu bobo -w-.", 
                 ephemeral=True
             )
-
-        database = getattr(self.bot, "db", None)
-        if database is None:
-            return await interaction.response.send_message(
-                "Banco de dados MongoDB não conectado.", 
-                ephemeral=True
-            )
-
-        await interaction.response.defer(ephemeral=True)
 
         try:
-            frase_doc = await database.rewrite_phrases.find_one({})
-
-            if not frase_doc:
-                return await interaction.followup.send(
-                    "📭 Nenhuma frase encontrada na coleção `rewrite_phrases`.", 
-                    ephemeral=True
-                )
-
-            # 3. Extrai os dados do documento do MongoDB
-            db_id = str(frase_doc["_id"])
-            texto_frase = frase_doc.get("phrase", "Frase sem texto disponível")
+            # 1. Instancia o layout inicial (O painel que tem o botão "Sugerir Frase")
+            layout = SuggestPhraseStarterLayout()
             
-            autor_mention = frase_doc.get("author_mention", interaction.user.mention)
-
-            # 4. Instancia a View persistente passando o ID real do banco
-            layout = PhraseDecisionView(cog=self, phrase_id=db_id)
-            layout.build_with_data(
-                phrase_text=texto_frase,
-                db_id=db_id,
-                author_mention=autor_mention
-            )
-
-            # 5. Envia o painel estruturado para o canal de Staff
-            await canal_mod.send(view=layout)
-
-            # 6. Responde ao Administrador que deu tudo certo
-            await interaction.followup.send(
-                f"✅ Painel para a frase ID `{db_id}` enviado com sucesso em {canal_mod.mention}!", 
+            # 2. Envia a View no canal selecionado como argumento no comando
+            await canal.send(view=layout)
+            
+            # 3. Responde de forma oculta confirmando o envio
+            await interaction.response.send_message(
+                f"✅ Painel de sugestão de frases enviado com sucesso em {canal.mention}!", 
                 ephemeral=True
             )
 
         except Exception as e:
-            print(f"Erro ao gerar painel de frase: {e}")
-            await interaction.followup.send(
-                f"❌ Ocorreu um erro ao buscar a frase: {e}", 
+            print(f"Erro ao enviar painel de frase: {e}")
+            await interaction.response.send_message(
+                f"❌ Ocorreu um erro ao tentar enviar o painel: {e}", 
                 ephemeral=True
             )
 
