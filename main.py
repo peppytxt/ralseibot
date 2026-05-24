@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
 # Importações dos seus componentes persistentes
-from cogs.challenges import StaffDecisionView
+from cogs.challenges import StaffDecisionView, SuggestStarterLayout
 from cogs.confessions import ConfessionLayout, ConfessionStarterLayout
 from cogs.moeda import setup as economia_setup
 
@@ -78,10 +78,21 @@ async def setup_hook():
     await load_all_extensions()
     
     # 2. Registra TODAS as Views persistentes do bot para não morrerem no restart
+    bot.add_view(SuggestStarterLayout())
     bot.add_view(StaffDecisionView())
     bot.add_view(ConfessionStarterLayout())
     bot.add_view(ConfessionLayout(text="", num=0))
     print("🔄 Views persistentes (Quiz e Confissões) carregadas com sucesso!")
+
+    ID_SERVIDOR = 1410006076400599235  
+    guild_objeto = discord.Object(id=ID_SERVIDOR)
+
+    bot.tree.copy_global_to(guild=guild_objeto)
+
+    bot.tree.copy_global_to(guild=guild_objeto)
+
+    await bot.tree.sync(guild=guild_objeto)
+    print(f"✅ Comandos locais sincronizados para o servidor: {ID_SERVIDOR}")
 
     # 3. Carregar comandos externos da economia
     try:

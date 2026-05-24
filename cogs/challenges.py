@@ -462,7 +462,6 @@ class SuggestPhraseModal(ui.Modal, title="Sugerir Frase para Reescrita"):
         self.cog = cog
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Defina o canal de moderação de frases desejado (pode ser o mesmo ou outro)
         ID_CANAL_MODERACAO = 1507871453771599964 
         
         canal_mod = interaction.guild.get_channel(ID_CANAL_MODERACAO)
@@ -712,29 +711,34 @@ class Challenges(commands.Cog):
 
     # ------------- CONFIG COMMAND ------------------
 
-
     ID_SERVIDOR = 1410006076400599235  
+    ID_Peppy = 274645285634834434
+    ID_Luoisz = 381475458652307466
+
+    # =======================================================
+    #  COMANDO 1: PAINEL DO QUIZ
+    # =======================================================
     @app_commands.command(name="setup_sugestoes_quiz", description="[Admin] Envia o painel fixo para sugestões de quiz")
     @app_commands.guilds(discord.Object(id=ID_SERVIDOR))
-    @app_commands.checks.has_permissions(administrator=True)
     async def setup_sugestoes_quiz(self, interaction: discord.Interaction):
+        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz] and not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("Você não tem permissão para usar este comando, seu bobo -w-.", ephemeral=True)
+
         view = SuggestStarterLayout()
         await interaction.channel.send(view=view)
         await interaction.response.send_message("✅ Painel de sugestões configurado neste canal!", ephemeral=True)
 
-    # Callback de Aprovação no MongoDB
+    # =======================================================
+    #  CALLBACKS DE APURAÇÃO DO QUIZ
+    # =======================================================
     async def approve_question(self, interaction: discord.Interaction, q_text, a_text, author_name):
-        IDPeppyuwu = 274645285634834434
-        IDLuoisz = 381475458652307466
-
-        if interaction.user.id != IDPeppyuwu and interaction.user.id != IDLuoisz:
+        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar perguntas >:3", 
                 ephemeral=True
             )
 
         await interaction.response.defer(thinking=False)
-
         database = getattr(self.bot, "db", None)
         if database is None:
             return await interaction.followup.send("Banco de dados offline :(", ephemeral=True)
@@ -751,16 +755,11 @@ class Challenges(commands.Cog):
                 "author_name": author_name
             }
 
-            # 1. Salva direto no MongoDB
             await database.quiz_questions.insert_one(nova_pergunta)
-
-            # 2. Atualiza a lista da RAM na hora para o bot já poder usar
             self.quiz_questions.append(nova_pergunta)
 
-            # Formata a exibição das respostas para a Staff ver na mensagem de aprovação
             respostas_str = " **OU** ".join([f"`{r}`" for r in respostas_finais])
 
-            # 3. Atualiza a interface da Staff
             container = ui.Container(accent_color=discord.Color.green())
             container.add_item(ui.TextDisplay(
                 f"## ✅ Pergunta Aprovada por {interaction.user.mention}!\n"
@@ -771,19 +770,14 @@ class Challenges(commands.Cog):
             
             layout = ui.LayoutView()
             layout.add_item(container)
-            
             await interaction.edit_original_response(view=layout)
 
         except Exception as e:
             print(f"❌ Erro ao aprovar pergunta no banco: {e}")
             await interaction.followup.send(f"❌ Erro ao salvar no banco: {e}", ephemeral=True)
 
-    # Callback de Rejeição
     async def deny_question(self, interaction: discord.Interaction, q_text: str):
-        IDPeppyuwu = 274645285634834434
-        IDLuoisz = 381475458652307466
-
-        if interaction.user.id != IDPeppyuwu and interaction.user.id != IDLuoisz:
+        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar perguntas >:3", 
                 ephemeral=True
@@ -797,59 +791,40 @@ class Challenges(commands.Cog):
                 f"**Pergunta descartada:**\n> {q_text}" 
             ))
             
-
             layout = ui.LayoutView()
             layout.add_item(container)
-
             await interaction.response.edit_message(view=layout)
         except Exception as e:
             print(f"❌ Erro ao recusar pergunta: {e}")
 
 
     # =======================================================
-    #  COMANDO PARA ENVIAR O PAINEL DE INÍCIO DE FRASES
+    #  COMANDO 2: PAINEL DE INÍCIO DE FRASES
     # =======================================================
-    ID_SEU_SERVIDOR = 1410006076400599235  
-    ID_SEU_USER_DISCORD = 274645285634834434
-
     @app_commands.command(
         name="gerar_painel_frases", 
         description="[Admin] Envia o painel inicial de sugestão de frases."
     )
-    @app_commands.guilds(discord.Object(id=ID_SEU_SERVIDOR)) 
+    @app_commands.guilds(discord.Object(id=ID_SERVIDOR)) 
     async def gerar_painel_frase(self, interaction: discord.Interaction, canal: discord.TextChannel):
-        if interaction.user.id != self.ID_SEU_USER_DISCORD:
+        # Verificação direta por ID dos Donos
+        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz]:
             return await interaction.response.send_message(
                 "Você não tem permissão para executar este comando, seu bobo -w-.", 
                 ephemeral=True
             )
 
         try:
-            # 1. Instancia o layout inicial (O painel que tem o botão "Sugerir Frase")
             layout = SuggestPhraseStarterLayout()
-            
-            # 2. Envia a View no canal selecionado como argumento no comando
             await canal.send(view=layout)
-            
-            # 3. Responde de forma oculta confirmando o envio
             await interaction.response.send_message(
                 f"✅ Painel de sugestão de frases enviado com sucesso em {canal.mention}!", 
                 ephemeral=True
             )
-
         except Exception as e:
             print(f"Erro ao enviar painel de frase: {e}")
             await interaction.response.send_message(
-                f"❌ Ocorreu um erro ao tentar enviar o painel: {e}", 
-                ephemeral=True
-            )
-
-    # Tratamento de erro específico para falta de permissão no comando de gerar painel de frase
-    @gerar_painel_frase.error
-    async def gerar_painel_frase_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        if isinstance(error, app_commands.errors.MissingPermissions):
-            await interaction.response.send_message(
-                "Você não tem permissão de `Administrador` para usar este comando, seu bobo -w-.", 
+                f"Ocorreu um erro ao tentar enviar o painel :( {e}", 
                 ephemeral=True
             )
 
