@@ -91,8 +91,6 @@ async def setup_hook():
 
     bot.tree.copy_global_to(guild=guild_objeto)
 
-    bot.tree.copy_global_to(guild=guild_objeto)
-
     await bot.tree.sync(guild=guild_objeto)
     print(f"✅ Comandos locais sincronizados para o servidor: {ID_SERVIDOR}")
 
