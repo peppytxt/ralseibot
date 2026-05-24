@@ -276,8 +276,8 @@ class StaffDecisionView(ui.LayoutView):
         self.container = ui.Container(accent_color=discord.Color.orange())
         self.row = ui.ActionRow()
         
-        # 2. Criamos o TextDisplay já na inicialização (vazio por enquanto)
-        self.text_display = ui.TextDisplay(value="Carregando dados da sugestão...")
+        # CORREÇÃO: Mudado de 'value' para 'content'
+        self.text_display = ui.TextDisplay(content="Carregando dados da sugestão...")
         
         # 3. Definimos os botões estáticos com seus IDs persistentes fixos
         self.btn_accept = ui.Button(
@@ -300,6 +300,7 @@ class StaffDecisionView(ui.LayoutView):
         self.row.add_item(self.btn_accept)
         self.row.add_item(self.btn_deny)
 
+        # 5. Montamos a árvore COMPLETA aqui dentro do __init__ para garantir a persistência
         self.container.add_item(self.text_display)
         self.container.add_item(self.row)
         self.add_item(self.container)
@@ -309,7 +310,8 @@ class StaffDecisionView(ui.LayoutView):
             self.cog = interaction.client.get_cog("Challenges")
 
         try:
-            content = interaction.message.components[0].items[0].value
+            # CORREÇÃO: Mudado o final de '.value' para '.content' para ler os dados corretamente
+            content = interaction.message.components[0].items[0].content
             q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
             a_text = content.split("**Resposta:** `")[1].split("`")[0]
             author_name = content.split("(`")[1].split("`)")[0]
@@ -323,15 +325,17 @@ class StaffDecisionView(ui.LayoutView):
             self.cog = interaction.client.get_cog("Challenges")
 
         try:
-            content = interaction.message.components[0].items[0].value
+            # CORREÇÃO: Mudado o final de '.value' para '.content'
+            content = interaction.message.components[0].items[0].content
             q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
         except Exception:
             q_text = "Pergunta antiga (histórico indisponível)"
 
         await self.cog.deny_question(interaction, q_text)
 
+    # Método usado no formulário para injetar os dados alterando o componente que já existe
     def build_with_data(self, q_text: str, a_text: str, author_name: str, user_mention: str):
-        self.text_display.value = (
+        self.text_display.content = (
             f"## 📥 Nova Sugestão de Pergunta\n"
             f"**Autor:** {user_mention} (`{author_name}`)\n\n"
             f"**Pergunta:** {q_text}\n"
