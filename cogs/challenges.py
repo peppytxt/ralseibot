@@ -269,7 +269,7 @@ class SuggestStarterLayout(ui.LayoutView):
 
 class StaffDecisionView(ui.LayoutView):
     def __init__(self, cog=None):
-        super().__init__(timeout=None)  # OBRIGATÓRIO: Sem tempo limite para persistência
+        super().__init__(timeout=None)
         self.cog = cog
 
         # 1. Instanciamos o contêiner principal e a linha dos botões
