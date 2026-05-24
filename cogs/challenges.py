@@ -600,6 +600,27 @@ class Challenges(commands.Cog):
         self.quiz_questions = []
         self.rewrite_phrases = []
 
+        asyncio.create_task(self.load_data_from_db())
+
+        async def load_data_from_db(self):
+            await self.bot.wait_until_ready()
+            database = getattr(self.bot, "db", None)
+            if database is not None:
+                try:
+                    # Carrega as perguntas do quiz
+                    cursor_quiz = database.quiz_questions.find({})
+                    self.quiz_questions = await cursor_quiz.to_list(length=1000)
+
+                    # Carrega as frases de reescrita
+                    cursor_phrases = database.rewrite_phrases.find({})
+                    docs = await cursor_phrases.to_list(length=1000)
+                    
+                    self.rewrite_phrases = [d["phrase"] for d in docs if "phrase" in d]
+                    
+                    print(f"📦 Carregadas {len(self.rewrite_phrases)} frases de reescrita do MongoDB.")
+                except Exception as e:
+                    print(f"❌ Erro ao carregar dados iniciais do Mongo: {e}")
+
         self.load_quiz_data()
 
     async def cog_load(self):
@@ -834,7 +855,6 @@ class Challenges(commands.Cog):
     # =======================================================
     async def approve_rewrite(self, interaction: discord.Interaction, p_text: str, author_name: str):
         await interaction.response.defer(thinking=False)
-
         database = getattr(self.bot, "db", None)
         if database is None:
             return await interaction.followup.send("Banco de dados offline :(", ephemeral=True)
@@ -844,11 +864,12 @@ class Challenges(commands.Cog):
                 "phrase": p_text,
                 "author_name": author_name
             }
-
-            # 1. Salva direto na coleção 'rewrite_phrases' do MongoDB
+            # 1. Salva no banco de dados
             await database.rewrite_phrases.insert_one(nova_frase)
 
-            # 2. Atualiza a interface da Staff mostrando que deu certo
+            if hasattr(self, "rewrite_phrases") and isinstance(self.rewrite_phrases, list):
+                self.rewrite_phrases.append(p_text)
+
             container = ui.Container(accent_color=discord.Color.green())
             container.add_item(ui.TextDisplay(
                 f"## ✅ Frase Aprovada por {interaction.user.mention}!\n"
@@ -858,10 +879,7 @@ class Challenges(commands.Cog):
             
             layout = ui.LayoutView()
             layout.add_item(container)
-            
-            # Altera a mensagem original da staff removendo os botões
             await interaction.edit_original_response(view=layout)
-
         except Exception as e:
             print(f"❌ Erro ao aprovar frase no banco: {e}")
             await interaction.followup.send(f"❌ Erro ao salvar no banco: {e}", ephemeral=True)
