@@ -269,14 +269,17 @@ class SuggestStarterLayout(ui.LayoutView):
 
 class StaffDecisionView(ui.LayoutView):
     def __init__(self, cog=None):
-        super().__init__(timeout=None) # OBRIGATÓRIO: Sem tempo limite para persistência
+        super().__init__(timeout=None)  # OBRIGATÓRIO: Sem tempo limite para persistência
         self.cog = cog
 
         # 1. Instanciamos o contêiner principal e a linha dos botões
         self.container = ui.Container(accent_color=discord.Color.orange())
         self.row = ui.ActionRow()
         
-        # 2. Definimos os botões estáticos com seus IDs persistentes fixos
+        # 2. Criamos o TextDisplay já na inicialização (vazio por enquanto)
+        self.text_display = ui.TextDisplay(value="Carregando dados da sugestão...")
+        
+        # 3. Definimos os botões estáticos com seus IDs persistentes fixos
         self.btn_accept = ui.Button(
             label="Aceitar", 
             style=discord.ButtonStyle.success, 
@@ -293,9 +296,13 @@ class StaffDecisionView(ui.LayoutView):
         )
         self.btn_deny.callback = self.press_deny
 
-        # 3. Colocamos os botões dentro da linha
+        # 4. Colocamos os botões dentro da linha
         self.row.add_item(self.btn_accept)
         self.row.add_item(self.btn_deny)
+
+        self.container.add_item(self.text_display)
+        self.container.add_item(self.row)
+        self.add_item(self.container)
 
     async def press_accept(self, interaction: discord.Interaction):
         if not self.cog:
@@ -323,19 +330,13 @@ class StaffDecisionView(ui.LayoutView):
 
         await self.cog.deny_question(interaction, q_text)
 
-    # Método usado no formulário para injetar os dados mantendo a ordem visual correta
     def build_with_data(self, q_text: str, a_text: str, author_name: str, user_mention: str):
-        text_display = ui.TextDisplay(
+        self.text_display.value = (
             f"## 📥 Nova Sugestão de Pergunta\n"
             f"**Autor:** {user_mention} (`{author_name}`)\n\n"
             f"**Pergunta:** {q_text}\n"
             f"**Resposta:** `{a_text}`"
         )
-
-        self.container.add_item(text_display)
-        self.container.add_item(self.row)
-        
-        self.add_item(self.container)
         return self
 
 
