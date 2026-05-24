@@ -272,27 +272,40 @@ class StaffDecisionView(ui.LayoutView):
         super().__init__(timeout=None)
         self.cog = cog
 
+        # 1. Instanciamos o contêiner principal
         self.container = ui.Container(accent_color=discord.Color.orange())
         
+        # 2. Criamos a linha para os botões
         self.row = ui.ActionRow()
+        
+        # 3. Definimos os botões diretamente com seus IDs persistentes fixos
+        self.btn_accept = ui.Button(
+            label="Aceitar", 
+            style=discord.ButtonStyle.success, 
+            emoji="✅", 
+            custom_id="quiz_mod_accept_btn"
+        )
+        self.btn_accept.callback = self.press_accept 
+
+        self.btn_deny = ui.Button(
+            label="Recusar", 
+            style=discord.ButtonStyle.danger, 
+            emoji="❌", 
+            custom_id="quiz_mod_deny_btn"
+        )
+        self.btn_deny.callback = self.press_deny
+
+        # 4. Foi montado a árvore de componentes de forma segura
         self.row.add_item(self.btn_accept)
         self.row.add_item(self.btn_deny)
-        
         self.container.add_item(self.row)
         self.add_item(self.container)
 
-    # 1. BOTÃO DE ACEITAR 
-    @ui.button(
-        label="Aceitar", 
-        style=discord.ButtonStyle.success, 
-        emoji="✅", 
-        custom_id="quiz_mod_accept_btn"
-    )
-    async def btn_accept(self, interaction: discord.Interaction):
+    # Função executada ao clicar em "Aceitar"
+    async def press_accept(self, interaction: discord.Interaction):
         if not self.cog:
             self.cog = interaction.client.get_cog("Challenges")
 
-        # Busca o TextDisplay que está antes dos botões para pegar os dados
         try:
             content = interaction.message.components[0].items[0].value
             q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
@@ -303,14 +316,8 @@ class StaffDecisionView(ui.LayoutView):
 
         await self.cog.approve_question(interaction, q_text, a_text, author_name)
 
-    # 2. BOTÃO DE RECUSAR (Definido estaticamente com ID fixo)
-    @ui.button(
-        label="Recusar", 
-        style=discord.ButtonStyle.danger, 
-        emoji="❌", 
-        custom_id="quiz_mod_deny_btn"
-    )
-    async def btn_deny(self, interaction: discord.Interaction):
+    # Função executada ao clicar em "Recusar"
+    async def press_deny(self, interaction: discord.Interaction):
         if not self.cog:
             self.cog = interaction.client.get_cog("Challenges")
 
@@ -322,7 +329,7 @@ class StaffDecisionView(ui.LayoutView):
 
         await self.cog.deny_question(interaction, q_text)
 
-    # Método usado apenas no envio para injetar dinamicamente o texto antes da linha dos botões
+    # Método usado no formulário para injetar dinamicamente o texto antes da linha dos botões
     def build_with_data(self, q_text: str, a_text: str, author_name: str, user_mention: str):
         text_display = ui.TextDisplay(
             f"## 📥 Nova Sugestão de Pergunta\n"
@@ -330,7 +337,7 @@ class StaffDecisionView(ui.LayoutView):
             f"**Pergunta:** {q_text}\n"
             f"**Resposta:** `{a_text}`"
         )
-        # Insere o texto na primeira posição do container (antes dos botões)
+        # Insere o componente de texto na primeira posição do contêiner (no topo)
         self.container.items.insert(0, text_display)
         return self
 
