@@ -278,9 +278,9 @@ class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
     resposta = ui.TextInput(
         label="Qual é a resposta correta?",
         style=discord.TextStyle.short,
-        placeholder="Ex: Kris",
+        placeholder="Para mais de uma resposta válida, separe por '/' (Ex: Kris / kris)",
         required=True,
-        max_length=100
+        max_length=200 
     )
 
     def __init__(self, cog):
@@ -476,9 +476,14 @@ class Challenges(commands.Cog):
             return await interaction.followup.send("Banco de dados offline :(", ephemeral=True)
         
         try:
+            if "/" in a_text:
+                respostas_finais = [resp.strip() for resp in a_text.split("/")]
+            else:
+                respostas_finais = [a_text.strip()]
+
             nova_pergunta = {
                 "question": q_text,
-                "answer": a_text,
+                "answer": respostas_finais,
                 "author_name": author_name
             }
 
@@ -488,18 +493,21 @@ class Challenges(commands.Cog):
             # 2. Atualiza a lista da RAM na hora para o bot já poder usar
             self.quiz_questions.append(nova_pergunta)
 
-            # 3. Atualiza a interface da Staff (Substitui a mensagem removendo os botões)
+            # Formata a exibição das respostas para a Staff ver na mensagem de aprovação
+            respostas_str = " **OU** ".join([f"`{r}`" for r in respostas_finais])
+
+            # 3. Atualiza a interface da Staff
             container = ui.Container(accent_color=discord.Color.green())
             container.add_item(ui.TextDisplay(
                 f"## ✅ Pergunta Aprovada por {interaction.user.mention}!\n"
                 f"A pergunta de `{author_name}` foi salva e inserida na rotação ativa.\n\n"
                 f"**Pergunta:** {q_text}\n"
-                f"**Resposta:** `{a_text}`"
+                f"**Respostas válidas:** {respostas_str}"
             ))
             
             layout = ui.LayoutView()
             layout.add_item(container)
-
+            
             await interaction.edit_original_response(view=layout)
 
         except Exception as e:
@@ -522,7 +530,7 @@ class Challenges(commands.Cog):
             container.add_item(ui.TextDisplay(
                 f"## ❌ Sugestão Recusada por {interaction.user.mention}\n"
                 f"Esta pergunta foi descartada pela equipe de moderação e não foi para o banco.\n\n"
-                f"**Pergunta descartada:**\n> {q_text}"
+                f"**Pergunta descartada:**\n> {q_text}" 
             ))
             
 
@@ -791,19 +799,21 @@ class Challenges(commands.Cog):
                 await msg.delete()
 
             return
-
+        
         async with self.locks[guild_id]:
             if challenge.get("solved"):
                 return
-            
-            respostas_permitidas = challenge["answer"]
+        
+            respostas_banco = challenge["answer"]
 
-            if isinstance(respostas_permitidas, str):
-                respostas_permitidas = [respostas_permitidas]
+            if isinstance(respostas_banco, list):
+                respostas_corretas = [str(r).strip().lower() for r in respostas_banco]
+            else:
+                respostas_corretas = [str(respostas_banco).strip().lower()]
+            user_answer = message.content.strip().lower()
 
-            user_answer = normalize(message.content)
-
-            if any(user_answer == normalize(r) for r in respostas_permitidas):
+            if user_answer in respostas_corretas:
+                # ----------------------------------
                 challenge["solved"] = True      
 
                 config_cache = self.config_cache.get(message.guild.id, {})
