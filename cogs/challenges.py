@@ -777,7 +777,7 @@ class Challenges(commands.Cog):
     async def gerar_painel_frase_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.errors.MissingPermissions):
             await interaction.response.send_message(
-                "❌ Você não tem permissão de `Administrador` para usar este comando!", 
+                "Você não tem permissão de `Administrador` para usar este comando, seu bobo -w-.", 
                 ephemeral=True
             )
 
