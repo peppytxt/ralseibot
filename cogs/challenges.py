@@ -269,15 +269,15 @@ class SuggestStarterLayout(ui.LayoutView):
 
 class StaffDecisionView(ui.LayoutView):
     def __init__(self, cog=None):
-        super().__init__(timeout=None)
+        super().__init__(timeout=None)  # OBRIGATÓRIO: Sem tempo limite para persistência
         self.cog = cog
 
         # 1. Instanciamos o contêiner principal e a linha dos botões
         self.container = ui.Container(accent_color=discord.Color.orange())
         self.row = ui.ActionRow()
         
-        # CORREÇÃO: Mudado de 'value' para 'content'
-        self.text_display = ui.TextDisplay(content="Carregando dados da sugestão...")
+        # O componente começa com uma estrutura padrão estruturada para evitar quebras se lido vazio
+        self.text_display = ui.TextDisplay(content="**Autor:** -\n\n**Pergunta:** -\n**Resposta:** -")
         
         # 3. Definimos os botões estáticos com seus IDs persistentes fixos
         self.btn_accept = ui.Button(
@@ -310,11 +310,24 @@ class StaffDecisionView(ui.LayoutView):
             self.cog = interaction.client.get_cog("Challenges")
 
         try:
-            content = interaction.message.components[0].items[0].content
+            message_components = interaction.message.components
+            
+            raw_item = message_components[0].children[0]
+            
+            content = getattr(raw_item, "content", None) or getattr(raw_item, "value", None) or getattr(raw_item, "label", "")
+
+            if not content or "**Pergunta:**" not in content:
+                if interaction.message.content:
+                    content = interaction.message.content
+                elif interaction.message.embeds:
+                    content = interaction.message.embeds[0].description or ""
+
             q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
             a_text = content.split("**Resposta:** `")[1].split("`")[0]
             author_name = content.split("(`")[1].split("`)")[0]
-        except Exception:
+            
+        except Exception as e:
+            print(f"Erro na extração de dados: {e}")
             return await interaction.response.send_message("❌ Erro ao ler dados da pergunta antiga no Discord.", ephemeral=True)
 
         await self.cog.approve_question(interaction, q_text, a_text, author_name)
@@ -324,7 +337,13 @@ class StaffDecisionView(ui.LayoutView):
             self.cog = interaction.client.get_cog("Challenges")
 
         try:
-            content = interaction.message.components[0].items[0].content
+            message_components = interaction.message.components
+            raw_item = message_components[0].children[0]
+            content = getattr(raw_item, "content", None) or getattr(raw_item, "value", None) or getattr(raw_item, "label", "")
+            
+            if not content or "**Pergunta:**" not in content:
+                content = interaction.message.content or (interaction.message.embeds[0].description if interaction.message.embeds else "")
+
             q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
         except Exception:
             q_text = "Pergunta antiga (histórico indisponível)"
