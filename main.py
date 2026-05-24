@@ -2,6 +2,7 @@ import os
 import discord
 import random
 from discord.ext import commands, tasks
+from cogs.challenges import StaffDecisionView
 from cogs.confessions import ConfessionLayout, ConfessionStarterLayout
 from dotenv import load_dotenv
 from pymongo import MongoClient
@@ -71,6 +72,7 @@ async def my_setup_hook():
     await load_all_extensions()
     bot.add_view(ConfessionStarterLayout())
     bot.add_view(ConfessionLayout(text="", num=0))
+    bot.add_view(StaffDecisionView())
 
 # ================================
 #         EVENTOS

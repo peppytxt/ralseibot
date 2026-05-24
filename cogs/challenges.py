@@ -267,6 +267,73 @@ class SuggestStarterLayout(ui.LayoutView):
         await interaction.response.send_modal(SuggestQuestionModal(challenges_cog))
 
 
+class StaffDecisionView(ui.LayoutView):
+    def __init__(self, cog=None):
+        super().__init__(timeout=None)
+        self.cog = cog
+
+    def build_with_data(self, q_text: str, a_text: str, author_name: str, user_mention: str):
+        self.clear_items()
+        
+        container = ui.Container(accent_color=discord.Color.orange())
+        container.add_item(ui.TextDisplay(
+            f"## 📥 Nova Sugestão de Pergunta\n"
+            f"**Autor:** {user_mention} (`{author_name}`)\n\n"
+            f"**Pergunta:** {q_text}\n"
+            f"**Resposta:** `{a_text}`"
+        ))
+
+        row = ui.ActionRow()
+        
+        btn_accept = ui.Button(
+            label="Aceitar", 
+            style=discord.ButtonStyle.success, 
+            emoji="✅", 
+            custom_id="quiz_mod_accept_btn"
+        )
+        btn_accept.callback = self.press_accept
+
+        btn_deny = ui.Button(
+            label="Recusar", 
+            style=discord.ButtonStyle.danger, 
+            emoji="❌", 
+            custom_id="quiz_mod_deny_btn"
+        )
+        btn_deny.callback = self.press_deny
+
+        row.add_item(btn_accept)
+        row.add_item(btn_deny)
+        container.add_item(row)
+        self.add_item(container)
+        return self
+
+    async def press_accept(self, interaction: discord.Interaction):
+        if not self.cog:
+            self.cog = interaction.client.get_cog("Challenges")
+
+        content = interaction.message.components[0].items[0].value
+        
+        try:
+            q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
+            a_text = content.split("**Resposta:** `")[1].split("`")[0]
+            author_name = content.split("(`")[1].split("`)")[0]
+        except Exception:
+            return await interaction.response.send_message("❌ Erro ao recuperar os dados desta pergunta antiga.", ephemeral=True)
+
+        await self.cog.approve_question(interaction, q_text, a_text, author_name)
+
+    async def press_deny(self, interaction: discord.Interaction):
+        if not self.cog:
+            self.cog = interaction.client.get_cog("Challenges")
+
+        content = interaction.message.components[0].items[0].value
+        try:
+            q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
+        except Exception:
+            q_text = "Pergunta antiga (histórico indisponível)"
+
+        await self.cog.deny_question(interaction, q_text)
+
 class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
     pergunta = ui.TextInput(
         label="Qual é a pergunta?",
@@ -297,29 +364,13 @@ class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
                 ephemeral=True
             )
 
-        layout = ui.LayoutView(timeout=None)
-        container = ui.Container(accent_color=discord.Color.orange())
-        container.add_item(ui.TextDisplay(
-            f"## 📥 Nova Sugestão de Pergunta\n"
-            f"**Autor:** {interaction.user.mention} (`{interaction.user.name}`)\n\n"
-            f"**Pergunta:** {self.pergunta.value}\n"
-            f"**Resposta:** `{self.resposta.value}`"
-        ))
-
-        row = ui.ActionRow()
-        
-        btn_accept = ui.Button(label="Aceitar", style=discord.ButtonStyle.success, emoji="✅")
-        btn_accept.callback = lambda inter: asyncio.create_task(
-            self.cog.approve_question(inter, self.pergunta.value, self.resposta.value, interaction.user.name)
+        layout = StaffDecisionView(self.cog)
+        layout.build_with_data(
+            q_text=self.pergunta.value,
+            a_text=self.resposta.value,
+            author_name=interaction.user.name,
+            user_mention=interaction.user.mention
         )
-
-        btn_deny = ui.Button(label="Recusar", style=discord.ButtonStyle.danger, emoji="❌")
-        btn_deny.callback = lambda inter: asyncio.create_task(self.cog.deny_question(inter, self.pergunta.value))
-
-        row.add_item(btn_accept)
-        row.add_item(btn_deny)
-        container.add_item(row)
-        layout.add_item(container)
 
         await canal_mod.send(view=layout)
         
