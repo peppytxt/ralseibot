@@ -81,7 +81,6 @@ async def setup_hook():
     bot.add_view(SuggestStarterLayout())
     bot.add_view(StaffDecisionView())
     bot.add_view(SuggestPhraseStarterLayout())
-    bot.add_view(SuggestPhraseModal())
     bot.add_view(PhraseStaffDecisionView())
     bot.add_view(ConfessionStarterLayout())
     bot.add_view(ConfessionLayout(text="", num=0))
