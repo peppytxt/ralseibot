@@ -407,6 +407,94 @@ class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
             ephemeral=True
         )
 
+class PhraseDecisionView(ui.LayoutView):
+    def __init__(self, cog=None, phrase_id: str = None):
+        suffix = phrase_id if phrase_id else "persistent"
+        super().__init__(timeout=None)
+        self.cog = cog
+
+        # Defina aqui o seu ID do Discord (substitua pelo seu ID real)
+        self.DONO_ID = 123456789012345678  
+
+        self.container = ui.Container(accent_color=discord.Color.blue())
+        self.row = ui.ActionRow()
+        
+        self.text_display = ui.TextDisplay(content="**Frase:** -\n**ID:** -")
+        
+        self.btn_accept = ui.Button(
+            label="Aprovar Reescrita", 
+            style=discord.ButtonStyle.success, 
+            emoji="📝", 
+            custom_id=f"rewrite_mod_accept_{suffix}"
+        )
+        self.btn_accept.callback = self.press_accept
+
+        self.btn_deny = ui.Button(
+            label="Recusar Reescrita", 
+            style=discord.ButtonStyle.danger, 
+            emoji="🗑️", 
+            custom_id=f"rewrite_mod_deny_{suffix}"
+        )
+        self.btn_deny.callback = self.press_deny
+
+        self.row.add_item(self.btn_accept)
+        self.row.add_item(self.btn_deny)
+        self.container.add_item(self.text_display)
+        self.container.add_item(self.row)
+        self.add_item(self.container)
+
+    async def press_accept(self, interaction: discord.Interaction):
+        if interaction.user.id != self.DONO_ID:
+            return await interaction.response.send_message(
+                "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
+                ephemeral=True
+            )
+
+        if not self.cog:
+            self.cog = interaction.client.get_cog("Challenges") 
+
+        try:
+            db_id = interaction.custom_id.split("rewrite_mod_accept_")[1]
+            if db_id == "persistent":
+                raw_item = interaction.message.components[0].children[0]
+                content = getattr(raw_item, "content", None) or getattr(raw_item, "value", "")
+                db_id = content.split("**ID do Banco:** `")[1].split("`")[0]
+        except Exception as e:
+            print(f"Erro ao extrair ID da frase: {e}")
+            return await interaction.response.send_message("Não foi possível resgatar o ID desta reescrita.", ephemeral=True)
+
+        await self.cog.approve_rewrite(interaction, db_id)
+
+    async def press_deny(self, interaction: discord.Interaction):
+        if interaction.user.id != self.DONO_ID:
+            return await interaction.response.send_message(
+                "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
+                ephemeral=True
+            )
+
+        if not self.cog:
+            self.cog = interaction.client.get_cog("Challenges")
+
+        try:
+            db_id = interaction.custom_id.split("rewrite_mod_deny_")[1]
+            if db_id == "persistent":
+                raw_item = interaction.message.components[0].children[0]
+                content = getattr(raw_item, "content", None) or getattr(raw_item, "value", "")
+                db_id = content.split("**ID do Banco:** `")[1].split("`")[0]
+        except Exception:
+            return await interaction.response.send_message("Não foi possível resgatar o ID desta reescrita.", ephemeral=True)
+
+        await self.cog.deny_rewrite(interaction, db_id)
+
+    def build_with_data(self, phrase_text: str, db_id: str, author_mention: str):
+        self.text_display.content = (
+            f"## 📝 Nova Sugestão de Reescrita\n"
+            f"**Enviado por:** {author_mention}\n\n"
+            f"**Frase:** \"{phrase_text}\"\n"
+            f"**ID do Banco:** `{db_id}`"
+        )
+        return self
+
 class Challenges(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -530,7 +618,7 @@ class Challenges(commands.Cog):
 
     # ------------- CONFIG COMMAND ------------------
 
-    @app_commands.command(name="setup_sugestoes_quiz", description="Envia o painel fixo para sugestões de quiz")
+    @app_commands.command(name="setup_sugestoes_quiz", description="[Admin] Envia o painel fixo para sugestões de quiz")
     @app_commands.checks.has_permissions(administrator=True)
     async def setup_sugestoes_quiz(self, interaction: discord.Interaction):
         view = SuggestStarterLayout()
@@ -621,6 +709,79 @@ class Challenges(commands.Cog):
             print(f"❌ Erro ao recusar pergunta: {e}")
 
 
+    @app_commands.command(
+        name="gerar_painel_frase", 
+        description="[Admin] Puxa uma frase pendente do banco e envia para moderação."
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    async def gerar_painel_frase(self, interaction: discord.Interaction):
+        ID_CANAL_MODERACAO_FRASES = 1507871453771599964
+        
+        canal_mod = interaction.guild.get_channel(ID_CANAL_MODERACAO_FRASES)
+        if not canal_mod:
+            return await interaction.response.send_message(
+                "❌ Canal de moderação de frases não encontrado!", 
+                ephemeral=True
+            )
+
+        database = getattr(self.bot, "db", None)
+        if database is None:
+            return await interaction.response.send_message(
+                "Banco de dados MongoDB não conectado.", 
+                ephemeral=True
+            )
+
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            frase_doc = await database.rewrite_phrases.find_one({})
+
+            if not frase_doc:
+                return await interaction.followup.send(
+                    "📭 Nenhuma frase encontrada na coleção `rewrite_phrases`.", 
+                    ephemeral=True
+                )
+
+            # 3. Extrai os dados do documento do MongoDB
+            db_id = str(frase_doc["_id"])
+            texto_frase = frase_doc.get("phrase", "Frase sem texto disponível")
+            
+            autor_mention = frase_doc.get("author_mention", interaction.user.mention)
+
+            # 4. Instancia a View persistente passando o ID real do banco
+            layout = PhraseDecisionView(cog=self, phrase_id=db_id)
+            layout.build_with_data(
+                phrase_text=texto_frase,
+                db_id=db_id,
+                author_mention=autor_mention
+            )
+
+            # 5. Envia o painel estruturado para o canal de Staff
+            await canal_mod.send(view=layout)
+
+            # 6. Responde ao Administrador que deu tudo certo
+            await interaction.followup.send(
+                f"✅ Painel para a frase ID `{db_id}` enviado com sucesso em {canal_mod.mention}!", 
+                ephemeral=True
+            )
+
+        except Exception as e:
+            print(f"Erro ao gerar painel de frase: {e}")
+            await interaction.followup.send(
+                f"❌ Ocorreu um erro ao buscar a frase: {e}", 
+                ephemeral=True
+            )
+
+    # Tratamento de erro específico para falta de permissão no comando de gerar painel de frase
+    @gerar_painel_frase.error
+    async def gerar_painel_frase_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error, app_commands.errors.MissingPermissions):
+            await interaction.response.send_message(
+                "❌ Você não tem permissão de `Administrador` para usar este comando!", 
+                ephemeral=True
+            )
+
+
     @app_commands.command(name="challengeconfig", description="Configura os desafios")
     @app_commands.checks.has_permissions(administrator=True)
     async def challengeconfig(self, interaction: discord.Interaction):
@@ -652,7 +813,7 @@ class Challenges(commands.Cog):
     @rank_group.command(name="global", description="Ranking global de vitórias")
     async def rank_global(self, interaction: discord.Interaction):
         if self.col_users is None: 
-            return await interaction.response.send_message("❌ Banco de dados offline.", ephemeral=True)
+            return await interaction.response.send_message("Banco de dados offline :(", ephemeral=True)
             
         await interaction.response.defer()
 
@@ -714,7 +875,7 @@ class Challenges(commands.Cog):
         user: discord.Member | None = None
     ):
         if self.col_users is None: 
-            return await interaction.response.send_message("Banco de dados offline:(", ephemeral=True)
+            return await interaction.response.send_message("Banco de dados offline :(", ephemeral=True)
             
         target = user or interaction.user
 
