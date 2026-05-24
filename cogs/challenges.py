@@ -602,24 +602,24 @@ class Challenges(commands.Cog):
 
         asyncio.create_task(self.load_data_from_db())
 
-        async def load_data_from_db(self):
-            await self.bot.wait_until_ready()
-            database = getattr(self.bot, "db", None)
-            if database is not None:
-                try:
-                    # Carrega as perguntas do quiz
-                    cursor_quiz = database.quiz_questions.find({})
-                    self.quiz_questions = await cursor_quiz.to_list(length=1000)
+    async def load_data_from_db(self):
+        await self.bot.wait_until_ready()
+        database = getattr(self.bot, "db", None)
+        if database is not None:
+            try:
+                # Carrega as perguntas do quiz
+                cursor_quiz = database.quiz_questions.find({})
+                self.quiz_questions = await cursor_quiz.to_list(length=1000)
 
-                    # Carrega as frases de reescrita
-                    cursor_phrases = database.rewrite_phrases.find({})
-                    docs = await cursor_phrases.to_list(length=1000)
-                    
-                    self.rewrite_phrases = [d["phrase"] for d in docs if "phrase" in d]
-                    
-                    print(f"📦 Carregadas {len(self.rewrite_phrases)} frases de reescrita do MongoDB.")
-                except Exception as e:
-                    print(f"❌ Erro ao carregar dados iniciais do Mongo: {e}")
+                # Carrega as frases de reescrita
+                cursor_phrases = database.rewrite_phrases.find({})
+                docs = await cursor_phrases.to_list(length=1000)
+                
+                self.rewrite_phrases = [d["phrase"] for d in docs if "phrase" in d]
+                
+                print(f"📦 Carregadas {len(self.rewrite_phrases)} frases de reescrita do MongoDB.")
+            except Exception as e:
+                print(f"❌ Erro ao carregar dados iniciais do Mongo: {e}")
 
         self.load_quiz_data()
 
