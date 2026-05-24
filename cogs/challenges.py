@@ -828,6 +828,64 @@ class Challenges(commands.Cog):
                 ephemeral=True
             )
 
+    # =======================================================
+    #  CALLBACK DE APROVAÇÃO DE FRASES
+    # =======================================================
+    async def approve_rewrite(self, interaction: discord.Interaction, p_text: str, author_name: str):
+        await interaction.response.defer(thinking=False)
+
+        database = getattr(self.bot, "db", None)
+        if database is None:
+            return await interaction.followup.send("Banco de dados offline :(", ephemeral=True)
+        
+        try:
+            nova_frase = {
+                "phrase": p_text,
+                "author_name": author_name
+            }
+
+            # 1. Salva direto na coleção 'rewrite_phrases' do MongoDB
+            await database.rewrite_phrases.insert_one(nova_frase)
+
+            # 2. Atualiza a interface da Staff mostrando que deu certo
+            container = ui.Container(accent_color=discord.Color.green())
+            container.add_item(ui.TextDisplay(
+                f"## ✅ Frase Aprovada por {interaction.user.mention}!\n"
+                f"A frase de `{author_name}` foi salva com sucesso no banco de dados.\n\n"
+                f"**Frase:** \"{p_text}\""
+            ))
+            
+            layout = ui.LayoutView()
+            layout.add_item(container)
+            
+            # Altera a mensagem original da staff removendo os botões
+            await interaction.edit_original_response(view=layout)
+
+        except Exception as e:
+            print(f"❌ Erro ao aprovar frase no banco: {e}")
+            await interaction.followup.send(f"❌ Erro ao salvar no banco: {e}", ephemeral=True)
+
+
+    # =======================================================
+    #  CALLBACK DE REJEIÇÃO DE FRASES
+    # =======================================================
+    async def deny_rewrite(self, interaction: discord.Interaction, p_text: str):
+        try:
+            container = ui.Container(accent_color=discord.Color.red())
+            container.add_item(ui.TextDisplay(
+                f"## ❌ Sugestão de Frase Recusada por {interaction.user.mention}\n"
+                f"Esta frase foi descartada e não foi salva no banco.\n\n"
+                f"**Frase descartada:**\n> {p_text}" 
+            ))
+            
+            layout = ui.LayoutView()
+            layout.add_item(container)
+
+            # Como não enviamos nada ao banco na recusa, apenas mudamos a mensagem do Discord
+            await interaction.response.edit_message(view=layout)
+        except Exception as e:
+            print(f"❌ Erro ao recusar frase: {e}")
+
 
     @app_commands.command(name="challengeconfig", description="Configura os desafios")
     @app_commands.checks.has_permissions(administrator=True)
