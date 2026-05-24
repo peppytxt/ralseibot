@@ -1,14 +1,15 @@
 import os
 import discord
 import random
+import asyncio
 from discord.ext import commands, tasks
+from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
+
+# Importações dos seus componentes persistentes
 from cogs.challenges import StaffDecisionView
 from cogs.confessions import ConfessionLayout, ConfessionStarterLayout
-from dotenv import load_dotenv
-from pymongo import MongoClient
 from cogs.moeda import setup as economia_setup
-from motor.motor_asyncio import AsyncIOMotorClient
-from discord.ext import tasks
 
 load_dotenv()
 
@@ -68,11 +69,32 @@ async def load_all_extensions():
         except Exception as e:
             print(f"Falha ao carregar {cog}: {e}")
 
-async def my_setup_hook():
+# ================================
+#         HOOK DE SETUP (UNIFICADO)
+# ================================
+@bot.event
+async def setup_hook():
+    # 1. Carrega todas as extensões primeiro
     await load_all_extensions()
+    
+    # 2. Registra TODAS as Views persistentes do bot para não morrerem no restart
+    bot.add_view(StaffDecisionView())
     bot.add_view(ConfessionStarterLayout())
     bot.add_view(ConfessionLayout(text="", num=0))
-    bot.add_view(StaffDecisionView())
+    print("🔄 Views persistentes (Quiz e Confissões) carregadas com sucesso!")
+
+    # 3. Carregar comandos externos da economia
+    try:
+        economia_setup(bot.tree)
+    except Exception as e:
+        print("Erro economia:", e)
+
+    # 4. Sincronizar slash commands com o Discord
+    try:
+        await bot.tree.sync()
+        print("Slash commands sincronizados!")
+    except Exception as e:
+        print("Erro ao sincronizar:", e)
 
 # ================================
 #         EVENTOS
@@ -82,23 +104,6 @@ async def on_ready():
     if not status_task.is_running():
         status_task.start()
     print(f"Bot online como {bot.user} :3 (ID: {bot.user.id})")
-
-@bot.event
-async def setup_hook():
-    await load_all_extensions()
-
-    # Carregar comandos da economia
-    try:
-        economia_setup(bot.tree)
-    except Exception as e:
-        print("Erro economia:", e)
-
-    # Sincronizar slash commands
-    try:
-        await bot.tree.sync()
-        print("Slash commands sincronizados!")
-    except Exception as e:
-        print("Erro ao sincronizar:", e)
 
 @bot.event
 async def on_message(message):
@@ -112,6 +117,9 @@ async def on_command_error(ctx, error):
         return
     print("Erro tratado (main)", error)
 
+# ================================
+#         TASKS
+# ================================
 @tasks.loop(seconds=30)
 async def status_task():
     guilds = len(bot.guilds)
