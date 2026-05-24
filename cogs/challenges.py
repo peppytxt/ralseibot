@@ -234,7 +234,7 @@ class RalcoinSettingsModal(ui.Modal, title="Configurar Ganhos de Ralcoins"):
 
 class SuggestStarterLayout(ui.LayoutView):
     def __init__(self):
-        super().__init__(timeout=None) # Esse garante o botão infinito no canal público!
+        super().__init__(timeout=None)
         
         container = ui.Container(accent_color=discord.Color.blurple())
         container.add_item(ui.TextDisplay(
@@ -269,7 +269,7 @@ class SuggestStarterLayout(ui.LayoutView):
 
 class StaffDecisionView(ui.LayoutView):
     def __init__(self, cog=None):
-        super().__init__(timeout=None)  # OBRIGATÓRIO: Sem tempo limite para persistência
+        super().__init__(timeout=None)
         self.cog = cog
 
         # 1. Instanciamos o contêiner principal e a linha dos botões
@@ -310,7 +310,6 @@ class StaffDecisionView(ui.LayoutView):
             self.cog = interaction.client.get_cog("Challenges")
 
         try:
-            # CORREÇÃO: Mudado o final de '.value' para '.content' para ler os dados corretamente
             content = interaction.message.components[0].items[0].content
             q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
             a_text = content.split("**Resposta:** `")[1].split("`")[0]
@@ -325,7 +324,6 @@ class StaffDecisionView(ui.LayoutView):
             self.cog = interaction.client.get_cog("Challenges")
 
         try:
-            # CORREÇÃO: Mudado o final de '.value' para '.content'
             content = interaction.message.components[0].items[0].content
             q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
         except Exception:
@@ -591,7 +589,7 @@ class Challenges(commands.Cog):
             container = ui.Container(accent_color=discord.Color.red())
             container.add_item(ui.TextDisplay(
                 f"## ❌ Sugestão Recusada por {interaction.user.mention}\n"
-                f"Esta pergunta foi descartada pela equipe de moderação e não foi para o banco.\n\n"
+                f"Esta pergunta foi descartada pela equipe de moderação.\n\n"
                 f"**Pergunta descartada:**\n> {q_text}" 
             ))
             
