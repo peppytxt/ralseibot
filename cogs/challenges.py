@@ -521,16 +521,17 @@ class Challenges(commands.Cog):
             container = ui.Container(accent_color=discord.Color.red())
             container.add_item(ui.TextDisplay(
                 f"## ❌ Sugestão Recusada por {interaction.user.mention}\n"
-                f"Esta pergunta `{q_text}` foi descartada pela equipe de moderação."
+                f"Esta pergunta foi descartada pela equipe de moderação e não foi para o banco.\n\n"
+                f"**Pergunta descartada:**\n> {q_text}"
             ))
             
+
             layout = ui.LayoutView()
             layout.add_item(container)
 
             await interaction.response.edit_message(view=layout)
         except Exception as e:
             print(f"❌ Erro ao recusar pergunta: {e}")
-    
 
 
     @app_commands.command(name="challengeconfig", description="Configura os desafios")
