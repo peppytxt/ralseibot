@@ -272,67 +272,68 @@ class StaffDecisionView(ui.LayoutView):
         super().__init__(timeout=None)
         self.cog = cog
 
-    def build_with_data(self, q_text: str, a_text: str, author_name: str, user_mention: str):
-        self.clear_items()
+        self.container = ui.Container(accent_color=discord.Color.orange())
         
-        container = ui.Container(accent_color=discord.Color.orange())
-        container.add_item(ui.TextDisplay(
-            f"## 📥 Nova Sugestão de Pergunta\n"
-            f"**Autor:** {user_mention} (`{author_name}`)\n\n"
-            f"**Pergunta:** {q_text}\n"
-            f"**Resposta:** `{a_text}`"
-        ))
-
-        row = ui.ActionRow()
+        self.row = ui.ActionRow()
+        self.row.add_item(self.btn_accept)
+        self.row.add_item(self.btn_deny)
         
-        btn_accept = ui.Button(
-            label="Aceitar", 
-            style=discord.ButtonStyle.success, 
-            emoji="✅", 
-            custom_id="quiz_mod_accept_btn"
-        )
-        btn_accept.callback = self.press_accept
+        self.container.add_item(self.row)
+        self.add_item(self.container)
 
-        btn_deny = ui.Button(
-            label="Recusar", 
-            style=discord.ButtonStyle.danger, 
-            emoji="❌", 
-            custom_id="quiz_mod_deny_btn"
-        )
-        btn_deny.callback = self.press_deny
-
-        row.add_item(btn_accept)
-        row.add_item(btn_deny)
-        container.add_item(row)
-        self.add_item(container)
-        return self
-
-    async def press_accept(self, interaction: discord.Interaction):
+    # 1. BOTÃO DE ACEITAR 
+    @ui.button(
+        label="Aceitar", 
+        style=discord.ButtonStyle.success, 
+        emoji="✅", 
+        custom_id="quiz_mod_accept_btn"
+    )
+    async def btn_accept(self, interaction: discord.Interaction):
         if not self.cog:
             self.cog = interaction.client.get_cog("Challenges")
 
-        content = interaction.message.components[0].items[0].value
-        
+        # Busca o TextDisplay que está antes dos botões para pegar os dados
         try:
+            content = interaction.message.components[0].items[0].value
             q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
             a_text = content.split("**Resposta:** `")[1].split("`")[0]
             author_name = content.split("(`")[1].split("`)")[0]
         except Exception:
-            return await interaction.response.send_message("❌ Erro ao recuperar os dados desta pergunta antiga.", ephemeral=True)
+            return await interaction.response.send_message("❌ Erro ao ler dados da pergunta antiga no Discord.", ephemeral=True)
 
         await self.cog.approve_question(interaction, q_text, a_text, author_name)
 
-    async def press_deny(self, interaction: discord.Interaction):
+    # 2. BOTÃO DE RECUSAR (Definido estaticamente com ID fixo)
+    @ui.button(
+        label="Recusar", 
+        style=discord.ButtonStyle.danger, 
+        emoji="❌", 
+        custom_id="quiz_mod_deny_btn"
+    )
+    async def btn_deny(self, interaction: discord.Interaction):
         if not self.cog:
             self.cog = interaction.client.get_cog("Challenges")
 
-        content = interaction.message.components[0].items[0].value
         try:
+            content = interaction.message.components[0].items[0].value
             q_text = content.split("**Pergunta:** ")[1].split("\n**Resposta:**")[0]
         except Exception:
             q_text = "Pergunta antiga (histórico indisponível)"
 
         await self.cog.deny_question(interaction, q_text)
+
+    # Método usado apenas no envio para injetar dinamicamente o texto antes da linha dos botões
+    def build_with_data(self, q_text: str, a_text: str, author_name: str, user_mention: str):
+        text_display = ui.TextDisplay(
+            f"## 📥 Nova Sugestão de Pergunta\n"
+            f"**Autor:** {user_mention} (`{author_name}`)\n\n"
+            f"**Pergunta:** {q_text}\n"
+            f"**Resposta:** `{a_text}`"
+        )
+        # Insere o texto na primeira posição do container (antes dos botões)
+        self.container.items.insert(0, text_display)
+        return self
+
 
 class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
     pergunta = ui.TextInput(
@@ -364,6 +365,7 @@ class SuggestQuestionModal(ui.Modal, title="Sugerir Pergunta para o Quiz"):
                 ephemeral=True
             )
 
+        # Monta a nova estrutura estática injetando o texto correto
         layout = StaffDecisionView(self.cog)
         layout.build_with_data(
             q_text=self.pergunta.value,
