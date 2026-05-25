@@ -1171,10 +1171,11 @@ class Challenges(commands.Cog):
             respostas_banco = challenge["answer"]
 
             if isinstance(respostas_banco, list):
-                respostas_corretas = [str(r).strip().lower() for r in respostas_banco]
+                respostas_corretas = [normalize(str(r)) for r in respostas_banco]
             else:
-                respostas_corretas = [str(respostas_banco).strip().lower()]
-            user_answer = message.content.strip().lower()
+                respostas_corretas = [normalize(str(respostas_banco))]
+            
+            user_answer = normalize(message.content)
 
             if user_answer in respostas_corretas:
                 # ----------------------------------
@@ -1280,7 +1281,7 @@ class Challenges(commands.Cog):
         elif typ == "quiz":
             if not self.quiz_questions:
                 return {
-                    "question": "**Pergunta:** Quem é o mascote fofinho de Deltarune?",
+                   "question": "**Pergunta:** Quem é o mascote fofinho de Deltarune?",
                     "answer": "Ralsei"
                 }
 
