@@ -900,7 +900,6 @@ class Challenges(commands.Cog):
             layout = ui.LayoutView()
             layout.add_item(container)
 
-            # Como não enviamos nada ao banco na recusa, apenas mudamos a mensagem do Discord
             await interaction.response.edit_message(view=layout)
         except Exception as e:
             print(f"❌ Erro ao recusar frase: {e}")

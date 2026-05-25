@@ -83,12 +83,30 @@ class ConfessionsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="setup_confissoes", description="Envia o painel inicial de confissões anônimas")
-    @app_commands.checks.has_permissions(administrator=True)
+    # Configurações de ID de segurança
+    ID_SERVIDOR = 1410006076400599235  
+    ID_SEU_USER_DISCORD = 274645285634834434
+
+    @app_commands.command(name="setup_confissoes", description="[Admin] Envia o painel inicial de confissões anônimas")
+    @app_commands.guilds(discord.Object(id=ID_SERVIDOR))
     async def setup_confissoes(self, interaction: discord.Interaction):
-        view = ConfessionStarterLayout()
-        await interaction.channel.send(view=view)
-        await interaction.response.send_message("✅ Painel configurado!", ephemeral=True)
+        if interaction.user.id != self.ID_SEU_USER_DISCORD:
+            return await interaction.response.send_message(
+                "Você não tem permissão para usar este comando, seu bobo -w-", 
+                ephemeral=True
+            )
+
+        try:
+            view = ConfessionStarterLayout()
+            await interaction.channel.send(view=view)
+            await interaction.response.send_message("✅ Painel configurado!", ephemeral=True)
+            
+        except Exception as e:
+            print(f"Erro ao enviar painel de confissões: {e}")
+            await interaction.response.send_message(
+                f"Ocorreu um erro ao tentar enviar o painel: {e}", 
+                ephemeral=True
+            )
 
 
 async def handle_confession_submission(interaction: discord.Interaction, text, img_url, is_reply, message_id):
