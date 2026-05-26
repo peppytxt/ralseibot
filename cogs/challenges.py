@@ -1556,7 +1556,6 @@ class Challenges(commands.Cog):
                 "question": f"🧩 **Anagrama! Descubra a palavra embaralhada:**\n"
                             f"➡️ Letras: **`{palavra_embaralhada}`**\n",
                 "answer": palavra_original,
-                "author_name": item.get("author_name", "Staff")
             }
 
 def count_human_members(guild: discord.Guild) -> int:
