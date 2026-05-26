@@ -1050,12 +1050,18 @@ class Challenges(commands.Cog):
         if interaction.user.id != 274645285634834434: # Seu ID
             return await interaction.response.send_message("Você não tem permissão para usar este comando, seu bobo -w-.", ephemeral=True)
 
+        await interaction.response.defer(ephemeral=True)
+
         try:
             view = SuggestAnagramStarterLayout()
+            
             await canal.send(view=view)
-            await interaction.response.send_message(f"✅ Painel de anagramas enviado em {canal.mention}!", ephemeral=True)
+            
+            await interaction.followup.send(f"✅ Painel de anagramas enviado com sucesso em {canal.mention}!", ephemeral=True)
+            
         except Exception as e:
-            await interaction.response.send_message(f"❌ Erro: {e}", ephemeral=True)
+            print(f"Erro ao gerar painel de anagramas: {e}")
+            await interaction.followup.send(f"❌ Erro ao tentar processar o comando: {e}", ephemeral=True)
 
 
     # =======================================================
