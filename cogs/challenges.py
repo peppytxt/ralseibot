@@ -1553,7 +1553,7 @@ class Challenges(commands.Cog):
             palavra_embaralhada = "".join(letras).upper()
 
             return {
-                "question": f"🧩 **Anagrama! Descubra a palavra embaralhada:**\n"
+                "question": f"🧩 **Anagrama! Descubra a palavra embaralhada:**\n\n"
                             f"➡️ Letras: **`{palavra_embaralhada}`**\n",
                 "answer": palavra_original,
             }
