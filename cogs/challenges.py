@@ -1467,7 +1467,7 @@ class Challenges(commands.Cog):
     # ------------- GENERATE CHALLENGE -------------
 
     def generate_challenge(self):
-        typ = random.choice(["anagram"])
+        typ = random.choice(["math", "rewrite", "guess", "quiz", "anagram"])
 
         if typ == "math":
             math_type = random.choice(["add", "sub", "mul"])
