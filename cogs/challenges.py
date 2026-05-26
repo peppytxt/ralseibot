@@ -589,6 +589,176 @@ class PhraseStaffDecisionView(ui.LayoutView):
         )
         return self
 
+# =======================================================
+#  1. PAINEL INICIAL PARA USUÁRIOS ENVIAREM ANAGRAMAS
+# =======================================================
+class SuggestAnagramStarterLayout(ui.LayoutView):
+    def __init__(self):
+        super().__init__(timeout=None)
+        
+        container = ui.Container(accent_color=discord.Color.magenta())
+        container.add_item(ui.TextDisplay(
+            "## 🔠 Sugira Palavras para o Anagrama!\n"
+            "Tem uma palavra legal que deseja virar anagrama? Clique no botão abaixo "
+            "para enviar sua sugestão para a moderação.\n\n"
+        ))
+        
+        row = ui.ActionRow()
+        btn_start = ui.Button(
+            label="Sugerir Anagrama", 
+            custom_id="btn_suggest_anagram_trigger", 
+            style=discord.ButtonStyle.primary, 
+            emoji="🔠"
+        )
+        
+        btn_start.callback = self.start_suggestion
+        row.add_item(btn_start)
+        container.add_item(row)
+        self.add_item(container)
+
+    async def start_suggestion(self, interaction: discord.Interaction):
+        challenges_cog = interaction.client.get_cog("Challenges")
+        if not challenges_cog:
+            return await interaction.response.send_message(
+                "❌ O sistema de desafios está temporariamente indisponível.", 
+                ephemeral=True
+            )
+        
+        await interaction.response.send_modal(SuggestAnagramModal(challenges_cog))
+
+
+# =======================================================
+#  2. MODAL DE ENVIO DO ANAGRAMA
+# =======================================================
+class SuggestAnagramModal(ui.Modal, title="Sugerir Anagrama"):
+    palavra = ui.TextInput(
+        label="Qual é a palavra correta?",
+        style=discord.TextStyle.short,
+        placeholder="Ex: Ralsei (Sem espaços ou símbolos)",
+        required=True,
+        max_length=30
+    )
+
+    def __init__(self, cog):
+        super().__init__()
+        self.cog = cog
+
+    async def on_submit(self, interaction: discord.Interaction):
+        ID_CANAL_MODERACAO = 1507871453771599964
+        
+        canal_mod = interaction.guild.get_channel(ID_CANAL_MODERACAO)
+        if not canal_mod:
+            return await interaction.response.send_message(
+                "Canal de moderação não encontrado. Avise um administrador!", 
+                ephemeral=True
+            )
+
+        # Monta a tela de decisão da Staff
+        layout = AnagramStaffDecisionView(self.cog)
+        layout.build_with_data(
+            word_text=self.palavra.value.strip(),
+            author_name=interaction.user.name,
+            user_mention=interaction.user.mention
+        )
+
+        await canal_mod.send(view=layout)
+        await interaction.response.send_message(
+            "✨ Sua sugestão de anagrama foi enviada com sucesso! :3", 
+            ephemeral=True
+        )
+
+
+# =======================================================
+#  3. PAINEL DE DECISÃO DA STAFF (RESTRITO AO SEU ID)
+# =======================================================
+class AnagramStaffDecisionView(ui.LayoutView):
+    def __init__(self, cog=None):
+        super().__init__(timeout=None)
+        self.cog = cog
+        self.peppy = 274645285634834434
+
+        self.container = ui.Container(accent_color=discord.Color.fuchsia())
+        self.row = ui.ActionRow()
+        
+        self.text_display = ui.TextDisplay(content="**Autor:** -\n\n**Palavra:** -")
+        
+        self.btn_accept = ui.Button(
+            label="Aceitar Anagrama", 
+            style=discord.ButtonStyle.success, 
+            emoji="✅", 
+            custom_id="anagram_mod_accept_btn"
+        )
+        self.btn_accept.callback = self.press_accept
+
+        self.btn_deny = ui.Button(
+            label="Recusar Anagrama", 
+            style=discord.ButtonStyle.danger, 
+            emoji="❌", 
+            custom_id="anagram_mod_deny_btn"
+        )
+        self.btn_deny.callback = self.press_deny
+
+        self.row.add_item(self.btn_accept)
+        self.row.add_item(self.btn_deny)
+        self.container.add_item(self.text_display)
+        self.container.add_item(self.row)
+        self.add_item(self.container)
+
+    async def press_accept(self, interaction: discord.Interaction):
+        if interaction.user.id != self.peppy:
+            return await interaction.response.send_message(
+                "O que vuxê está fazendo aqui?? Apenas o dono do bot pode gerenciar anagramas >:3", 
+                ephemeral=True
+            )
+
+        if not self.cog:
+            self.cog = interaction.client.get_cog("Challenges")
+
+        try:
+            content = self.get_content(interaction)
+            word_text = content.split("**Palavra:** ")[1]
+            author_name = content.split("(`")[1].split("`)")[0]
+            
+        except Exception as e:
+            print(f"Erro na extração de dados do anagrama: {e}")
+            return await interaction.response.send_message("Erro ao ler dados do anagrama antigo.", ephemeral=True)
+
+        await self.cog.approve_anagram(interaction, word_text, author_name)
+
+    async def press_deny(self, interaction: discord.Interaction):
+        if interaction.user.id != self.peppy:
+            return await interaction.response.send_message(
+                "O que vuxê está fazendo aqui?? Apenas o dono do bot pode gerenciar anagramas >:3", 
+                ephemeral=True
+            )
+
+        if not self.cog:
+            self.cog = interaction.client.get_cog("Challenges")
+
+        try:
+            content = self.get_content(interaction)
+            word_text = content.split("**Palavra:** ")[1]
+        except Exception:
+            word_text = "Anagrama antigo (histórico indisponível)"
+
+        await self.cog.deny_anagram(interaction, word_text)
+
+    def get_content(self, interaction):
+        message_components = interaction.message.components
+        raw_item = message_components[0].children[0]
+        content = getattr(raw_item, "content", None) or getattr(raw_item, "value", None) or getattr(raw_item, "label", "")
+        if not content or "**Palavra:**" not in content:
+            content = interaction.message.content or (interaction.message.embeds[0].description if interaction.message.embeds else "")
+        return content
+
+    def build_with_data(self, word_text: str, author_name: str, user_mention: str):
+        self.text_display.content = (
+            f"## 📥 Nova Sugestão de Anagrama\n"
+            f"**Autor:** {user_mention} (`{author_name}`)\n\n"
+            f"**Palavra:** {word_text}\n"
+        )
+        return self
+
 class Challenges(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -599,6 +769,7 @@ class Challenges(commands.Cog):
         self.config_cache = {}
         self.quiz_questions = []
         self.rewrite_phrases = []
+        self.anagram_words = []
 
         asyncio.create_task(self.load_data_from_db())
 
@@ -614,6 +785,9 @@ class Challenges(commands.Cog):
                 # Carrega as frases de reescrita
                 cursor_phrases = database.rewrite_phrases.find({})
                 docs = await cursor_phrases.to_list(length=1000)
+
+                cursor_anagrams = database.anagram_words.find({})
+                self.anagram_words = await cursor_anagrams.to_list(length=1000)
                 
                 self.rewrite_phrases = [d["phrase"] for d in docs if "phrase" in d]
                 
@@ -818,6 +992,70 @@ class Challenges(commands.Cog):
             await interaction.response.edit_message(view=layout)
         except Exception as e:
             print(f"❌ Erro ao recusar pergunta: {e}")
+
+    
+    # =======================================================
+    #  CALLBACKS DE APURAÇÃO DO ANAGRAMA
+    # =======================================================
+    async def approve_anagram(self, interaction: discord.Interaction, word_text: str, author_name: str):
+        await interaction.response.defer(thinking=False)
+        database = getattr(self.bot, "db", None)
+        if database is None:
+            return await interaction.followup.send("Banco de dados offline :(", ephemeral=True)
+        
+        try:
+            novo_anagrama = {
+                "word": word_text,
+                "author_name": author_name
+            }
+            # 1. Salva no banco de dados na coleção 'anagram_words'
+            await database.anagram_words.insert_one(novo_anagrama)
+
+            # 2. Atualiza a lista da RAM na hora
+            self.anagram_words.append(novo_anagrama)
+
+            container = ui.Container(accent_color=discord.Color.green())
+            container.add_item(ui.TextDisplay(
+                f"## ✅ Anagrama Aprovado por {interaction.user.mention}!\n"
+                f"Salvo com sucesso na rotação de desafios.\n\n"
+                f"**Palavra:** `{word_text}`\n"
+            ))
+            
+            layout = ui.LayoutView()
+            layout.add_item(container)
+            await interaction.edit_original_response(view=layout)
+        except Exception as e:
+            print(f"❌ Erro ao aprovar anagrama: {e}")
+            await interaction.followup.send(f"❌ Erro ao salvar no banco: {e}", ephemeral=True)
+
+    async def deny_anagram(self, interaction: discord.Interaction, word_text: str):
+        try:
+            container = ui.Container(accent_color=discord.Color.red())
+            container.add_item(ui.TextDisplay(
+                f"## ❌ Anagrama Recusado por {interaction.user.mention}\n"
+                f"A palavra `{word_text}` foi descartada.\n" 
+            ))
+            layout = ui.LayoutView()
+            layout.add_item(container)
+            await interaction.response.edit_message(view=layout)
+        except Exception as e:
+            print(f"❌ Erro ao recusar anagrama: {e}")
+
+    # =======================================================
+    #  COMANDO PARA ENVIAR O PAINEL DE INÍCIO DE ANAGRAMAS
+    # =======================================================
+    @app_commands.command(name="gerar_painel_anagramas", description="[Admin] Envia o painel fixo de sugestões de anagramas")
+    @app_commands.guilds(discord.Object(id=1410006076400599235)) # Seu Servidor
+    async def gerar_painel_anagramas(self, interaction: discord.Interaction, canal: discord.TextChannel):
+        if interaction.user.id != 274645285634834434: # Seu ID
+            return await interaction.response.send_message("Você não tem permissão para usar este comando, seu bobo -w-.", ephemeral=True)
+
+        try:
+            view = SuggestAnagramStarterLayout()
+            await canal.send(view=view)
+            await interaction.response.send_message(f"✅ Painel de anagramas enviado em {canal.mention}!", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Erro: {e}", ephemeral=True)
 
 
     # =======================================================
@@ -1223,7 +1461,7 @@ class Challenges(commands.Cog):
     # ------------- GENERATE CHALLENGE -------------
 
     def generate_challenge(self):
-        typ = random.choice(["math", "rewrite", "guess", "quiz"])
+        typ = random.choice(["anagram"])
 
         if typ == "math":
             math_type = random.choice(["add", "sub", "mul"])
@@ -1289,6 +1527,30 @@ class Challenges(commands.Cog):
                 "question": f"**Pergunta:** {item['question']}",
                 "answer": item['answer'],
                 "author_name": item.get("author_name")
+            }
+        
+        elif typ == "anagram":
+            if not self.anagram_words:
+                item = {"word": "Peppy"}
+            else:
+                item = random.choice(self.anagram_words)
+
+            palavra_original = item["word"]
+
+            letras = list(palavra_original)
+            tentativas = 0
+            
+            while "".join(letras).lower() == palavra_original.lower() and tentativas < 10:
+                random.shuffle(letras)
+                tentativas += 1
+
+            palavra_embaralhada = "".join(letras).upper()
+
+            return {
+                "question": f"🧩 **Anagrama! Descubra a palavra embaralhada:**\n"
+                            f"➡️ Letras: **`{palavra_embaralhada}`**\n",
+                "answer": palavra_original,
+                "author_name": item.get("author_name", "Staff")
             }
 
 def count_human_members(guild: discord.Guild) -> int:
