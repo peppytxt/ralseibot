@@ -676,6 +676,7 @@ class AnagramStaffDecisionView(ui.LayoutView):
         super().__init__(timeout=None)
         self.cog = cog
         self.peppy = 274645285634834434
+        self.luoisz = 381475458652307466
 
         self.container = ui.Container(accent_color=discord.Color.fuchsia())
         self.row = ui.ActionRow()
@@ -705,7 +706,7 @@ class AnagramStaffDecisionView(ui.LayoutView):
         self.add_item(self.container)
 
     async def press_accept(self, interaction: discord.Interaction):
-        if interaction.user.id != self.peppy:
+        if interaction.user.id not in [self.peppy, self.luoisz]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode gerenciar anagramas >:3", 
                 ephemeral=True
@@ -726,7 +727,7 @@ class AnagramStaffDecisionView(ui.LayoutView):
         await self.cog.approve_anagram(interaction, word_text, author_name)
 
     async def press_deny(self, interaction: discord.Interaction):
-        if interaction.user.id != self.peppy:
+        if interaction.user.id not in [self.peppy, self.luoisz]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode gerenciar anagramas >:3", 
                 ephemeral=True
