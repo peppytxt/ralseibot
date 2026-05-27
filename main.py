@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
 # Importações dos seus componentes persistentes
-from cogs.challenges import PhraseStaffDecisionView, StaffDecisionView, SuggestAnagramStarterLayout, SuggestPhraseModal, SuggestPhraseStarterLayout, SuggestStarterLayout
+from cogs.challenges import AnagramStaffDecisionView, PhraseStaffDecisionView, StaffDecisionView, SuggestAnagramStarterLayout, SuggestPhraseModal, SuggestPhraseStarterLayout, SuggestStarterLayout
 from cogs.confessions import ConfessionLayout, ConfessionStarterLayout
 from cogs.moeda import setup as economia_setup
 
@@ -83,6 +83,7 @@ async def setup_hook():
     bot.add_view(SuggestPhraseStarterLayout())
     bot.add_view(PhraseStaffDecisionView())
     bot.add_view(SuggestAnagramStarterLayout())
+    bot.add_view(AnagramStaffDecisionView())
     bot.add_view(ConfessionStarterLayout())
     bot.add_view(ConfessionLayout(text="", num=0))
     print("🔄 Views persistentes (Quiz e Confissões) carregadas com sucesso!")
