@@ -239,7 +239,7 @@ class VoiceXP(commands.Cog):
             if elapsed >= self.XP_INTERVAL:
                 xp = self.XP_PER_TICK
                 
-                self.col.update_one(
+                await self.col.update_one(
                     {"_id": user_id},
                     {"$inc": {"xp_voice": xp}},
                     upsert=True
@@ -281,7 +281,7 @@ class XP(commands.Cog):
         user_id = message.author.id
         now = time.time()
 
-        user = self.col.find_one({"_id": user_id})
+        user = await self.col.find_one({"_id": user_id})
 
         # ----------------------------
         # CRIA NOVO USUÁRIO DO ZERO
@@ -293,7 +293,7 @@ class XP(commands.Cog):
                 "last_xp_global": 0,
                 "xp_local": {}
             }
-            self.col.insert_one(user)
+            await self.col.insert_one(user)
         updated = False
 
         if "xp_global" not in user:
@@ -309,7 +309,7 @@ class XP(commands.Cog):
             updated = True
 
         if updated:
-            self.col.update_one(
+            await self.col.update_one(
                 {"_id": user_id},
                 {"$set": user}
             )
@@ -325,7 +325,7 @@ class XP(commands.Cog):
             gained = random.randint(5, 15)
             await self.add_xp(message.author, gained)
 
-            self.col.update_one(
+            await self.col.update_one(
                 {"_id": user_id},
                 {"$set": {"last_xp_global": now}}
             )
@@ -342,7 +342,7 @@ class XP(commands.Cog):
 
             local_data[guild_id] = local
 
-            self.col.update_one(
+            await self.col.update_one(
                 {"_id": user_id},
                 {"$set": {"xp_local": local_data}}
             )
