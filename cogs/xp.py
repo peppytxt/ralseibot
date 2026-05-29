@@ -251,6 +251,8 @@ class XP(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+        self.col = getattr(self.bot, "db", None)["users"]
+
         MONGO_URL = os.getenv("MONGO_URL")
         if not MONGO_URL:
             raise ValueError("❌ ERRO: Variável de ambiente MONGO_URL não encontrada!")

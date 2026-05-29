@@ -6,7 +6,6 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
-# Importações dos seus componentes persistentes
 from cogs.challenges import AnagramStaffDecisionView, PhraseStaffDecisionView, StaffDecisionView, SuggestAnagramStarterLayout, SuggestPhraseModal, SuggestPhraseStarterLayout, SuggestStarterLayout
 from cogs.confessions import ConfessionLayout, ConfessionStarterLayout
 from cogs.moeda import setup as economia_setup
