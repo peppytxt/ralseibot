@@ -272,82 +272,89 @@ class XP(commands.Cog):
     # ------------------------------
     @commands.Cog.listener()
     async def on_message(self, message):
-
-        if message.author.bot:
+        if message.author.bot or not message.guild:
             return
         
-        if message.guild is None:
+        database = getattr(self.bot, "db", None)
+        if database is None:
             return
+
+        colecao_assincrona = database["users"]
 
         guild_id = str(message.guild.id)  
         user_id = message.author.id
         now = time.time()
 
-        user = await self.col.find_one({"_id": user_id})
+        try:
+            user = await colecao_assincrona.find_one({"_id": user_id})
 
-        # ----------------------------
-        # CRIA NOVO USUÁRIO DO ZERO
-        # ----------------------------
-        if user is None:
-            user = {
-                "_id": user_id,
-                "xp_global": 0,
-                "last_xp_global": 0,
-                "xp_local": {}
-            }
-            await self.col.insert_one(user)
-        updated = False
+            # ----------------------------
+            # CRIA NOVO USUÁRIO DO ZERO
+            # ----------------------------
+            if user is None:
+                user = {
+                    "_id": user_id,
+                    "xp_global": 0,
+                    "last_xp_global": 0,
+                    "xp_local": {}
+                }
+                await colecao_assincrona.insert_one(user)
+                
+            updated = False
 
-        if "xp_global" not in user:
-            user["xp_global"] = user.get("xp", 0)
-            updated = True
+            if "xp_global" not in user:
+                user["xp_global"] = user.get("xp", 0)
+                updated = True
 
-        if "last_xp_global" not in user:
-            user["last_xp_global"] = user.get("last_xp", 0)
-            updated = True
+            if "last_xp_global" not in user:
+                user["last_xp_global"] = user.get("last_xp", 0)
+                updated = True
 
-        if "xp_local" not in user:
-            user["xp_local"] = {}
-            updated = True
+            if "xp_local" not in user:
+                user["xp_local"] = {}
+                updated = True
 
-        if updated:
-            await self.col.update_one(
-                {"_id": user_id},
-                {"$set": user}
-            )
+            if updated:
+                await colecao_assincrona.update_one(
+                    {"_id": user_id},
+                    {"$set": user}
+                )
 
-        xp_global = user["xp_global"]
-        last_global = user["last_xp_global"]
-        local_data = user["xp_local"]
+            xp_global = user["xp_global"]
+            last_global = user["last_xp_global"]
+            local_data = user["xp_local"]
 
-        # ============================
-        #   XP GLOBAL
-        # ============================
-        if now - last_global >= 10:
-            gained = random.randint(5, 15)
-            await self.add_xp(message.author, gained)
+            # ============================
+            #   XP GLOBAL
+            # ============================
+            if now - last_global >= 10:
+                gained = random.randint(5, 15)
+                await self.add_xp(message.author, gained)
 
-            await self.col.update_one(
-                {"_id": user_id},
-                {"$set": {"last_xp_global": now}}
-            )
+                await colecao_assincrona.update_one(
+                    {"_id": user_id},
+                    {"$set": {"last_xp_global": now}}
+                )
 
-        # ============================
-        #   XP LOCAL POR SERVIDOR
-        # ============================
-        local = local_data.get(guild_id, {"xp": 0, "last_xp": 0})
+            # ============================
+            #   XP LOCAL POR SERVIDOR
+            # ============================
+            local = local_data.get(guild_id, {"xp": 0, "last_xp": 0})
 
-        if now - local["last_xp"] >= 10:
-            gained = random.randint(5, 15)
-            local["xp"] += gained
-            local["last_xp"] = now
+            if now - local["last_xp"] >= 10:
+                gained = random.randint(5, 15)
+                local["xp"] += gained
+                local["last_xp"] = now
 
-            local_data[guild_id] = local
+                local_data[guild_id] = local
 
-            await self.col.update_one(
-                {"_id": user_id},
-                {"$set": {"xp_local": local_data}}
-            )
+                await colecao_assincrona.update_one(
+                    {"_id": user_id},
+                    {"$set": {"xp_local": local_data}}
+                )
+
+        except Exception as e:
+            print(f"❌ Erro ao processar o sistema de XP no on_message: {e}")
 
         await self.bot.process_commands(message)
         
