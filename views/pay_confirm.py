@@ -44,6 +44,8 @@ class PayConfirmView(discord.ui.View):
         )
 
         await self.message.channel.send(embed=embed)
+
+        await self.check_economy_achievements(interaction.user.id, ctx_or_interaction=interaction)
         self.stop()
 
     @discord.ui.button(label="✅ Confirmar", style=discord.ButtonStyle.success)
@@ -55,7 +57,7 @@ class PayConfirmView(discord.ui.View):
             self.receiver_confirmed = True
         else:
             return await interaction.response.send_message(
-                "❌ Você não faz parte desta transação.",
+                "Você não faz parte desta transação. OwO",
                 ephemeral=True
             )
 
@@ -63,7 +65,7 @@ class PayConfirmView(discord.ui.View):
             return await self.finalize(interaction)
 
         await interaction.response.send_message(
-            "✅ Confirmação registrada. Aguardando a outra parte.",
+            "✅ Confirmação registrada. Aguardando a outra parte...",
             ephemeral=True
         )
 
@@ -72,7 +74,7 @@ class PayConfirmView(discord.ui.View):
 
         if interaction.user.id not in (self.sender.id, self.receiver.id):
             return await interaction.response.send_message(
-                "❌ Você não pode cancelar esta transação.",
+                "Você não pode cancelar esta transação. OwO",
                 ephemeral=True
             )
 

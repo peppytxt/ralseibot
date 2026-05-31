@@ -2,8 +2,9 @@ import discord
 from discord import ui, app_commands
 from discord.ext import commands
 from functools import partial
+import time
 
-# --- DADOS ---
+# --- CONQUISTAS LISTA ---
 ACHIEVEMENTS = {
     "first_message": {"title": "💬 Primeira mensagem!", "description": "Você enviou sua primeira mensagem."},
     "messages_1000": {"title": "📨 Comunicador", "description": "Você enviou 1.000 mensagens."},
@@ -42,18 +43,12 @@ class AchievementsView(ui.LayoutView):
             self.user_data = {"achievements": []}
         self.refresh_interface()
 
-    def get_user_data(self):
-        if hasattr(self.cog, 'col') and self.cog.col is not None:
-            return self.cog.col.find_one({"_id": self.user.id}) or {}
-        return {"achievements": []}
-
     def refresh_interface(self):
         self.clear_items()
 
         info = self.tabs.get(self.active_tab, {"label": "Todas", "emoji": "🏆"})
 
         header = ui.Container()
-
         header.title = f"{info['emoji']} Categoria: {info['label']}"
         header.accent_color = discord.Color.gold()
         
@@ -110,9 +105,10 @@ class AchievementsView(ui.LayoutView):
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.user.id:
-            await interaction.response.send_message("❌ Este painel não é seu.", ephemeral=True)
+            await interaction.response.send_message("Este painel não é seu. Bobo -w-", ephemeral=True)
             return False
         return True
+
 
 class AchievementsCog(commands.Cog):
     def __init__(self, bot):
@@ -129,45 +125,74 @@ class AchievementsCog(commands.Cog):
             self.col = None
             print("AVISO: Conexão com o banco de dados não encontrada no objeto 'bot'.")
             
-    async def give_achievement(self, user_id: int, achievement_key: str):
+    async def give_achievement(self, user_id: int, achievement_key: str, message_context: discord.Message = None) -> bool:
         if self.col is None:
-            return
+            return False
+
+        user_doc = await self.col.find_one({"_id": user_id}) or {}
+        if achievement_key in user_doc.get("achievements", []):
+            return False
 
         result = await self.col.update_one(
-                {"_id": user_id},
-                {"$addToSet": {"achievements": achievement_key}},
-                upsert=True
-            )
+            {"_id": user_id},
+            {"$addToSet": {"achievements": achievement_key}},
+            upsert=True
+        )
 
         if result.modified_count > 0 or result.upserted_id is not None:
             print(f"DEBUG: {user_id} ganhou a conquista: {achievement_key}")
-
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if message.author.bot:
-            return
-
-        await self.give_achievement(message.author.id, "first_message")
             
+            if message_context and achievement_key != "first_message":
+                data = ACHIEVEMENTS.get(achievement_key, {"title": "Nova Conquista", "description": ""})
+                try:
+                    await message_context.reply(
+                        f"## 🏆 Conquista Desbloqueada!\n"
+                        f"Você acabou de adquirir: **{data['title']}**\n"
+                        f"└ *{data['description']}*",
+                        ephemeral=True
+                    )
+                except Exception as e:
+                    print(f"Não foi possível enviar notificação efêmera: {e}")
+            return True
+        return False
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild:
             return
 
         user_doc = await self.col.find_one_and_update(
-            {"_id": message.author.id},
+            {
+                "_id": message.author.id,
+                "$or": [
+                    {"message_count": {"$lt": 1000}},
+                    {"message_count": {"$exists": False}}
+                ]
+            },
             {"$inc": {"message_count": 1}},
-            upsert=True,
-            return_document=True
+            upsert=False,
+            return_document=discord.enums.InviteTarget.unknown 
         )
 
-        count = user_doc.get("message_count", 0)
+        if user_doc is None:
+            existe = await self.col.find_one({"_id": message.author.id})
+            if not existe:
+                await self.col.update_one(
+                    {"_id": message.author.id},
+                    {"$inc": {"message_count": 1}},
+                    upsert=True
+                )
+                count = 1
+            else:
+                count = existe.get("message_count", 1000)
+        else:
+            count = user_doc.get("message_count", 0)
 
         if count >= 1000:
-            await self.give_achievement(message.author.id, "messages_1000")
+            await self.give_achievement(message.author.id, "messages_1000", message_context=message)
         
         if count >= 1:
-            await self.give_achievement(message.author.id, "first_message")
+            await self.give_achievement(message.author.id, "first_message", message_context=message)
             
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -180,26 +205,37 @@ class AchievementsCog(commands.Cog):
                 duration = discord.utils.utcnow() - join_time
                 seconds = duration.total_seconds()
                 hours = seconds / 3600
-                
+
                 doc = await self.col.find_one_and_update(
-                    {"_id": member.id},
+                    {
+                        "_id": member.id,
+                        "$or": [
+                            {"voice_hours": {"$lt": 10.0}},
+                            {"voice_hours": {"$exists": False}}
+                        ]
+                    },
                     {"$inc": {"voice_hours": hours}},
-                    upsert=True,
-                    return_document=True
+                    upsert=False
                 )
                 
-                if doc.get("voice_hours", 0) >= 10:
+                voice_hours = 10.0
+                if doc is not None:
+                    voice_hours = doc.get("voice_hours", 0.0)
+                else:
+                    existe = await self.col.find_one({"_id": member.id})
+                    if not existe:
+                        await self.col.update_one({"_id": member.id}, {"$inc": {"voice_hours": hours}}, upsert=True)
+                        voice_hours = hours
+                
+                if voice_hours >= 10:
                     await self.give_achievement(member.id, "voice_10h")
 
     @app_commands.command(name="conquistas", description="Veja as conquistas de um usuário.")
     @app_commands.describe(usuario="O usuário que você deseja ver as conquistas")
     async def conquistas(self, interaction: discord.Interaction, usuario: discord.Member = None):
         alvo = usuario or interaction.user
-
         view = AchievementsView(cog=self, user=alvo)
-        
         await view.load_initial_data()
-        
         await interaction.response.send_message(view=view)
 
 async def setup(bot):
