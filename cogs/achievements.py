@@ -162,26 +162,34 @@ class AchievementsCog(commands.Cog):
             return
 
         from pymongo import ReturnDocument
-
+        
         user_doc = await self.col.find_one_and_update(
             {
                 "_id": message.author.id,
-                "$or": [
-                    {"message_count": {"$lt": 1000}},
-                    {"message_count": {"$exists": False}}
-                ]
+                "message_count": {"$lt": 1000}
             },
             {"$inc": {"message_count": 1}},
-            upsert=True,
-            return_document=ReturnDocument.AFTER 
+            upsert=False,
+            return_document=ReturnDocument.AFTER
         )
 
         if user_doc is None:
             existe = await self.col.find_one({"_id": message.author.id})
-            count = existe.get("message_count", 1000) if existe else 1000
+            
+            if not existe:
+                user_doc = await self.col.find_one_and_update(
+                    {"_id": message.author.id},
+                    {"$inc": {"message_count": 1}},
+                    upsert=True,
+                    return_document=ReturnDocument.AFTER
+                )
+                count = user_doc.get("message_count", 1) if user_doc else 1
+            else:
+                count = existe.get("message_count", 1000)
         else:
             count = user_doc.get("message_count", 0)
 
+        # 🏆 ENTREGA DE CONQUISTAS
         if count >= 1000:
             await self.give_achievement(message.author.id, "messages_1000", message_context=message)
         
