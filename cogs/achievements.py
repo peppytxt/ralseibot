@@ -146,7 +146,7 @@ class AchievementsCog(commands.Cog):
                 data = ACHIEVEMENTS.get(achievement_key, {"title": "Nova Conquista", "description": ""})
                 try:
                     await message_context.reply(
-                        f"## 🏆 Conquista Desbloqueada!\n"
+                        f"**🏆 Conquista Desbloqueada!**\n"
                         f"Você acabou de adquirir: **{data['title']}**\n"
                         f"└ *{data['description']}*",
                     )
