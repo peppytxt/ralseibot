@@ -496,6 +496,7 @@ class PhraseStaffDecisionView(ui.LayoutView):
 
         self.peppy = 274645285634834434 
         self.luoisz = 381475458652307466
+        self.polkatt = 1213993888222810113
 
         self.container = ui.Container(accent_color=discord.Color.teal())
         self.row = ui.ActionRow()
@@ -528,7 +529,7 @@ class PhraseStaffDecisionView(ui.LayoutView):
         self.add_item(self.container)
 
     async def press_accept(self, interaction: discord.Interaction):
-        if interaction.user.id not in [self.peppy, self.luoisz]:
+        if interaction.user.id not in [self.peppy, self.luoisz, self.polkatt]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
                 ephemeral=True
@@ -557,7 +558,7 @@ class PhraseStaffDecisionView(ui.LayoutView):
 
     async def press_deny(self, interaction: discord.Interaction):
         # Validação de segurança
-        if interaction.user.id not in [self.peppy, self.luoisz]:
+        if interaction.user.id not in [self.peppy, self.luoisz, self.polkatt]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar frases >:3", 
                 ephemeral=True
@@ -677,6 +678,7 @@ class AnagramStaffDecisionView(ui.LayoutView):
         self.cog = cog
         self.peppy = 274645285634834434
         self.luoisz = 381475458652307466
+        self.polkatt = 1213993888222810113
 
         self.container = ui.Container(accent_color=discord.Color.fuchsia())
         self.row = ui.ActionRow()
@@ -706,7 +708,7 @@ class AnagramStaffDecisionView(ui.LayoutView):
         self.add_item(self.container)
 
     async def press_accept(self, interaction: discord.Interaction):
-        if interaction.user.id not in [self.peppy, self.luoisz]:
+        if interaction.user.id not in [self.peppy, self.luoisz, self.polkatt]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode gerenciar anagramas >:3", 
                 ephemeral=True
@@ -727,7 +729,7 @@ class AnagramStaffDecisionView(ui.LayoutView):
         await self.cog.approve_anagram(interaction, word_text, author_name)
 
     async def press_deny(self, interaction: discord.Interaction):
-        if interaction.user.id not in [self.peppy, self.luoisz]:
+        if interaction.user.id not in [self.peppy, self.luoisz, self.polkatt]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode gerenciar anagramas >:3", 
                 ephemeral=True
@@ -911,6 +913,7 @@ class Challenges(commands.Cog):
     ID_SERVIDOR = 1410006076400599235  
     ID_Peppy = 274645285634834434
     ID_Luoisz = 381475458652307466
+    ID_Polkatt = 1213993888222810113
 
     # =======================================================
     #  COMANDO 1: PAINEL DO QUIZ
@@ -918,7 +921,7 @@ class Challenges(commands.Cog):
     @app_commands.command(name="setup_sugestoes_quiz", description="[Admin] Envia o painel fixo para sugestões de quiz")
     @app_commands.guilds(discord.Object(id=ID_SERVIDOR))
     async def setup_sugestoes_quiz(self, interaction: discord.Interaction):
-        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz] and not interaction.user.guild_permissions.administrator:
+        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz, self.ID_Polkatt] and not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message("Você não tem permissão para usar este comando, seu bobo -w-.", ephemeral=True)
 
         view = SuggestStarterLayout()
@@ -929,7 +932,7 @@ class Challenges(commands.Cog):
     #  CALLBACKS DE APURAÇÃO DO QUIZ
     # =======================================================
     async def approve_question(self, interaction: discord.Interaction, q_text, a_text, author_name):
-        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz]:
+        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz, self.ID_Polkatt]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar perguntas >:3", 
                 ephemeral=True
@@ -974,7 +977,7 @@ class Challenges(commands.Cog):
             await interaction.followup.send(f"❌ Erro ao salvar no banco: {e}", ephemeral=True)
 
     async def deny_question(self, interaction: discord.Interaction, q_text: str):
-        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz]:
+        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz, self.ID_Polkatt]:
             return await interaction.response.send_message(
                 "O que vuxê está fazendo aqui?? Apenas o dono do bot pode aceitar ou recusar perguntas >:3", 
                 ephemeral=True
@@ -1075,7 +1078,7 @@ class Challenges(commands.Cog):
     @app_commands.guilds(discord.Object(id=ID_SERVIDOR)) 
     async def gerar_painel_frase(self, interaction: discord.Interaction, canal: discord.TextChannel):
         # Verificação direta por ID dos Donos
-        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz]:
+        if interaction.user.id not in [self.ID_Peppy, self.ID_Luoisz, self.ID_Polkatt] and not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message(
                 "Você não tem permissão para executar este comando, seu bobo -w-.", 
                 ephemeral=True
