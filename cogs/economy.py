@@ -650,7 +650,7 @@ class Economy(commands.Cog):
         )
 
         view.message = await interaction.original_response()
-        
+
     @commands.hybrid_command(name="pescar", description="Tente a sorte no lago!")
     async def pescar(self, ctx: commands.Context):
         user_data = self.col.find_one({"_id": ctx.author.id}) or {}

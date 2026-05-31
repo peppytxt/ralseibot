@@ -161,6 +161,8 @@ class AchievementsCog(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
+        from pymongo import ReturnDocument
+
         user_doc = await self.col.find_one_and_update(
             {
                 "_id": message.author.id,
@@ -170,21 +172,13 @@ class AchievementsCog(commands.Cog):
                 ]
             },
             {"$inc": {"message_count": 1}},
-            upsert=False,
-            return_document=discord.enums.InviteTarget.unknown 
+            upsert=True,
+            return_document=ReturnDocument.AFTER 
         )
 
         if user_doc is None:
             existe = await self.col.find_one({"_id": message.author.id})
-            if not existe:
-                await self.col.update_one(
-                    {"_id": message.author.id},
-                    {"$inc": {"message_count": 1}},
-                    upsert=True
-                )
-                count = 1
-            else:
-                count = existe.get("message_count", 1000)
+            count = existe.get("message_count", 1000) if existe else 1000
         else:
             count = user_doc.get("message_count", 0)
 
