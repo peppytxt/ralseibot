@@ -149,7 +149,6 @@ class AchievementsCog(commands.Cog):
                         f"## 🏆 Conquista Desbloqueada!\n"
                         f"Você acabou de adquirir: **{data['title']}**\n"
                         f"└ *{data['description']}*",
-                        ephemeral=True
                     )
                 except Exception as e:
                     print(f"Não foi possível enviar notificação efêmera: {e}")
@@ -162,7 +161,7 @@ class AchievementsCog(commands.Cog):
             return
 
         from pymongo import ReturnDocument
-        
+
         user_doc = await self.col.find_one_and_update(
             {
                 "_id": message.author.id,
