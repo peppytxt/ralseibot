@@ -6,11 +6,11 @@ import time
 
 # --- CONQUISTAS LISTA ---
 ACHIEVEMENTS = {
-    "first_message": {"title": "💬 Primeira mensagem!", "description": "Você enviou sua primeira mensagem."},
-    "messages_1000": {"title": "📨 Comunicador", "description": "Você enviou 1.000 mensagens."},
-    "voice_10h": {"title": "🎧 Morador da Call", "description": "Você ficou 10 horas em call."},
-    "challenge_first_win": {"title": "🏅 Primeira Vitória", "description": "Você venceu seu primeiro challenge."},
-    "coins_100000": {"title": "💰 Rico", "description": "Acumulou 100k de ralcoins."} 
+    "first_message": {"title": "💬 Primeira mensagem!", "description": "por ter enviado sua primeira mensagem."},
+    "messages_1000": {"title": "📨 Comunicador", "description": "por enviar 1000 mensagens."},
+    "voice_10h": {"title": "🎧 Morador da Call", "description": "por ficar 10 horas em call."},
+    "challenge_first_win": {"title": "🏅 Primeira Vitória", "description": "por vencer seu primeiro challenge."},
+    "coins_100000": {"title": "💰 Rico", "description": "por acumular 100k de ralcoins."} 
 }
 
 ACHIEVEMENTS_BY_CATEGORY = {
@@ -146,9 +146,8 @@ class AchievementsCog(commands.Cog):
                 data = ACHIEVEMENTS.get(achievement_key, {"title": "Nova Conquista", "description": ""})
                 try:
                     await message_context.reply(
-                        f"**🏆 Conquista Desbloqueada!**\n"
-                        f"Você acabou de adquirir: **{data['title']}**\n"
-                        f"└ *{data['description']}*",
+                        f"## 🏆 Conquista Desbloqueada!\n"
+                        f"-# - Você acabou de adquirir: **{data['title']}** __{data['description']}__\n",
                     )
                 except Exception as e:
                     print(f"Não foi possível enviar notificação efêmera: {e}")
