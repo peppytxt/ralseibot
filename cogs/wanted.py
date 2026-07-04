@@ -18,7 +18,9 @@ class WantedCog(commands.Cog):
 
         try:
             BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-            imagem_fundo = os.path.join(BASE_DIR, "..", "images", "wanted.png")
+            caminho_imagem = os.path.join(BASE_DIR, "..", "images", "wanted.png")
+
+            imagem_fundo = Image.open(caminho_imagem).convert("RGBA")
 
             avatar_bytes = await alvo.display_avatar.read()
 
