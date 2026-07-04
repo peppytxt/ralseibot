@@ -26,11 +26,11 @@ class WantedCog(commands.Cog):
 
             imagem_avatar = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
-            tamanho_avatar = (400, 400)
+            tamanho_avatar = (600, 600)
             imagem_avatar = imagem_avatar.resize(tamanho_avatar, Image.Resampling.LANCZOS)
 
-            posicao_x = 250
-            posicao_y = 180
+            posicao_x = 252
+            posicao_y = 700
             
             imagem_fundo.paste(imagem_avatar, (posicao_x, posicao_y), imagem_avatar)
 
