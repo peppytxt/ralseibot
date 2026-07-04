@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import io
+import os
 from PIL import Image
 
 class WantedCog(commands.Cog):
@@ -16,7 +17,8 @@ class WantedCog(commands.Cog):
         await interaction.response.defer()
 
         try:
-            imagem_fundo = Image.open("../images/wanted.png").convert("RGBA")
+            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+            imagem_fundo = os.path.join(BASE_DIR, "..", "images", "wanted.png")
 
             avatar_bytes = await alvo.display_avatar.read()
 

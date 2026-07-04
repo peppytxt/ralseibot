@@ -16,6 +16,7 @@ TOKEN = os.getenv("TOKEN")
 COMMAND_PREFIX = os.getenv("COMMAND_PREFIX", "[]")
 DATA_DIR = os.getenv("DATA_DIR", "data")
 MONGO_URL = os.getenv("MONGO_URL")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 intents = discord.Intents.default()
 intents.message_content = True
