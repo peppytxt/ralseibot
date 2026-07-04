@@ -29,8 +29,8 @@ class WantedCog(commands.Cog):
             tamanho_avatar = (580, 580)
             imagem_avatar = imagem_avatar.resize(tamanho_avatar, Image.Resampling.LANCZOS)
 
-            posicao_x = 122
-            posicao_y = 380
+            posicao_x = 105
+            posicao_y = 350
             
             imagem_fundo.paste(imagem_avatar, (posicao_x, posicao_y), imagem_avatar)
 
