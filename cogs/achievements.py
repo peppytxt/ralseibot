@@ -10,7 +10,7 @@ ACHIEVEMENTS = {
     "messages_1000": {"title": "📨 Comunicador", "description": "por enviar 1000 mensagens."},
     "voice_10h": {"title": "🎧 Morador da Call", "description": "por ficar 10 horas em call."},
     "challenge_first_win": {"title": "🏅 Primeira Vitória", "description": "por vencer seu primeiro challenge."},
-    "coins_100000": {"title": "💰 Rico", "description": "por acumular 100k de ralcoins."} 
+    "coins_100000": {"title": "💰 Rico", "description": "por acumular 100k de ralcoins."},
 }
 
 ACHIEVEMENTS_BY_CATEGORY = {
