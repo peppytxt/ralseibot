@@ -16,7 +16,7 @@ class WantedCog(commands.Cog):
         await interaction.response.defer()
 
         try:
-            imagem_fundo = Image.open("images/wanted.png").convert("RGBA")
+            imagem_fundo = Image.open("../images/wanted.png").convert("RGBA")
 
             avatar_bytes = await alvo.display_avatar.read()
 
