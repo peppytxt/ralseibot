@@ -175,26 +175,52 @@ class RalcoinSettingsModal(discord.ui.Modal):
 # ==========================================
 # 2. VIEW SELEÇÃO DE DIFICULDADE (Chama o Modal acima)
 # ==========================================
-class DifficultySelectView(discord.ui.View):
+class DifficultySelectView(ui.LayoutView):
     def __init__(self, cog, guild_id):
         super().__init__(timeout=120)
         self.cog = cog
         self.guild_id = guild_id
 
-    @discord.ui.select(
-        placeholder="Selecione a dificuldade que deseja configurar...",
-        options=[
-            discord.SelectOption(label="Fácil", value="facil", emoji="🟢", description="Configure os ganhos do nível Fácil"),
-            discord.SelectOption(label="Médio", value="medio", emoji="🟡", description="Configure os ganhos do nível Médio"),
-            discord.SelectOption(label="Difícil", value="dificil", emoji="🔴", description="Configure os ganhos do nível Difícil")
-        ]
-    )
-    async def select_difficulty(self, interaction: discord.Interaction, select: discord.ui.Select):
-        dificuldade_escolhida = select.values[0]
+    def build_interface(self):
+        self.clear_items()
+        
+        # Criamos o container seguindo o padrão das suas outras telas
+        container = ui.Container(accent_color=discord.Color.blue())
+        
+        container.add_item(ui.TextDisplay(
+            "🪙 **Configuração de Recompensas**\n"
+            "Selecione qual dificuldade você deseja ajustar os limites de Ralcoins:"
+        ))
+        
+        # Criamos a linha de ação para o menu de seleção
+        row_select = ui.ActionRow()
+        
+        # Menu de seleção nativo da sua biblioteca de UI
+        select_dificuldade = ui.Select(
+            placeholder="Escolha a dificuldade...",
+            min_values=1,
+            max_values=1,
+            options=[
+                discord.SelectOption(label="Fácil", value="facil", emoji="🟢", description="Configure os ganhos do nível Fácil"),
+                discord.SelectOption(label="Médio", value="medio", emoji="🟡", description="Configure os ganhos do nível Médio"),
+                discord.SelectOption(label="Difícil", value="dificil", emoji="🔴", description="Configure os ganhos do nível Difícil")
+            ]
+        )
+        select_dificuldade.callback = self.select_difficulty
+        
+        row_select.add_item(select_dificuldade)
+        container.add_item(row_select)
+        
+        self.add_item(container)
+
+    async def select_difficulty(self, interaction: discord.Interaction):
+        # Captura o valor selecionado
+        dificuldade_escolhida = interaction.data['values'][0]
+        
+        # Abre o modal passando a dificuldade correspondente
         await interaction.response.send_modal(
             RalcoinSettingsModal(self.cog, self.guild_id, dificuldade_escolhida)
         )
-
 
 # ==========================================
 # 3. VIEW DO PAINEL PRINCIPAL
@@ -310,9 +336,10 @@ class ChallengeConfigView(ui.LayoutView):
             await interaction.response.edit_message(view=self)
 
     async def ralcoin_config_callback(self, interaction: discord.Interaction):
+        view = DifficultySelectView(self.cog, self.guild.id)
+        view.build_interface()
         await interaction.response.send_message(
-            "🪙 **Qual faixa de recompensas você deseja configurar?**",
-            view=DifficultySelectView(self.cog, self.guild.id),
+            view=view,
             ephemeral=True
         )
 
