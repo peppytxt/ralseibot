@@ -1757,10 +1757,10 @@ class Challenges(commands.Cog):
                 elegiveis = [w for w in self.anagram_words if len(w.get("word", "")) <= 5]
                 item = random.choice(elegiveis) if elegiveis else {"word": "Peppy"}
             elif dificuldade == "medio":
-                elegiveis = [w for w in self.anagram_words if 6 <= len(w.get("word", "")) <= 9]
+                elegiveis = [w for w in self.anagram_words if 6 <= len(w.get("word", "")) <= 7]
                 item = random.choice(elegiveis) if elegiveis else {"word": "Delicioso"}
             else:  # dificil
-                elegiveis = [w for w in self.anagram_words if len(w.get("word", "")) >= 10]
+                elegiveis = [w for w in self.anagram_words if len(w.get("word", "")) >= 9]
                 item = random.choice(elegiveis) if elegiveis else {"word": "Paralelepipedo"}
 
             palavra_original = item["word"]
