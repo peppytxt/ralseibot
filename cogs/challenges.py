@@ -25,7 +25,7 @@ CTRLV_MESSAGES = [
 ]
 
 class ChallengeLayout(ui.LayoutView):
-    def __init__(self, texto_desafio: str, estilo_cor: discord.Color, timeout: float = 180):
+    def __init__(self, texto_desafio: str, estilo_cor, timeout: float = 180):
         super().__init__(timeout=timeout)
         
         container = ui.Container(accent_color=estilo_cor)
@@ -1539,7 +1539,7 @@ class Challenges(commands.Cog):
                 timeout=180
             )
 
-            await channel.send(content=texto_desafio, view=layout_desafio)
+            await channel.send(view=layout_desafio)
 
         except Exception as e:
             print(f"❌ Erro ao enviar desafio em {guild.id}: {e}")
