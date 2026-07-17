@@ -1526,7 +1526,7 @@ class Challenges(commands.Cog):
             texto_desafio = (
                 f"## 📺 **IT'S TV TIME!!**\n"
                 f"Dificuldade: **{estilo['label']}**\n"
-                f"{challenge['question']}"
+                f"{challenge['question']}\n"
                 f"***Dificuldade: {dificuldade_nome}** | {autor_str}*\n"
                 f"-# Responda corretamente para ganhar pontos!"
             )
