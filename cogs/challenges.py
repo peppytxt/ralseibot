@@ -4,7 +4,6 @@ from discord.ext import commands, tasks
 import random
 import time
 import asyncio
-import json
 import unicodedata
 
 DEFAULT_INTERVAL = 100
@@ -41,10 +40,18 @@ class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
         try:
             valor = int(self.intervalo.value)
             
-            if valor < 50:
-                return await interaction.response.send_message(
-                  "⚠️ O intervalo mínimo permitido é de **50 mensagens**.", ephemeral=True
-                )
+            ID_SERVIDOR_DE_TESTES = 1410006076400599235 
+            
+            if interaction.guild_id != ID_SERVIDOR_DE_TESTES:
+                if valor < 50:
+                    return await interaction.response.send_message(
+                      "⚠️ O intervalo mínimo permitido é de **50 mensagens**.", ephemeral=True
+                    )
+            else:
+                if valor < 1:
+                    return await interaction.response.send_message(
+                      "⚠️ No servidor de testes, o intervalo mínimo é de **1 mensagem**.", ephemeral=True
+                    )
             
             self.view.config["interval"] = valor
             await self.view.save_and_refresh(interaction)
