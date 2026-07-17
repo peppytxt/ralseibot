@@ -1524,12 +1524,10 @@ class Challenges(commands.Cog):
                 autor_str = f"\n\n_*Sugerido por {challenge['author_name']}_*"
 
             texto_desafio = (
-                f"## {estilo['emoji']} **IT'S TV TIME!!**\n"
+                f"## 📺 **IT'S TV TIME!!**\n"
                 f"Dificuldade: **{estilo['label']}**\n"
-                f"--- \n"
                 f"{challenge['question']}"
-                f"{autor_str}\n"
-                f"--- \n"
+                f"***Dificuldade: {dificuldade_nome}** | {autor_str}*\n"
                 f"-# Responda corretamente para ganhar pontos!"
             )
 
@@ -1550,6 +1548,7 @@ class Challenges(commands.Cog):
         except discord.HTTPException as e:
             print(f"❌ Erro de API ao enviar desafio em {guild.id}: {e}")
             self.active_challenges.pop(guild.id, None)
+
     # ------------- CHECK ANSWER -------------
 
     async def check_answer(self, message):
