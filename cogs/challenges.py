@@ -24,6 +24,16 @@ CTRLV_MESSAGES = [
     "🚫 Ctrl+C + Ctrl+V não aumenta QI, só digita 😉",
 ]
 
+class ChallengeLayout(ui.LayoutView):
+    def __init__(self, texto_desafio: str, estilo_cor: discord.Color, timeout: float = 180):
+        super().__init__(timeout=timeout)
+        
+        container = ui.Container(accent_color=estilo_cor)
+        
+        container.add_item(ui.TextDisplay(texto_desafio))
+        
+        self.add_item(container)
+
 class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
     intervalo = ui.TextInput(
         label="Número de mensagens",
@@ -1498,7 +1508,6 @@ class Challenges(commands.Cog):
             dificuldade_nome = challenge.get("dificuldade", "medio")
             estilo = self.DIFICULDADE_STYLE.get(dificuldade_nome, self.DIFICULDADE_STYLE["medio"])
 
-            # Guardamos as informações do desafio ativo
             self.active_challenges[guild.id] = {
                 "answer": challenge["answer"],
                 "spawned_at": time.time(),
@@ -1507,11 +1516,7 @@ class Challenges(commands.Cog):
                 "dificuldade": dificuldade_nome 
             }
 
-            # --- CONSTRUINDO A INTERFACE V2 ---
-
-            view_desafio = discord.ui.View(timeout=180) 
-
-            container = ui.Container(accent_color=estilo["color"])
+            # --- CONSTRUINDO A INTERFACE V2 CORRETA ---
             
             autor_str = ""
             if challenge.get("author_name"):
@@ -1526,17 +1531,18 @@ class Challenges(commands.Cog):
                 f"--- \n"
                 f"-# Responda corretamente para ganhar pontos!"
             )
-            
-            container.add_item(ui.TextDisplay(texto_desafio))
-            
-            view_desafio.add_item(container)
 
-            await channel.send(view=view_desafio)
+            layout_desafio = ChallengeLayout(
+                texto_desafio=texto_desafio, 
+                estilo_cor=estilo["color"], 
+                timeout=180
+            )
+            
+            await channel.send(view=layout_desafio)
 
         except discord.HTTPException as e:
             print(f"❌ Erro de API ao enviar desafio em {guild.id}: {e}")
             self.active_challenges.pop(guild.id, None)
-
     # ------------- CHECK ANSWER -------------
 
     async def check_answer(self, message):
