@@ -1521,7 +1521,7 @@ class Challenges(commands.Cog):
             
             autor_str = ""
             if challenge.get("author_name"):
-                autor_str = f"| _*Sugerido por {challenge['author_name']}_*"
+                autor_str = f"| *_Sugerido por {challenge['author_name']}_*"
 
             texto_desafio = (
                 f"## 📺 **IT'S TV TIME!!**\n"
