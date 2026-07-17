@@ -1347,6 +1347,28 @@ class Challenges(commands.Cog):
 
     # ------------- SPAWN CHALLENGE -------------
 
+    # Estrutura visual baseada nos componentes v2 para cada nível
+    DIFICULDADE_STYLE = {
+        "facil": {
+            "label": "Fácil",
+            "emoji": "🟢",
+            "color": discord.Color.green(),
+            "accent": "success"
+        },
+        "medio": {
+            "label": "Médio",
+            "emoji": "🟡",
+            "color": discord.Color.gold(),
+            "accent": "warning"
+        },
+        "dificil": {
+            "label": "Difícil",
+            "emoji": "🔴",
+            "color": discord.Color.red(),
+            "accent": "danger"
+        }
+    }
+
     async def spawn_challenge(self, guild, config):
         if guild.id in self.active_challenges:
             return
@@ -1358,29 +1380,44 @@ class Challenges(commands.Cog):
 
         try:
             challenge = self.generate_challenge()
+            
+            dificuldade_nome = challenge.get("dificuldade", "medio")
+            estilo = self.DIFICULDADE_STYLE.get(dificuldade_nome, self.DIFICULDADE_STYLE["medio"])
 
+            # Guardamos as informações do desafio ativo
             self.active_challenges[guild.id] = {
                 "answer": challenge["answer"],
                 "spawned_at": time.time(),
                 "token_positions": challenge.get("token_positions"),
-                "solved": False
+                "solved": False,
+                "dificuldade": dificuldade_nome 
             }
 
-            embed = discord.Embed(
-                title="📺 IT'S TV TIME!!",
-                description=challenge["question"],
-                color=discord.Color.blue()
-            )
+            # --- CONSTRUINDO A INTERFACE V2 ---
 
+            view_desafio = discord.ui.View(timeout=180) 
+
+            container = ui.Container(accent_color=estilo["color"])
+            
+            autor_str = ""
             if challenge.get("author_name"):
-                embed.set_footer(
-                    text=f"Sugerido por {challenge['author_name']}",
-                    icon_url=challenge.get("author_icon")
-                )
-            else:
-                embed.set_footer(text="Responda corretamente para ganhar pontos!")
+                autor_str = f"\n\n_*Sugerido por {challenge['author_name']}_*"
 
-            await channel.send(embed=embed)
+            texto_desafio = (
+                f"## {estilo['emoji']} **IT'S TV TIME!!**\n"
+                f"Dificuldade: **{estilo['label']}**\n"
+                f"--- \n"
+                f"{challenge['question']}"
+                f"{autor_str}\n"
+                f"--- \n"
+                f"-# Responda corretamente para ganhar pontos!"
+            )
+            
+            container.add_item(ui.TextDisplay(texto_desafio))
+            
+            view_desafio.add_item(container)
+
+            await channel.send(view=view_desafio)
 
         except discord.HTTPException as e:
             print(f"❌ Erro de API ao enviar desafio em {guild.id}: {e}")
@@ -1470,83 +1507,136 @@ class Challenges(commands.Cog):
 
     # ------------- GENERATE CHALLENGE -------------
 
-    def generate_challenge(self):
-        typ = random.choice(["math", "rewrite", "guess", "quiz", "anagram"])
+    def generate_challenge(self, dificuldade=None):
+        if not dificuldade:
+            dificuldade = random.choices(
+                ["facil", "medio", "dificil"],
+                weights=[50, 35, 15],
+                k=1
+            )[0]
+
+        if dificuldade == "facil":
+            typ = random.choice(["math", "anagram"])
+        elif dificuldade == "medio":
+            typ = random.choice(["math", "guess", "rewrite", "quiz", "anagram"])
+        else:
+            typ = random.choice(["math", "rewrite", "anagram"])
+
+        # --- GERANDO O DESAFIO COM BASE NO TIPO E DIFICULDADE ---
 
         if typ == "math":
-            math_type = random.choice(["add", "sub", "mul"])
+            if dificuldade == "facil":
+                # Soma ou subtração simples (1 a 50)
+                math_type = random.choice(["add", "sub"])
+                if math_type == "add":
+                    a, b = random.randint(1, 50), random.randint(1, 50)
+                    question = f"Quanto é **{a} + {b}**?"
+                    answer = str(a + b)
+                else:
+                    a, b = random.randint(1, 50), random.randint(1, 50)
+                    maior, menor = max(a, b), min(a, b)
+                    question = f"Quanto é **{maior} - {menor}**?"
+                    answer = str(maior - menor)
 
-            if math_type == "add":
-                a = random.randint(1, 50)
-                b = random.randint(1, 50)
-                question = f"Quanto é **{a} + {b}**?"
-                answer = str(a + b)
-
-            elif math_type == "sub":
-                a = random.randint(1, 50)
-                b = random.randint(1, 50)
-                maior = max(a, b)
-                menor = min(a, b)
-                question = f"Quanto é **{maior} - {menor}**?"
-                answer = str(maior - menor)
-
-            else:
-                a = random.randint(2, 9)
-                b = random.randint(2, 9)
+            elif dificuldade == "medio":
+                a, b = random.randint(2, 9), random.randint(2, 9)
                 question = f"Quanto é **{a} × {b}**?"
                 answer = str(a * b)
 
+            else:
+                a = random.randint(5, 15)
+                b = random.randint(3, 10)
+                
+                op = random.choice(["+", "-"])
+                
+                if op == "+":
+                    c = random.randint(10, 50)
+                    question = f"Quanto é **({a} × {b}) + {c}**?"
+                    answer = str((a * b) + c)
+                else:
+                    multiplicacao = a * b
+                    limite_superior = max(10, multiplicacao)
+                    c = random.randint(10, limite_superior)
+                    
+                    question = f"Quanto é **({a} × {b}) - {c}**?"
+                    answer = str(multiplicacao - c)
+
             return {
+                "type": "math",
                 "question": question,
-                "answer": answer
+                "answer": answer,
+                "dificuldade": dificuldade
             }
 
         elif typ == "rewrite":
-            if not self.rewrite_phrases:
-                phrase = "Ralsei é muito fofinho!"
+            if dificuldade == "medio":
+                elegiveis = [p for p in self.rewrite_phrases if len(p.split()) < 60]
+                phrase = random.choice(elegiveis) if elegiveis else "Ralsei é muito fofinho!"
             else:
-                phrase = random.choice(self.rewrite_phrases)
+                elegiveis = [p for p in self.rewrite_phrases if len(p.split()) >= 60]
+                phrase = random.choice(elegiveis) if elegiveis else "Ralsei é um príncipe fofinho do reino das trevas que adora ajudar os seus amigos em todas as suas jornadas pelo mundo sombrio, sempre distribuindo manuais e ensinando a arte de resolver problemas pacificamente com um grande sorriso no rosto!"
 
             disguised, token_positions = add_invisible_chars(phrase)
 
             return {
+                "type": "rewrite",
                 "question": f"⌨️ **Reescreva** a frase exatamente:\n`{disguised}`",
                 "answer": phrase,
-                "token_positions": token_positions
+                "token_positions": token_positions,
+                "dificuldade": dificuldade
             }
 
         elif typ == "guess":
+            # Adivinhação sempre cai no Médio
             min_num = random.randint(1, 100)
-            max_num = min_num + random.randint(5, 7)
+            max_num = min_num + random.randint(5, 10)
             secret = random.randint(min_num, max_num)
 
             return {
+                "type": "guess",
                 "question": f"Entre **{min_num} e {max_num}**, qual número estou pensando? :3",
-                "answer": str(secret)
+                "answer": str(secret),
+                "dificuldade": dificuldade
             }
 
         elif typ == "quiz":
             if not self.quiz_questions:
                 return {
-                   "question": "**Pergunta:** Quem é o mascote fofinho de Deltarune?",
-                    "answer": "Ralsei"
+                    "type": "quiz",
+                    "question": "**Pergunta:** Quem é o mascote fofinho de Deltarune?",
+                    "answer": "Ralsei",
+                    "dificuldade": "medio"
                 }
 
-            item = random.choice(self.quiz_questions)
+            # Filtra as perguntas do seu cache/banco pela dificuldade correspondente
+            elegiveis = [q for q in self.quiz_questions if q.get("dificuldade", "medio") == dificuldade]
+            
+            # Fallback caso não ache perguntas da dificuldade exata
+            if not elegiveis:
+                elegiveis = self.quiz_questions
+
+            item = random.choice(elegiveis)
             return {
+                "type": "quiz",
                 "question": f"**Pergunta:** {item['question']}",
                 "answer": item['answer'],
-                "author_name": item.get("author_name")
+                "author_name": item.get("author_name"),
+                "dificuldade": item.get("dificuldade", "medio")
             }
-        
+
         elif typ == "anagram":
-            if not self.anagram_words:
-                item = {"word": "Peppy"}
-            else:
-                item = random.choice(self.anagram_words)
+            # Filtramos o tamanho da palavra original com base na dificuldade
+            if dificuldade == "facil":
+                elegiveis = [w for w in self.anagram_words if len(w.get("word", "")) <= 5]
+                item = random.choice(elegiveis) if elegiveis else {"word": "Peppy"}
+            elif dificuldade == "medio":
+                elegiveis = [w for w in self.anagram_words if 6 <= len(w.get("word", "")) <= 9]
+                item = random.choice(elegiveis) if elegiveis else {"word": "Delicioso"}
+            else:  # dificil
+                elegiveis = [w for w in self.anagram_words if len(w.get("word", "")) >= 10]
+                item = random.choice(elegiveis) if elegiveis else {"word": "Paralelepipedo"}
 
             palavra_original = item["word"]
-
             letras = list(palavra_original)
             tentativas = 0
             
@@ -1557,9 +1647,11 @@ class Challenges(commands.Cog):
             palavra_embaralhada = "".join(letras).upper()
 
             return {
+                "type": "anagram",
                 "question": f"🧩 **Anagrama! Descubra a palavra embaralhada:**\n"
                             f"➡️ Letras: **`{palavra_embaralhada}`**\n",
                 "answer": palavra_original,
+                "dificuldade": dificuldade
             }
 
 def count_human_members(guild: discord.Guild) -> int:
