@@ -916,7 +916,7 @@ class Challenges(commands.Cog):
                 cursor_anagrams = database.anagram_words.find({})
                 self.anagram_words = await cursor_anagrams.to_list(length=1000)
                 
-                self.rewrite_phrases = [d["phrase"] for d in docs if "phrase" in d]
+                self.rewrite_phrases = [d for d in docs if "phrase" in d]
                 
                 print(f"📦 Carregadas {len(self.rewrite_phrases)} frases de reescrita do MongoDB.")
             except Exception as e:
