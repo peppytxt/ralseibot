@@ -1539,7 +1539,13 @@ class Challenges(commands.Cog):
                 timeout=180
             )
 
-            await channel.send(view=layout_desafio)
+            await channel.send(content=texto_desafio, view=layout_desafio)
+
+        except Exception as e:
+            print(f"❌ Erro ao enviar desafio em {guild.id}: {e}")
+            import traceback
+            traceback.print_exc()
+            self.active_challenges.pop(guild.id, None)
 
         except discord.HTTPException as e:
             print(f"❌ Erro de API ao enviar desafio em {guild.id}: {e}")
