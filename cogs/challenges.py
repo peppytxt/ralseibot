@@ -55,6 +55,143 @@ class IntervalModal(ui.Modal, title="Ajustar Intervalo"):
                 ephemeral=True
             )
 
+class RalcoinSettingsModal(discord.ui.Modal):
+    min_val = discord.ui.TextInput(
+        label="Valor Mínimo",
+        placeholder="Ex: 1500",
+        min_length=1,
+        max_length=5
+    )
+    max_val = discord.ui.TextInput(
+        label="Valor Máximo",
+        placeholder="Ex: 4000",
+        min_length=1,
+        max_length=5
+    )
+
+    def __init__(self, cog, guild_id, dificuldade: str):
+        nomes = {"facil": "Fácil 🟢", "medio": "Médio 🟡", "dificil": "Difícil 🔴"}
+        super().__init__(title=f"Configurar Ralcoins - {nomes[dificuldade]}")
+        self.cog = cog
+        self.guild_id = guild_id
+        self.dificuldade = dificuldade
+
+        defaults = {
+            "facil": {"min": "700", "max": "1400"},
+            "medio": {"min": "1500", "max": "4000"},
+            "dificil": {"min": "4000", "max": "6000"}
+        }
+        
+        self.min_val.default = defaults[dificuldade]["min"]
+        self.max_val.default = defaults[dificuldade]["max"]
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            mini = int(self.min_val.value)
+            maxi = int(self.max_val.value)
+            LIMITE_ABSOLUTO = 10000
+
+            if mini < 0:
+                return await interaction.response.send_message("O valor não pode ser negativo! >:3", ephemeral=True)
+            
+            if mini >= maxi:
+                return await interaction.response.send_message(
+                    "O valor **mínimo** deve ser obrigatoriamente **menor** que o valor máximo >:3", 
+                    ephemeral=True
+                )
+                
+            if maxi > LIMITE_ABSOLUTO or mini > LIMITE_ABSOLUTO:
+                return await interaction.response.send_message(
+                    f"O valor máximo permitido é de **{LIMITE_ABSOLUTO}** Ralcoins! ^_~", 
+                    ephemeral=True
+                )
+
+            config = await self.cog.col_config.find_one({"_id": self.guild_id}) or {}
+            
+            rewards = config.get("rewards", {
+                "facil": {"min": 700, "max": 1400},
+                "medio": {"min": 1500, "max": 4000},
+                "dificil": {"min": 4000, "max": 6000}
+            })
+
+            if self.dificuldade == "facil":
+                limite_medio_min = rewards["medio"]["min"]
+                if maxi > limite_medio_min:
+                    return await interaction.response.send_message(
+                        f"❌ O ganho máximo do nível **Fácil** ({maxi}) não pode ser maior do que o mínimo do nível **Médio** ({limite_medio_min})!", 
+                        ephemeral=True
+                    )
+
+            elif self.dificuldade == "medio":
+                limite_facil_max = rewards["facil"]["max"]
+                limite_dificil_min = rewards["dificil"]["min"]
+
+                if mini < limite_facil_max:
+                    return await interaction.response.send_message(
+                        f"❌ O mínimo do nível **Médio** ({mini}) não pode ser menor do que o máximo do nível **Fácil** ({limite_facil_max})!", 
+                        ephemeral=True
+                    )
+                if maxi > limite_dificil_min:
+                    return await interaction.response.send_message(
+                        f"❌ O máximo do nível **Médio** ({maxi}) não pode ser maior do que o mínimo do nível **Difícil** ({limite_dificil_min})!", 
+                        ephemeral=True
+                    )
+
+            elif self.dificuldade == "dificil":
+                limite_medio_max = rewards["medio"]["max"]
+                if mini < limite_medio_max:
+                    return await interaction.response.send_message(
+                        f"❌ O mínimo do nível **Difícil** ({mini}) não pode ser menor do que o máximo do nível **Médio** ({limite_medio_max})!", 
+                        ephemeral=True
+                    )
+
+            rewards[self.dificuldade] = {"min": mini, "max": maxi}
+
+            await self.cog.col_config.update_one(
+                {"_id": self.guild_id},
+                {"$set": {"rewards": rewards}},
+                upsert=True
+            )
+
+            await self.cog.update_cache()
+
+            await interaction.response.send_message(
+                f"✅ **Dificuldade {self.dificuldade.capitalize()} configurada!**\n"
+                f"Mínimo: `{mini}` :coin:\nMáximo: `{maxi}` :coin:", 
+                ephemeral=True
+            )
+
+        except ValueError:
+            await interaction.response.send_message("❌ Por favor, insira apenas números inteiros!", ephemeral=True)
+
+
+# ==========================================
+# 2. VIEW SELEÇÃO DE DIFICULDADE (Chama o Modal acima)
+# ==========================================
+class DifficultySelectView(discord.ui.View):
+    def __init__(self, cog, guild_id):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.guild_id = guild_id
+
+    @discord.ui.select(
+        placeholder="Selecione a dificuldade que deseja configurar...",
+        options=[
+            discord.SelectOption(label="Fácil", value="facil", emoji="🟢", description="Configure os ganhos do nível Fácil"),
+            discord.SelectOption(label="Médio", value="medio", emoji="🟡", description="Configure os ganhos do nível Médio"),
+            discord.SelectOption(label="Difícil", value="dificil", emoji="🔴", description="Configure os ganhos do nível Difícil")
+        ]
+    )
+    async def select_difficulty(self, interaction: discord.Interaction, select: discord.ui.Select):
+        dificuldade_escolhida = select.values[0]
+        await interaction.response.send_modal(
+            RalcoinSettingsModal(self.cog, self.guild_id, dificuldade_escolhida)
+        )
+
+
+# ==========================================
+# 3. VIEW DO PAINEL PRINCIPAL
+# ==========================================
 class ChallengeConfigView(ui.LayoutView):
     def __init__(self, cog, guild, config):
         super().__init__(timeout=300)
@@ -166,146 +303,14 @@ class ChallengeConfigView(ui.LayoutView):
             await interaction.response.edit_message(view=self)
 
     async def ralcoin_config_callback(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(RalcoinSettingsModal(self.cog, self.guild.id))
+        await interaction.response.send_message(
+            "🪙 **Qual faixa de recompensas você deseja configurar?**",
+            view=DifficultySelectView(self.cog, self.guild.id),
+            ephemeral=True
+        )
 
     async def open_interval_modal(self, interaction: discord.Interaction):
         await interaction.response.send_modal(IntervalModal(self))
-
-class RalcoinSettingsModal(discord.ui.Modal):
-    min_val = discord.ui.TextInput(
-        label="Valor Mínimo",
-        placeholder="Ex: 1500",
-        min_length=1,
-        max_length=5
-    )
-    max_val = discord.ui.TextInput(
-        label="Valor Máximo",
-        placeholder="Ex: 4000",
-        min_length=1,
-        max_length=5
-    )
-
-    def __init__(self, cog, guild_id, dificuldade: str):
-        nomes = {"facil": "Fácil 🟢", "medio": "Médio 🟡", "dificil": "Difícil 🔴"}
-        super().__init__(title=f"Configurar Ralcoins - {nomes[dificuldade]}")
-        self.cog = cog
-        self.guild_id = guild_id
-        self.dificuldade = dificuldade
-
-        defaults = {
-            "facil": {"min": "700", "max": "1400"},
-            "medio": {"min": "1500", "max": "4000"},
-            "dificil": {"min": "4000", "max": "6000"}
-        }
-        
-        self.min_val.default = defaults[dificuldade]["min"]
-        self.max_val.default = defaults[dificuldade]["max"]
-
-    async def on_submit(self, interaction: discord.Interaction):
-        try:
-            mini = int(self.min_val.value)
-            maxi = int(self.max_val.value)
-            LIMITE_ABSOLUTO = 10000
-
-            if mini < 0:
-                return await interaction.response.send_message("O valor não pode ser negativo! >:3", ephemeral=True)
-            
-            if mini >= maxi:
-                return await interaction.response.send_message(
-                    "O valor **mínimo** deve ser obrigatoriamente **menor** que o valor máximo >:3", 
-                    ephemeral=True
-                )
-                
-            if maxi > LIMITE_ABSOLUTO or mini > LIMITE_ABSOLUTO:
-                return await interaction.response.send_message(
-                    f"O valor máximo permitido é de **{LIMITE_ABSOLUTO}** Ralcoins! ^_~", 
-                    ephemeral=True
-                )
-
-            config = await self.cog.col_config.find_one({"_id": self.guild_id}) or {}
-            
-            rewards = config.get("rewards", {
-                "facil": {"min": 700, "max": 1400},
-                "medio": {"min": 1500, "max": 4000},
-                "dificil": {"min": 4000, "max": 6000}
-            })
-
-            if self.dificuldade == "facil":
-                limite_medio_min = rewards["medio"]["min"]
-                if maxi > limite_medio_min:
-                    return await interaction.response.send_message(
-                        f"❌ O ganho máximo do nível **Fácil** ({maxi}) não pode ser maior do que o mínimo do nível **Médio** ({limite_medio_min})!", 
-                        ephemeral=True
-                    )
-
-            elif self.dificuldade == "medio":
-                limite_facil_max = rewards["facil"]["max"]
-                limite_dificil_min = rewards["dificil"]["min"]
-
-                if mini < limite_facil_max:
-                    return await interaction.response.send_message(
-                        f"❌ O mínimo do nível **Médio** ({mini}) não pode ser menor do que o máximo do nível **Fácil** ({limite_facil_max})!", 
-                        ephemeral=True
-                    )
-                if maxi > limite_dificil_min:
-                    return await interaction.response.send_message(
-                        f"❌ O máximo do nível **Médio** ({maxi}) não pode ser maior do que o mínimo do nível **Difícil** ({limite_dificil_min})!", 
-                        ephemeral=True
-                    )
-
-            elif self.dificuldade == "dificil":
-                limite_medio_max = rewards["medio"]["max"]
-                if mini < limite_medio_max:
-                    return await interaction.response.send_message(
-                        f"❌ O mínimo do nível **Difícil** ({mini}) não pode ser menor do que o máximo do nível **Médio** ({limite_medio_max})!", 
-                        ephemeral=True
-                    )
-
-            rewards[self.dificuldade] = {"min": mini, "max": maxi}
-
-            await self.cog.col_config.update_one(
-                {"_id": self.guild_id},
-                {"$set": {"rewards": rewards}},
-                upsert=True
-            )
-
-            await self.cog.update_cache()
-
-            await interaction.response.send_message(
-                f"✅ **Dificuldade {self.dificuldade.capitalize()} configurada!**\n"
-                f"Mínimo: `{mini}` :coin:\nMáximo: `{maxi}` :coin:", 
-                ephemeral=True
-            )
-
-        except ValueError:
-            await interaction.response.send_message("❌ Por favor, insira apenas números inteiros!", ephemeral=True)
-
-class DifficultySelectView(discord.ui.View):
-    def __init__(self, cog, guild_id):
-        super().__init__(timeout=120)
-        self.cog = cog
-        self.guild_id = guild_id
-
-    @discord.ui.select(
-        placeholder="Selecione a dificuldade que deseja configurar...",
-        options=[
-            discord.SelectOption(label="Fácil", value="facil", emoji="🟢", description="Configure os ganhos do nível Fácil"),
-            discord.SelectOption(label="Médio", value="medio", emoji="🟡", description="Configure os ganhos do nível Médio"),
-            discord.SelectOption(label="Difícil", value="dificil", emoji="🔴", description="Configure os ganhos do nível Difícil")
-        ]
-    )
-    async def select_difficulty(self, interaction: discord.Interaction, select: discord.ui.Select):
-        dificuldade_escolhida = select.values[0]
-        await interaction.response.send_modal(
-            RalcoinSettingsModal(self.cog, self.guild_id, dificuldade_escolhida)
-        )
-
-async def ralcoin_config_callback(self, interaction: discord.Interaction):
-    await interaction.response.send_message(
-        "🪙 **Qual faixa de recompensas você deseja configurar?**",
-        view=DifficultySelectView(self.cog, self.guild.id),
-        ephemeral=True
-    )
 
 class SuggestStarterLayout(ui.LayoutView):
     def __init__(self):
