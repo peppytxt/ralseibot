@@ -119,7 +119,7 @@ class RalcoinSettingsModal(discord.ui.Modal):
                 
             if maxi > LIMITE_ABSOLUTO or mini > LIMITE_ABSOLUTO:
                 return await interaction.response.send_message(
-                    f"O valor máximo permitido é de **{LIMITE_ABSOLUTO}** Ralcoins! ^_~", 
+                    f"O valor máximo permitido é de **{LIMITE_ABSOLUTO}** Ralcoins! OwO", 
                     ephemeral=True
                 )
 
