@@ -1521,12 +1521,12 @@ class Challenges(commands.Cog):
             
             autor_str = ""
             if challenge.get("author_name"):
-                autor_str = f"\n\n_*Sugerido por {challenge['author_name']}_*"
+                autor_str = f"\n\n| _*Sugerido por {challenge['author_name']}_*"
 
             texto_desafio = (
                 f"## 📺 **IT'S TV TIME!!**\n"
-                f"{challenge['question']}\n"
-                f"***Dificuldade: {estilo['label']}** | {autor_str}*\n"
+                f"{challenge['question']}\n\n"
+                f"***Dificuldade: {estilo['label']}**  {autor_str}*\n"
                 f"-# Responda corretamente para ganhar pontos!"
             )
 
