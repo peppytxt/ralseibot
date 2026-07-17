@@ -1504,6 +1504,7 @@ class Challenges(commands.Cog):
 
         try:
             challenge = self.generate_challenge()
+            print("DEBUG - Dados do Desafio:", challenge)
             
             dificuldade_nome = challenge.get("dificuldade", "medio")
             estilo = self.DIFICULDADE_STYLE.get(dificuldade_nome, self.DIFICULDADE_STYLE["medio"])
@@ -1516,7 +1517,7 @@ class Challenges(commands.Cog):
                 "dificuldade": dificuldade_nome 
             }
 
-            # --- CONSTRUINDO A INTERFACE V2 CORRETA ---
+            # --- CONSTRUINDO A INTERFACE V2 ---
             
             autor_str = ""
             if challenge.get("author_name"):
@@ -1537,7 +1538,7 @@ class Challenges(commands.Cog):
                 estilo_cor=estilo["color"], 
                 timeout=180
             )
-            
+
             await channel.send(view=layout_desafio)
 
         except discord.HTTPException as e:
@@ -1769,7 +1770,7 @@ class Challenges(commands.Cog):
             return {
                 "type": "anagram",
                 "question": f"🧩 **Anagrama! Descubra a palavra embaralhada:**\n"
-                            f"➡️ Letras: **`{palavra_embaralhada}`**\n",
+                            f"➡️ Letras: **`{palavra_embaralhada}`**",
                 "answer": palavra_original,
                 "dificuldade": dificuldade
             }
