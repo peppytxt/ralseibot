@@ -121,7 +121,6 @@ class ChallengeConfigView(ui.LayoutView):
         select_canal.callback = self.update_channel
         row_select.add_item(select_canal)
 
-        # Adicionamos o container e depois o seletor à View principal
         self.add_item(container)
         self.add_item(row_select)
 
@@ -172,34 +171,6 @@ class ChallengeConfigView(ui.LayoutView):
     async def open_interval_modal(self, interaction: discord.Interaction):
         await interaction.response.send_modal(IntervalModal(self))
 
-class DifficultySelectView(discord.ui.View):
-    def __init__(self, cog, guild_id):
-        super().__init__(timeout=120)
-        self.cog = cog
-        self.guild_id = guild_id
-
-    @discord.ui.select(
-        placeholder="Selecione a dificuldade que deseja configurar...",
-        options=[
-            discord.SelectOption(label="Fácil", value="facil", emoji="🟢", description="Configure os ganhos do nível Fácil"),
-            discord.SelectOption(label="Médio", value="medio", emoji="🟡", description="Configure os ganhos do nível Médio"),
-            discord.SelectOption(label="Difícil", value="dificil", emoji="🔴", description="Configure os ganhos do nível Difícil")
-        ]
-    )
-    async def select_difficulty(self, interaction: discord.Interaction, select: discord.ui.Select):
-        dificuldade_escolhida = select.values[0]
-        await interaction.response.send_modal(
-            RalcoinSettingsModal(self.cog, self.guild_id, dificuldade_escolhida)
-        )
-
-
-async def ralcoin_config_callback(self, interaction: discord.Interaction):
-    await interaction.response.send_message(
-        "🪙 **Qual faixa de recompensas você deseja configurar?**",
-        view=DifficultySelectView(self.cog, self.guild.id),
-        ephemeral=True
-    )
-
 class RalcoinSettingsModal(discord.ui.Modal):
     min_val = discord.ui.TextInput(
         label="Valor Mínimo",
@@ -215,21 +186,18 @@ class RalcoinSettingsModal(discord.ui.Modal):
     )
 
     def __init__(self, cog, guild_id, dificuldade: str):
-        # Define o título dinamicamente com base na dificuldade sendo editada
         nomes = {"facil": "Fácil 🟢", "medio": "Médio 🟡", "dificil": "Difícil 🔴"}
         super().__init__(title=f"Configurar Ralcoins - {nomes[dificuldade]}")
         self.cog = cog
         self.guild_id = guild_id
         self.dificuldade = dificuldade
 
-        # Valores padrões pré-definidos caso o servidor ainda não tenha configurado
         defaults = {
             "facil": {"min": "700", "max": "1400"},
             "medio": {"min": "1500", "max": "4000"},
             "dificil": {"min": "4000", "max": "6000"}
         }
         
-        # Define os placeholders base padrão no input
         self.min_val.default = defaults[dificuldade]["min"]
         self.max_val.default = defaults[dificuldade]["max"]
 
@@ -311,6 +279,33 @@ class RalcoinSettingsModal(discord.ui.Modal):
 
         except ValueError:
             await interaction.response.send_message("❌ Por favor, insira apenas números inteiros!", ephemeral=True)
+
+class DifficultySelectView(discord.ui.View):
+    def __init__(self, cog, guild_id):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.guild_id = guild_id
+
+    @discord.ui.select(
+        placeholder="Selecione a dificuldade que deseja configurar...",
+        options=[
+            discord.SelectOption(label="Fácil", value="facil", emoji="🟢", description="Configure os ganhos do nível Fácil"),
+            discord.SelectOption(label="Médio", value="medio", emoji="🟡", description="Configure os ganhos do nível Médio"),
+            discord.SelectOption(label="Difícil", value="dificil", emoji="🔴", description="Configure os ganhos do nível Difícil")
+        ]
+    )
+    async def select_difficulty(self, interaction: discord.Interaction, select: discord.ui.Select):
+        dificuldade_escolhida = select.values[0]
+        await interaction.response.send_modal(
+            RalcoinSettingsModal(self.cog, self.guild_id, dificuldade_escolhida)
+        )
+
+async def ralcoin_config_callback(self, interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "🪙 **Qual faixa de recompensas você deseja configurar?**",
+        view=DifficultySelectView(self.cog, self.guild.id),
+        ephemeral=True
+    )
 
 class SuggestStarterLayout(ui.LayoutView):
     def __init__(self):
