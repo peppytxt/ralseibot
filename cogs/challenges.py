@@ -188,18 +188,17 @@ class DifficultySelectView(discord.ui.View):
     )
     async def select_difficulty(self, interaction: discord.Interaction, select: discord.ui.Select):
         dificuldade_escolhida = select.values[0]
-        
         await interaction.response.send_modal(
             RalcoinSettingsModal(self.cog, self.guild_id, dificuldade_escolhida)
         )
 
 
 async def ralcoin_config_callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message(
-            "🪙 **Qual faixa de recompensas você deseja configurar?**",
-            view=DifficultySelectView(self.cog, self.guild.id),
-            ephemeral=True
-        )
+    await interaction.response.send_message(
+        "🪙 **Qual faixa de recompensas você deseja configurar?**",
+        view=DifficultySelectView(self.cog, self.guild.id),
+        ephemeral=True
+    )
 
 class RalcoinSettingsModal(discord.ui.Modal):
     min_val = discord.ui.TextInput(
