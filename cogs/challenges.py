@@ -15,6 +15,39 @@ CHALLENGE_TIMEOUT = 60
 MIN_MESSAGES_INTERVAL = 50
 MIN_TIME_INTERVAL = 600 
 
+BONUS_CONFIG = {
+    "facil": [
+        (1.0, 3.0),
+        (2.0, 2.0), 
+        (5.0, 1.5),
+        (10.0, 1.25),
+        (20.0, 1.1),
+    ],
+    "medio": [
+        (1.5, 3.0),
+        (3.0, 2.0),   
+        (7.0, 1.5),   
+        (12.0, 1.25), 
+        (25.0, 1.1),  
+    ],
+    "dificil": [
+        (2.5, 3.0),
+        (5.0, 2.0),   
+        (10.0, 1.5), 
+        (20.0, 1.25), 
+        (35.0, 1.1),  
+    ]
+}
+
+def calcular_multiplicador_tempo(tempo_gasto: float, dificuldade: str) -> float:
+    faixas = BONUS_CONFIG.get(dificuldade, BONUS_CONFIG["medio"])
+
+    for limite_tempo, multiplicador in faixas:
+        if tempo_gasto < limite_tempo:
+            return multiplicador
+            
+    return 1.0
+
 
 CTRLV_MESSAGES = [
     "👀 Ei… isso aí foi Ctrl+C + Ctrl+V, né?",
@@ -1014,13 +1047,25 @@ class Challenges(commands.Cog):
             self.quiz_questions = []
             self.rewrite_phrases = []
         
-    async def send_speed_message(self, channel, user, response_time):
+    async def send_speed_message(self, channel, user, response_time, bonus, reward_final):
         await asyncio.sleep(30)
-        await channel.send(
-            f"💡 **Você sabia?**\n"
-            f"{user.mention} respondeu corretamente em "
-            f"**{response_time:.2f} segundos** ⌨️⚡"
-        )
+        
+        if bonus > 1.0:
+            # Mensagem com bônus de velocidade
+            texto = (
+                f"💡 **Você sabia?**\n"
+                f"{user.mention} respondeu corretamente em "
+                f"**{response_time:.2f} segundos ({bonus}x)** e ganhou mais {reward_final} ralcoins ⌨️⚡"
+            )
+        else:
+            # Mensagem normal de tempo esgotado para o bônus
+            texto = (
+                f"💡 **Você sabia?**\n"
+                f"{user.mention} respondeu corretamente em "
+                f"**{response_time:.2f} segundos** e ganhou mais {reward_final} ralcoins ⌨️⚡"
+            )
+            
+        await channel.send(texto)
     
     @property
     def col_users(self):
@@ -1590,21 +1635,28 @@ class Challenges(commands.Cog):
                 # ----------------------------------
                 challenge["solved"] = True      
 
+                # 1. Definição da recompensa base (Aleatória dentro do cache/padrão)
                 config_cache = self.config_cache.get(message.guild.id, {})
                 min_ganho = config_cache.get("min_ralcoins", REWARD_MIN)
                 max_ganho = config_cache.get("max_ralcoins", REWARD_MAX)
+                reward_base = random.randint(min_ganho, max_ganho)
 
-                reward = random.randint(min_ganho, max_ganho)
+                # 2. Cálculo do tempo gasto e do bônus de velocidade
                 response_time = time.time() - challenge["spawned_at"]
+                dificuldade = challenge.get("dificuldade", "medio")
+                bonus = calcular_multiplicador_tempo(response_time, dificuldade)
+                reward_final = round(reward_base * bonus)
 
                 await message.add_reaction("✅")
 
+                # 3. Salvando o valor final (reward_final) no MongoDB global
                 await self.col_users.update_one(
                     {"_id": message.author.id},
-                    {"$inc": {"challenge_wins": 1, "challenge_earnings": reward, "coins": reward}},
+                    {"$inc": {"challenge_wins": 1, "challenge_earnings": reward_final, "coins": reward_final}},
                     upsert=True
                 )
 
+                # 4. Salvando o progresso no MongoDB local da Guilda
                 database = getattr(self.bot, "db", None)
                 if database is not None:
                     await database.member_challenges.update_one(
@@ -1616,15 +1668,24 @@ class Challenges(commands.Cog):
                         upsert=True
                     )
 
+                # 4. Mensagem imediata: Fala apenas o acerto e os ralcoins normais
                 await message.channel.send(
-                    f"🎉 {message.author.mention} acertou! "
-                    f"Você ganhou **{reward} ralcoins!**"
+                    f"🎉 {message.author.mention} acertou a resposta e ganhou **{reward_base} ralcoins**!"
                 )
 
                 self.active_challenges.pop(guild_id, None)
                 self.warned_users.clear()
 
-                asyncio.create_task(self.send_speed_message(message.channel, message.author, response_time))
+                # 5. Envia os dados completos para a função de speed anunciar o bônus depois
+                asyncio.create_task(
+                    self.send_speed_message(
+                        message.channel, 
+                        message.author, 
+                        response_time, 
+                        bonus, 
+                        reward_final
+                    )
+                )
 
                 achievements_cog = self.bot.get_cog("AchievementsCog") 
                 if achievements_cog:
