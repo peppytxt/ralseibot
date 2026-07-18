@@ -1670,7 +1670,7 @@ class Challenges(commands.Cog):
 
                 # 4. Mensagem imediata: Fala apenas o acerto e os ralcoins normais
                 await message.channel.send(
-                    f"🎉 {message.author.mention} acertou a resposta e ganhou **{reward_base} ralcoins**!"
+                    f"🎉 {message.author.mention} acertou! Você ganhou **{reward_base} ralcoins**!"
                 )
 
                 self.active_challenges.pop(guild_id, None)
