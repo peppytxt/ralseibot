@@ -80,7 +80,7 @@ class BalanceButtonView(discord.ui.View):
             await economia_cog.balance(interaction, user=None)
         else:
             await interaction.response.send_message(
-                "Erro: O sistema de economia não está carregado.", 
+                "O sistema de economia não está carregado :(", 
                 ephemeral=True
             )
 
