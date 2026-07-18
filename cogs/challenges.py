@@ -1047,7 +1047,7 @@ class Challenges(commands.Cog):
             self.quiz_questions = []
             self.rewrite_phrases = []
         
-    async def send_speed_message(self, channel, user, response_time, bonus, reward_final):
+    async def send_speed_message(self, channel, user, response_time, bonus, ganho_extra):
         await asyncio.sleep(30)
         
         if bonus > 1.0:
@@ -1055,14 +1055,14 @@ class Challenges(commands.Cog):
             texto = (
                 f"💡 **Você sabia?**\n"
                 f"{user.mention} respondeu corretamente em "
-                f"**{response_time:.2f} segundos ({bonus}x)** e ganhou mais {reward_final} ralcoins ⌨️⚡"
+                f"**{response_time:.2f} segundos ({bonus}x)** e ganhou mais {ganho_extra} ralcoins ⌨️⚡"
             )
         else:
             # Mensagem normal de tempo esgotado para o bônus
             texto = (
                 f"💡 **Você sabia?**\n"
                 f"{user.mention} respondeu corretamente em "
-                f"**{response_time:.2f} segundos** e ganhou mais {reward_final} ralcoins ⌨️⚡"
+                f"**{response_time:.2f} segundos** ⌨️⚡"
             )
             
         await channel.send(texto)
@@ -1647,6 +1647,8 @@ class Challenges(commands.Cog):
                 bonus = calcular_multiplicador_tempo(response_time, dificuldade)
                 reward_final = round(reward_base * bonus)
 
+                ganho_extra = reward_final - reward_base
+
                 await message.add_reaction("✅")
 
                 # 3. Salvando o valor final (reward_final) no MongoDB global
@@ -1683,7 +1685,7 @@ class Challenges(commands.Cog):
                         message.author, 
                         response_time, 
                         bonus, 
-                        reward_final
+                        ganho_extra
                     )
                 )
 
