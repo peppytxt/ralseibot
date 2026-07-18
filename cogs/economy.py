@@ -13,6 +13,18 @@ BR_TZ = timezone(timedelta(hours=-3))
 
 BOT_ECONOMY_ID = 0
 
+def obter_dados_saldo(collection, user_id, display_name):
+    data = collection.find_one({"_id": user_id}) or {}
+    coins = data.get("coins", 0)
+
+    rank = collection.count_documents({
+        "coins": {"$gt": coins},
+        "_id": {"$ne": BOT_ECONOMY_ID} 
+    }) + 1
+
+    return f"💳 **Saldo de {display_name}:** {coins} ralcoins\n🏆 **Rank global:** #{rank}"
+
+
 class FishingLayout(ui.LayoutView):
     def __init__(self, user, fish_data, cog):
         super().__init__()
@@ -390,20 +402,8 @@ class Economy(commands.Cog):
             user_id = user.id
             name = user.display_name
 
-        data = self.col.find_one({"_id": user_id}) or {}
-        coins = data.get("coins", 0)
-
-        rank = self.col.count_documents({
-            "coins": {"$gt": coins},
-            "_id": {"$ne": BOT_ECONOMY_ID}
-        }) + 1
-
-
-        await interaction.response.send_message(
-            f"💳 **Saldo de {name}:** {coins} ralcoins\n"
-            f"🏆 **Rank global:** #{rank}"
-        )
-
+        texto_saldo = obter_dados_saldo(self.col, user_id, name)
+        await interaction.response.send_message(texto_saldo)
                
     async def build_rankcoins_embed(self, interaction, page: int, page_size: int, is_local: bool = False):
         if page < 0:

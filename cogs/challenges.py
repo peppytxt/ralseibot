@@ -57,6 +57,33 @@ CTRLV_MESSAGES = [
     "🚫 Ctrl+C + Ctrl+V não aumenta QI, só digita 😉",
 ]
 
+class BalanceButtonView(discord.ui.View):
+    def __init__(self, winner_id: int, bot: discord.Client):
+        super().__init__(timeout=60)
+        self.winner_id = winner_id
+        self.bot = bot
+
+    @discord.ui.button(label="Ver Meu Saldo", style=discord.ButtonStyle.success, emoji="💳")
+    async def view_balance(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.winner_id:
+            await interaction.response.send_message(
+                "Saia daqui, esse botão não é para você ÒwÓ", 
+                ephemeral=True
+            )
+            return
+
+        economia_cog = self.bot.get_cog("EconomiaCog") 
+        
+        if economia_cog is not None:
+            await interaction.response.defer(ephemeral=True)
+            
+            await economia_cog.balance(interaction, user=None)
+        else:
+            await interaction.response.send_message(
+                "Erro: O sistema de economia não está carregado.", 
+                ephemeral=True
+            )
+
 class ChallengeLayout(ui.LayoutView):
     def __init__(self, texto_desafio: str, estilo_cor, timeout: float = 180):
         super().__init__(timeout=timeout)
@@ -1561,8 +1588,6 @@ class Challenges(commands.Cog):
                 "solved": False,
                 "dificuldade": dificuldade_nome 
             }
-
-            # --- CONSTRUINDO A INTERFACE V2 ---
             
             autor_str = ""
             if challenge.get("author_name"):
@@ -1671,8 +1696,10 @@ class Challenges(commands.Cog):
                     )
 
                 # 4. Mensagem imediata: Fala apenas o acerto e os ralcoins normais
+                view_botao = BalanceButtonView(winner_id=message.author.id, bot=self.bot)
                 await message.channel.send(
-                    f"🎉 {message.author.mention} acertou! Você ganhou **{reward_base} ralcoins**!"
+                    f"🎉 {message.author.mention} acertou! Você ganhou **{reward_base} ralcoins**!",
+                    view=view_botao
                 )
 
                 self.active_challenges.pop(guild_id, None)
