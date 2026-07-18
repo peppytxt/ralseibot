@@ -77,7 +77,7 @@ class BalanceButtonView(discord.ui.View):
         if economia_cog is not None:
             await interaction.response.defer(ephemeral=True)
             
-            await economia_cog.balance(interaction, user=None)
+            await economia_cog.balance.callback(economia_cog, interaction, user=None)
         else:
             await interaction.response.send_message(
                 "O sistema de economia não está carregado :(", 
