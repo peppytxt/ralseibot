@@ -75,8 +75,6 @@ class BalanceButtonView(discord.ui.View):
         economia_cog = self.bot.get_cog("Economy") 
         
         if economia_cog is not None:
-            await interaction.response.defer(ephemeral=True)
-            
             await economia_cog.balance.callback(economia_cog, interaction, user=None)
         else:
             await interaction.response.send_message(
