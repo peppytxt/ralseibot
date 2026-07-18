@@ -63,7 +63,7 @@ class BalanceButtonView(discord.ui.View):
         self.winner_id = winner_id
         self.bot = bot
 
-    @discord.ui.button(label="Ver Meu Saldo", style=discord.ButtonStyle.success, emoji="💳")
+    @discord.ui.button(label="Ver Meu Saldo", style=discord.ButtonStyle.secondary, emoji="💳")
     async def view_balance(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.winner_id:
             await interaction.response.send_message(
@@ -72,7 +72,7 @@ class BalanceButtonView(discord.ui.View):
             )
             return
 
-        economia_cog = self.bot.get_cog("EconomiaCog") 
+        economia_cog = self.bot.get_cog("Economy") 
         
         if economia_cog is not None:
             await interaction.response.defer(ephemeral=True)
