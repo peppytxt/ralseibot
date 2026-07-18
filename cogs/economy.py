@@ -403,7 +403,10 @@ class Economy(commands.Cog):
             name = user.display_name
 
         texto_saldo = obter_dados_saldo(self.col, user_id, name)
-        await interaction.response.send_message(texto_saldo)
+        if interaction.data.get("component_type") == 2: # 2 significa botão
+            await interaction.response.send_message(texto_saldo, ephemeral=True)
+        else:
+            await interaction.response.send_message(texto_saldo)
                
     async def build_rankcoins_embed(self, interaction, page: int, page_size: int, is_local: bool = False):
         if page < 0:
