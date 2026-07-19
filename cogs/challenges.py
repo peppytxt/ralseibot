@@ -1783,10 +1783,10 @@ class Challenges(commands.Cog):
 
         elif typ == "rewrite":
             if dificuldade == "medio":
-                elegiveis = [p for p in self.rewrite_phrases if len(p) < 60]
+                elegiveis = [p for p in self.rewrite_phrases if len(p) < 90]
                 phrase = random.choice(elegiveis) if elegiveis else "Ralsei é muito fofinho!"
             else:
-                elegiveis = [p for p in self.rewrite_phrases if len(p) >= 60]
+                elegiveis = [p for p in self.rewrite_phrases if len(p) >= 90]
                 phrase = random.choice(elegiveis) if elegiveis else "Ralsei é um príncipe fofinho do reino das trevas que adora ajudar os seus amigos em todas as suas jornadas pelo mundo sombrio, sempre distribuindo manuais e ensinando a arte de resolver problemas pacificamente com um grande sorriso no rosto!"
 
             disguised, token_positions = add_invisible_chars(phrase)
