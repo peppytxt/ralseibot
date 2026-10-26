@@ -21,7 +21,7 @@ class VipRoles(commands.Cog):
     cargo_group = app_commands.Group(
         name="cargo", 
         description="Gerencie seu cargo VIP personalizado",
-        guilds=[discord.Object(id=1410006076400599235)]
+        guild_ids=[1410006076400599235]
     )
 
     # ==========================================
