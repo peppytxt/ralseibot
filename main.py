@@ -60,6 +60,7 @@ COGS = [
     "cogs.admin",
     "cogs.confessions",
     "cogs.wanted",
+    "cogs.CargoVIP",
     "cogs.ai_chat"
 ]
 
