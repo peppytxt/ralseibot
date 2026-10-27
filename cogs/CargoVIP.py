@@ -1,7 +1,6 @@
 import discord
 from discord import app_commands, ui
 from discord.ext import commands
-
 class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
     nome = ui.TextInput(
         label="Nome do Cargo",
@@ -10,10 +9,17 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
         max_length=32
     )
     cor = ui.TextInput(
-        label="Cor Hexadecimal",
-        placeholder="Ex: #FF5733",
+        label="Cor Principal (Hex)",
+        placeholder="Ex: #00FFCC",
         min_length=4,
         max_length=7
+    )
+    segunda_cor = ui.TextInput(
+        label="Segunda Cor p/ Gradiente (Opcional)",
+        placeholder="Ex: #FF5733 (Deixe vazio para cor sólida)",
+        min_length=0,
+        max_length=7,
+        required=False
     )
 
     def __init__(self, cog, panel_view=None):
@@ -22,22 +28,29 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
         self.panel_view = panel_view
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
 
         try:
             color_obj = discord.Color.from_str(self.cor.value)
+            
+            kwargs = {
+                "name": self.nome.value,
+                "color": color_obj,
+                "reason": f"Cargo VIP criado por {interaction.user}"
+            }
+
+            if self.segunda_cor.value and self.segunda_cor.value.strip():
+                sec_color_obj = discord.Color.from_str(self.segunda_cor.value.strip())
+                kwargs["secondary_color"] = sec_color_obj
+
         except ValueError:
             return await interaction.followup.send(
-                embed=discord.Embed(title="Cor Inválida", description="Use o formato hexadecimal ex: `#FF5733` owo", color=discord.Color.red())
+                "Formato de cor inválido! Use o padrão hexadecimal ex: `#FF5733` owo",
+                ephemeral=True
             )
 
         try:
-            novo_cargo = await interaction.guild.create_role(
-                name=self.nome.value,
-                color=color_obj,
-                reason=f"Cargo VIP criado por {interaction.user}"
-            )
-
+            novo_cargo = await interaction.guild.create_role(**kwargs)
             await interaction.user.add_roles(novo_cargo, reason="Cargo VIP criado pelo próprio usuário.")
 
             await self.cog.col_vips.update_one(
@@ -57,12 +70,12 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
 
         except discord.Forbidden:
             await interaction.followup.send(
-                embed=discord.Embed(title="Erro de Permissão", description="Não tenho permissão para criar cargos no servidor :( consulte um administrador", color=discord.Color.red()),
+                "Não tenho permissão para criar cargos ou o servidor não atinge os requisitos de Boost para gradientes :(",
                 ephemeral=True
             )
         except Exception as e:
             await interaction.followup.send(
-                embed=discord.Embed(title="Erro", description=f"Ocorreu um erro ao criar o cargo: `{e}`", color=discord.Color.red()),
+                f"Ocorreu um erro ao criar o cargo: `{e}`",
                 ephemeral=True
             )
 
@@ -335,11 +348,18 @@ class VipRolePanel(ui.LayoutView):
                 ephemeral=True
             )
         
+        # Cria a view de convite e envia no canal sem usar o parâmetro 'content'
         invite_view = VipInviteView(self.role, self.user, membro, self)
-        msg_convite = await interaction.channel.send(content=f"{membro.mention}", view=invite_view)
+        msg_convite = await interaction.channel.send(view=invite_view)
         invite_view.message = msg_convite
 
-        await interaction.followup.send(embed=discord.Embed(title="📩 Convite Enviado!", description=f"Um convite foi enviado para {membro.mention} no chat. Ele tem **3 minutos** para aceitar!", color=discord.Color.blue()), ephemeral=True)
+        await interaction.followup.send(
+            embed=discord.Embed(
+                title="📩 Convite Enviado!", 
+                description=f"Um convite foi enviado para {membro.mention} no chat. Ele tem **3 minutos** para aceitar!", 
+                color=discord.Color.blue()
+            )
+        )
 
     async def callback_deletar(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=False)
