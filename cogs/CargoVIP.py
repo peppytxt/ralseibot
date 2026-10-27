@@ -109,7 +109,7 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
             for item in novo_painel.children:
                 view_final.add_item(item)
 
-            await interaction.followup.send(view=view_final, ephemeral=True)
+            await interaction.followup.send(view=view_final)
 
             if self.prompt_interaction:
                 try:
@@ -476,7 +476,7 @@ class VipRolePanel(ui.LayoutView):
         await interaction.followup.send(
             embed=discord.Embed(
                 title="📩 Convite Enviado!", 
-                description=f"Um convite foi enviado para {membro.mention} no chat. Ele tem **3 minutos** para aceitar!", 
+                description=f"Um convite foi enviado para {membro.mention} no chat. Tem **3 minutos** para aceitar!", 
                 color=discord.Color.blue()
             )
         )
@@ -485,7 +485,6 @@ class VipRolePanel(ui.LayoutView):
         if interaction.user.id != self.user.id:
             return await interaction.response.send_message("Ei! Esse painel não é seu >:c", ephemeral=True)
 
-        # Abre a tela de confirmação de exclusão
         confirm_view = ConfirmDeleteView(self.cog, self.user, self.role, self)
         await interaction.response.edit_message(view=confirm_view)
 
