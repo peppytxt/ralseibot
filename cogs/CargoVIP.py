@@ -50,8 +50,9 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
             novo_painel.build_interface()
 
             await interaction.followup.send(
-                embed=discord.Embed(title="✨ Criado com Sucesso!", description=f"Seu cargo {novo_cargo.mention} foi criado! Gerencie-o abaixo ^w^", color=color_obj),
-                view=novo_painel
+                content=f"✨ **Criado com Sucesso!** Seu cargo {novo_cargo.mention} foi gerado. Gerencie-o abaixo:",
+                view=novo_painel,
+                ephemeral=True
             )
 
         except discord.Forbidden:
@@ -306,11 +307,17 @@ class VipRolePanel(ui.LayoutView):
         if membro in self.role.members:
             await membro.remove_roles(self.role, reason=f"Removido pelo dono do VIP ({interaction.user})")
             await self.refresh_panel(interaction)
-            return await interaction.followup.send(embed=discord.Embed(title="🗑️ Removido", description=f"O cargo foi removido de {membro.mention}.", color=discord.Color.orange()))
+            return await interaction.followup.send(
+                f"🗑️ O cargo foi removido de {membro.mention}.", 
+                ephemeral=True
+            )
 
         membros_com_cargo = [m for m in self.role.members if m.id != self.user.id]
         if len(membros_com_cargo) >= 5:
-            return await interaction.followup.send(embed=discord.Embed(title="⚠️ Limite Atingidowo", description="Você atingiu o limite máximo de **5 pessoas** compartilhando seu cargo.", color=discord.Color.orange()))
+            return await interaction.followup.send(
+                "⚠️ Você atingiu o limite máximo de **5 pessoas** compartilhando seu cargo.", 
+                ephemeral=True
+            )
         
         invite_view = VipInviteView(self.role, self.user, membro, self)
         msg_convite = await interaction.channel.send(content=f"{membro.mention}", view=invite_view)
