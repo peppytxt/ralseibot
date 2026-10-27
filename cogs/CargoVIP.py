@@ -119,10 +119,18 @@ class EditRoleNameModal(ui.Modal, title="Altere Nome do Cargo"):
 
 class EditRoleColorModal(ui.Modal, title="Altere a Cor do Cargo"):
     nova_cor = ui.TextInput(
-        label="Nova Cor em Hexadecimal",
+        label="Cor Principal (Hex)",
         placeholder="Ex: #FF5733",
         min_length=4,
         max_length=7
+    )
+    
+    segunda_cor = ui.TextInput(
+        label="Segunda Cor p/ Gradiente (Opcional)",
+        placeholder="Ex: #00FFCC (Deixe vazio para cor sólida)",
+        min_length=0,
+        max_length=7,
+        required=False
     )
 
     def __init__(self, role, view):
@@ -133,17 +141,25 @@ class EditRoleColorModal(ui.Modal, title="Altere a Cor do Cargo"):
     async def on_submit(self, interaction: discord.Interaction):
         try:
             color_obj = discord.Color.from_str(self.nova_cor.value)
-            await self.role.edit(color=color_obj, reason=f"Cor alterada por {interaction.user}")
+            
+            kwargs = {"color": color_obj, "reason": f"Cor alterada por {interaction.user}"}
+            
+            if self.segunda_cor.value and self.segunda_cor.value.strip():
+                sec_color_obj = discord.Color.from_str(self.segunda_cor.value.strip())
+                kwargs["secondary_color"] = sec_color_obj
+            else:
+                kwargs["secondary_color"] = None 
+
+            await self.role.edit(**kwargs)
             
             await self.view.refresh_panel(interaction)
-            await interaction.followup.send(
-                embed=discord.Embed(title="🎨 Cor Atualizada", description=f"A cor do cargo foi atualizada com sucesso uwu", color=color_obj)
+            await interaction.response.send_message(
+                embed=discord.Embed(title="🎨 Cor Atualizada", description="A cor (ou gradiente) do cargo foi atualizada com sucesso uwu", color=color_obj)
             )
         except ValueError:
-            await interaction.response.send_message("Cor inválida! Use o formato hexadecimal, ex: `#FF5733` ksks", ephemeral=True)
+            await interaction.response.send_message("Formato de cor inválido! Use o padrão Hex ex: `#FF5733` ksks", ephemeral=True)
         except discord.Forbidden:
-            await interaction.response.send_message("Não tenho permissão para alterar a cor deste cargo :( consulte um administrador", ephemeral=True)
-
+            await interaction.response.send_message("Não tenho permissão para alterar a cor deste cargo ou o servidor não possui nível de Boost necessário para gradientes :(", ephemeral=True)
 
 class VipInviteView(ui.LayoutView):
     def __init__(self, role, dono, amigo, panel_view):
