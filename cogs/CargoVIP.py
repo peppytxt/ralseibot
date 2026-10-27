@@ -470,7 +470,7 @@ class VipRoles(commands.Cog):
         
         if not registro:
             prompt_view = VipCreatePromptView(self)
-            return await interaction.followup.send(view=prompt_view, ephemeral=True)
+            return await interaction.followup.send(view=prompt_view)
 
         role = interaction.guild.get_role(registro["role_id"])
 
