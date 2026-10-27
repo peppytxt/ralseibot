@@ -99,7 +99,7 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
             container_sucesso = ui.Container(accent_color=color_obj)
             container_sucesso.add_item(ui.TextDisplay(
                 f"✨ **Criado com Sucesso!**\n"
-                f"Seu cargo {novo_cargo.mention} foi criado ^w^.\n\n"
+                f"Seu cargo {novo_cargo.mention} foi criado ^w^\n\n"
                 f"-# Gerencie-o através do painel abaixo:"
             ))
             
@@ -151,6 +151,60 @@ class VipCreatePromptView(ui.LayoutView):
     async def press_criar(self, interaction: discord.Interaction):
         await interaction.response.send_modal(CreateRoleModal(self.cog, self))
 
+class ConfirmDeleteView(ui.LayoutView):
+    def __init__(self, cog, user, role, panel_view):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.user = user
+        self.role = role
+        self.panel_view = panel_view
+
+        container = ui.Container(accent_color=discord.Color.red())
+        container.add_item(ui.TextDisplay(
+            "⚠️ **Tem certeza que deseja deletar seu cargo personalizado?**\n\n"
+            "Esta ação é **irreversível** e todos os membros perderão o cargo imediatamente!"
+        ))
+
+        row = ui.ActionRow()
+        btn_sim = ui.Button(label="Sim, Deletar", style=discord.ButtonStyle.danger, emoji="🗑️")
+        btn_sim.callback = self.press_yes
+
+        btn_nao = ui.Button(label="Cancelar", style=discord.ButtonStyle.secondary, emoji="❌")
+        btn_nao.callback = self.press_no
+
+        row.add_item(btn_sim)
+        row.add_item(btn_nao)
+        container.add_item(row)
+        self.add_item(container)
+
+    async def press_yes(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user.id:
+            return await interaction.response.send_message("Apenas o dono pode fazer isso!", ephemeral=True)
+
+        await interaction.response.defer(ephemeral=True)
+
+        if self.role:
+            try:
+                await self.role.delete(reason=f"Deletado pelo dono ({interaction.user})")
+            except discord.Forbidden:
+                pass
+
+        await self.cog.col_vips.delete_one({"_id": self.user.id, "guild_id": interaction.guild.id})
+        
+        container_ok = ui.Container(accent_color=discord.Color.green())
+        container_ok.add_item(ui.TextDisplay("🗑️ **Cargo Deletado com Sucesso!** Use `/cargo painel` se quiser criar um novo owo"))
+        
+        view_ok = ui.LayoutView()
+        view_ok.add_item(container_ok)
+
+        await interaction.edit_original_response(view=view_ok)
+
+    async def press_no(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user.id:
+            return await interaction.response.send_message("Apenas o dono pode fazer isso!", ephemeral=True)
+
+        await interaction.response.edit_message(view=self.panel_view)
+
 # ==========================================
 # MODAIS DE EDIÇÃO (NOME E COR)
 # ==========================================
@@ -186,10 +240,9 @@ class EditRoleColorModal(ui.Modal, title="Altere a Cor do Cargo"):
         min_length=4,
         max_length=7
     )
-    
     segunda_cor = ui.TextInput(
         label="Segunda Cor p/ Gradiente (Opcional)",
-        placeholder="Ex: #00FFCC (Deixe vazio para cor sólida)",
+        placeholder="Ex: #00FFCC (Deixe vazio)",
         min_length=0,
         max_length=7,
         required=False
@@ -201,27 +254,33 @@ class EditRoleColorModal(ui.Modal, title="Altere a Cor do Cargo"):
         self.view = view
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
         try:
             color_obj = discord.Color.from_str(self.nova_cor.value)
-            
             kwargs = {"color": color_obj, "reason": f"Cor alterada por {interaction.user}"}
             
             if self.segunda_cor.value and self.segunda_cor.value.strip():
                 sec_color_obj = discord.Color.from_str(self.segunda_cor.value.strip())
                 kwargs["secondary_color"] = sec_color_obj
             else:
-                kwargs["secondary_color"] = None 
+                kwargs["secondary_color"] = None
 
             await self.role.edit(**kwargs)
             
             await self.view.refresh_panel(interaction)
-            await interaction.response.send_message(
-                embed=discord.Embed(title="🎨 Cor Atualizada", description="A cor (ou gradiente) do cargo foi atualizada com sucesso uwu", color=color_obj)
-            )
+            
+            container_cor = ui.Container(accent_color=color_obj)
+            container_cor.add_item(ui.TextDisplay(f"🎨 **Cor Atualizada!**\nA cor do cargo foi alterada com sucesso uwu"))
+            view_cor = ui.LayoutView()
+            view_cor.add_item(container_cor)
+            
+            await interaction.followup.send(view=view_cor, ephemeral=True)
+
         except ValueError:
-            await interaction.response.send_message("Formato de cor inválido! Use o padrão Hex ex: `#FF5733` ksks", ephemeral=True)
+            await interaction.followup.send("Formato de cor inválido! Use o padrão hexadecimal ex: `#FF5733` ksks", ephemeral=True)
         except discord.Forbidden:
-            await interaction.response.send_message("Não tenho permissão para alterar a cor deste cargo ou o servidor não possui nível de Boost necessário para gradientes :(", ephemeral=True)
+            await interaction.followup.send("Não tenho permissão para alterar a cor ou o servidor não tem Boost suficiente para gradientes :( consulte um administrador", ephemeral=True)
 
 class VipInviteView(ui.LayoutView):
     def __init__(self, role, dono, amigo, panel_view):
@@ -369,7 +428,11 @@ class VipRolePanel(ui.LayoutView):
         await interaction.response.send_modal(EditRoleColorModal(self.role, self))
 
     async def callback_gerenciar_membro(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user.id:
+            return await interaction.response.send_message("Você não pode gerenciar os amigos de um cargo que não é seu uwu", ephemeral=True)
+        
         await interaction.response.defer(ephemeral=False)
+
         membro_alvo = interaction.data['values'][0]
         membro = interaction.guild.get_member(int(membro_alvo))
 
@@ -393,11 +456,10 @@ class VipRolePanel(ui.LayoutView):
         membros_com_cargo = [m for m in self.role.members if m.id != self.user.id]
         if len(membros_com_cargo) >= 5:
             return await interaction.followup.send(
-                "⚠️ Você atingiu o limite máximo de **5 pessoas** compartilhando seu cargo.", 
+                "⚠️ Você atingiu o limite máximo de **5 pessoas** compartilhando seu cargo TwT", 
                 ephemeral=True
             )
         
-        # Cria a view de convite e envia no canal sem usar o parâmetro 'content'
         invite_view = VipInviteView(self.role, self.user, membro, self)
         msg_convite = await interaction.channel.send(view=invite_view)
         invite_view.message = msg_convite
@@ -411,6 +473,13 @@ class VipRolePanel(ui.LayoutView):
         )
 
     async def callback_deletar(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user.id:
+            return await interaction.response.send_message("Ei! Esse painel não é seu >:c", ephemeral=True)
+
+        # Abre a tela de confirmação de exclusão
+        confirm_view = ConfirmDeleteView(self.cog, self.user, self.role, self)
+        await interaction.response.edit_message(view=confirm_view)
+
         await interaction.response.defer(ephemeral=False)
         if self.role:
             try:
