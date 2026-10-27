@@ -1,16 +1,354 @@
 import discord
-from discord import app_commands
+from discord import app_commands, ui
 from discord.ext import commands
 
+class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
+    nome = ui.TextInput(
+        label="Nome do Cargo",
+        placeholder="Ex: Supremos do Ralsei",
+        min_length=1,
+        max_length=32
+    )
+    cor = ui.TextInput(
+        label="Cor Hexadecimal",
+        placeholder="Ex: #FF5733",
+        min_length=4,
+        max_length=7
+    )
+
+    def __init__(self, cog, panel_view=None):
+        super().__init__()
+        self.cog = cog
+        self.panel_view = panel_view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            color_obj = discord.Color.from_str(self.cor.value)
+        except ValueError:
+            return await interaction.followup.send(
+                embed=discord.Embed(title="Cor Inválida", description="Use o formato hexadecimal ex: `#FF5733` owo", color=discord.Color.red()),
+                ephemeral=True
+            )
+
+        try:
+            novo_cargo = await interaction.guild.create_role(
+                name=self.nome.value,
+                color=color_obj,
+                reason=f"Cargo VIP criado por {interaction.user}"
+            )
+
+            await interaction.user.add_roles(novo_cargo, reason="Cargo VIP criado pelo próprio usuário.")
+
+            await self.cog.col_vips.update_one(
+                {"_id": interaction.user.id, "guild_id": interaction.guild.id},
+                {"$set": {"role_id": novo_cargo.id}},
+                upsert=True
+            )
+
+            novo_painel = VipRolePanel(self.cog, interaction.user, novo_cargo)
+            novo_painel.build_interface()
+
+            await interaction.followup.send(
+                embed=discord.Embed(title="✨ Criado com Sucesso!", description=f"Seu cargo {novo_cargo.mention} foi criado! Gerencie-o abaixo ^w^", color=color_obj),
+                view=novo_painel,
+                ephemeral=True
+            )
+
+        except discord.Forbidden:
+            await interaction.followup.send(
+                embed=discord.Embed(title="Erro de Permissão", description="Não tenho permissão para criar cargos no servidor :( consulte um administrador", color=discord.Color.red()),
+                ephemeral=True
+            )
+        except Exception as e:
+            await interaction.followup.send(
+                embed=discord.Embed(title="Erro", description=f"Ocorreu um erro ao criar o cargo: `{e}`", color=discord.Color.red()),
+                ephemeral=True
+            )
+
+class VipCreatePromptView(ui.LayoutView):
+    def __init__(self, cog):
+        super().__init__(timeout=180)
+        self.cog = cog
+
+        container = ui.Container(accent_color=discord.Color.gold())
+        container.add_item(ui.TextDisplay(
+            "## 👑 Criador de Cargo VIP\n"
+            "Você ainda não possui um cargo personalizado no servidor!\n\n"
+            "Clique no botão abaixo para escolher o **nome** e a **cor** do seu cargo personalizado."
+        ))
+
+        row = ui.ActionRow()
+        btn_criar = ui.Button(label="Criar Meu Cargo VIP", style=discord.ButtonStyle.success, emoji="✨")
+        btn_criar.callback = self.press_criar
+        row.add_item(btn_criar)
+
+        container.add_item(row)
+        self.add_item(container)
+
+    async def press_criar(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(CreateRoleModal(self.cog, self))
+
+# ==========================================
+# MODAIS DE EDIÇÃO (NOME E COR)
+# ==========================================
+class EditRoleNameModal(ui.Modal, title="Altere Nome do Cargo"):
+    novo_nome = ui.TextInput(
+        label="Novo Nome do Cargo",
+        placeholder="Ex: Supremos do Ralsei",
+        min_length=1,
+        max_length=32
+    )
+
+    def __init__(self, role, view):
+        super().__init__()
+        self.role = role
+        self.view = view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            await self.role.edit(name=self.novo_nome.value, reason=f"Nome alterado por {interaction.user}")
+            
+            await self.view.refresh_panel(interaction)
+            await interaction.followup.send(
+                embed=discord.Embed(title="✏️ Nome Atualizado", description=f"O nome do cargo foi alterado para **{self.novo_nome.value}** ^w^", color=self.role.color),
+                ephemeral=True
+            )
+        except discord.Forbidden:
+            await interaction.response.send_message("Não tenho permissão para editar o nome deste cargo :( consulte um administrador", ephemeral=True)
+
+
+class EditRoleColorModal(ui.Modal, title="Altere a Cor do Cargo"):
+    nova_cor = ui.TextInput(
+        label="Nova Cor em Hexadecimal",
+        placeholder="Ex: #FF5733",
+        min_length=4,
+        max_length=7
+    )
+
+    def __init__(self, role, view):
+        super().__init__()
+        self.role = role
+        self.view = view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            color_obj = discord.Color.from_str(self.nova_cor.value)
+            await self.role.edit(color=color_obj, reason=f"Cor alterada por {interaction.user}")
+            
+            await self.view.refresh_panel(interaction)
+            await interaction.followup.send(
+                embed=discord.Embed(title="🎨 Cor Atualizada", description=f"A cor do cargo foi atualizada com sucesso uwu", color=color_obj),
+                ephemeral=True
+            )
+        except ValueError:
+            await interaction.response.send_message("Cor inválida! Use o formato hexadecimal, ex: `#FF5733` ksks", ephemeral=True)
+        except discord.Forbidden:
+            await interaction.response.send_message("Não tenho permissão para alterar a cor deste cargo :( consulte um administrador", ephemeral=True)
+
+
+class VipInviteView(ui.LayoutView):
+    def __init__(self, role, dono, amigo, panel_view):
+        super().__init__(timeout=180)
+        self.role = role
+        self.dono = dono
+        self.amigo = amigo
+        self.panel_view = panel_view
+
+        container = ui.Container(accent_color=role.color if role.color.value != 0 else discord.Color.blue())
+        container.add_item(ui.TextDisplay(
+            f"## 📜 Convite de Cargo VIP!\n"
+            f"{self.amigo.mention}, você recebeu um convite de {self.dono.mention} "
+            f"para receber o cargo personalizado {self.role.mention}!\n\n"
+            f"⏰ **Você tem 3 minutos para aceitar este convite ^w^**"
+        ))
+
+        row = ui.ActionRow()
+        btn_accept = ui.Button(label="Aceitar Convite", style=discord.ButtonStyle.success, emoji="✅")
+        btn_accept.callback = self.press_accept
+        row.add_item(btn_accept)
+
+        container.add_item(row)
+        self.add_item(container)
+
+    async def press_accept(self, interaction: discord.Interaction):
+        if interaction.user.id != self.amigo.id:
+            return await interaction.response.send_message("Este convite não é para você, bobinho >:3", ephemeral=True)
+
+        membros_atuais = [m for m in self.role.members if m.id != self.dono.id]
+        if len(membros_atuais) >= 5:
+            container_erro = ui.Container(accent_color=discord.Color.red())
+            container_erro.add_item(ui.TextDisplay("O limite de 5 membros para este cargo foi atingido antes de você aceitar."))
+            layout = ui.LayoutView()
+            layout.add_item(container_erro)
+            return await interaction.response.edit_message(view=layout)
+
+        try:
+            await self.amigo.add_roles(self.role, reason=f"Convite VIP aceito -> enviado por {self.dono})")
+            
+            container_sucesso = ui.Container(accent_color=discord.Color.green())
+            container_sucesso.add_item(ui.TextDisplay(
+                f"🎉 **Convite Aceito!**\n"
+                f"{self.amigo.mention} agora possui o cargo {self.role.mention}!"
+            ))
+            
+            layout = ui.LayoutView()
+            layout.add_item(container_sucesso)
+            await interaction.response.edit_message(view=layout)
+
+            if self.panel_view:
+                await self.panel_view.refresh_panel(interaction)
+
+        except discord.Forbidden:
+            await interaction.response.send_message("Não tenho permissão para atribuir este cargo :( consulte um administrador", ephemeral=True)
+
+    async def on_timeout(self):
+        container_expired = ui.Container(accent_color=discord.Color.dark_gray())
+        container_expired.add_item(ui.TextDisplay(f"⏰ **Convite Expirado**\nO tempo para aceitar o cargo {self.role.name} esgotou :("))
+        layout = ui.LayoutView()
+        layout.add_item(container_expired)
+        try:
+            if hasattr(self, "message") and self.message:
+                await self.message.edit(view=layout)
+        except Exception:
+            pass
+
+# ==========================================
+# PAINEL PRINCIPAL (LAYOUT V2)
+# ==========================================
+class VipRolePanel(ui.LayoutView):
+    def __init__(self, cog, user, role):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.user = user
+        self.role = role
+
+    def build_interface(self):
+        self.clear_items()
+
+        if not self.role:
+            container = ui.Container(accent_color=discord.Color.red())
+            container.add_item(ui.TextDisplay("Sryy, mas **o seu cargo VIP não existe mais no servidor.**\nUse `/cargo criar` para gerar um novo."))
+            self.add_item(container)
+            return
+
+        container = ui.Container(accent_color=self.role.color if self.role.color.value != 0 else discord.Color.blurple())
+
+        membros_com_cargo = [m.mention for m in self.role.members if m.id != self.user.id]
+        membros_str = ", ".join(membros_com_cargo) if membros_com_cargo else "_Nenhum amigo adicionado no momento_"
+
+        texto = (
+            f"## 👑 Painel do seu Cargo VIP\n"
+            f"**Cargo:** {self.role.mention}\n"
+            f"**Cor Hex:** `{str(self.role.color)}`\n\n"
+            f"👥 **Amigos com acesso ({len(membros_com_cargo)}/5):**\n"
+            f"{membros_str}\n\n"
+            f"-# Utilize os botões abaixo para gerenciar seu cargo personalizado."
+        )
+
+        container.add_item(ui.TextDisplay(texto))
+
+        # --- BOTÕES DE AÇÃO ---
+        row1 = ui.ActionRow()
+        
+        btn_nome = ui.Button(label="Editar Nome", style=discord.ButtonStyle.primary, emoji="✏️")
+        btn_nome.callback = self.callback_editar_nome
+
+        btn_cor = ui.Button(label="Mudar Cor", style=discord.ButtonStyle.secondary, emoji="🎨")
+        btn_cor.callback = self.callback_editar_cor
+
+        btn_deletar = ui.Button(label="Deletar Cargo", style=discord.ButtonStyle.danger, emoji="🗑️")
+        btn_deletar.callback = self.callback_deletar
+
+        row1.add_item(btn_nome)
+        row1.add_item(btn_cor)
+        row1.add_item(btn_deletar)
+        container.add_item(row1)
+
+        # --- SELETOR PARA ADICIONAR / REMOVER AMIGOS (Até 5) ---
+        row2 = ui.ActionRow()
+        select_membro = ui.UserSelect(
+            placeholder="Selecione um membro para dar/remover o cargo...",
+            min_values=1,
+            max_values=1
+        )
+        select_membro.callback = self.callback_gerenciar_membro
+        row2.add_item(select_membro)
+        container.add_item(row2)
+
+        self.add_item(container)
+
+    async def refresh_panel(self, interaction: discord.Interaction):
+        self.role = interaction.guild.get_role(self.role.id)
+        self.build_interface()
+        if interaction.response.is_done():
+            await interaction.edit_original_response(view=self)
+        else:
+            await interaction.response.edit_message(view=self)
+
+    async def callback_editar_nome(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(EditRoleNameModal(self.role, self))
+
+    async def callback_editar_cor(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(EditRoleColorModal(self.role, self))
+
+    async def callback_gerenciar_membro(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        membro_alvo = interaction.data['values'][0]
+        membro = interaction.guild.get_member(int(membro_alvo))
+
+        if not membro:
+            return await interaction.followup.send("Membro não encontrado :(", ephemeral=True)
+
+        if membro.bot:
+            return await interaction.followup.send("Você não pode atribuir seu cargo a bots, bobinho TwT", ephemeral=True)
+
+        if membro == interaction.user:
+            return await interaction.followup.send("Você já é o dono do cargo principal ksks", ephemeral=True)
+
+        if membro in self.role.members:
+            await membro.remove_roles(self.role, reason=f"Removido pelo dono do VIP ({interaction.user})")
+            await self.refresh_panel(interaction)
+            return await interaction.followup.send(embed=discord.Embed(title="🗑️ Removido", description=f"O cargo foi removido de {membro.mention}.", color=discord.Color.orange()), ephemeral=True)
+
+        membros_com_cargo = [m for m in self.role.members if m.id != self.user.id]
+        if len(membros_com_cargo) >= 5:
+            return await interaction.followup.send(embed=discord.Embed(title="⚠️ Limite Atingidowo", description="Você atingiu o limite máximo de **5 pessoas** compartilhando seu cargo.", color=discord.Color.orange()), ephemeral=True)
+        
+        invite_view = VipInviteView(self.role, self.user, membro, self)
+        msg_convite = await interaction.channel.send(content=f"{membro.mention}", view=invite_view)
+        invite_view.message = msg_convite
+
+        await interaction.followup.send(embed=discord.Embed(title="📩 Convite Enviado!", description=f"Um convite foi enviado para {membro.mention} no chat. Ele tem **3 minutos** para aceitar!", color=discord.Color.blue()), ephemeral=True)
+
+    async def callback_deletar(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        if self.role:
+            try:
+                await self.role.delete(reason=f"Deletado pelo dono ({interaction.user})")
+            except discord.Forbidden:
+                pass
+
+        await self.cog.col_vips.delete_one({"_id": self.user.id, "guild_id": interaction.guild.id})
+        
+        embed = discord.Embed(title="🗑️ Cargo Deletado", description="Seu cargo VIP foi excluído com sucesso. Use `/cargo criar` se quiser gerar outro UwU", color=discord.Color.green())
+        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.delete_original_response()
+
+
+# ==========================================
+# COG PRINCIPAL DE CARGOS VIP
+# ==========================================
 class VipRoles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    SERVER_ID = 1410006076400599235 
-    
+    SERVER_ID = 1410006076400599235  
+
     VIP_ROLE_IDS = [
-        1411874300952318126, # Espersso Premium
-        1415850384722886818  # Booster
+        1411874300952318126, # Espresso Premium
+        1415850384722886818 # Booster
     ]
 
     @property
@@ -24,14 +362,10 @@ class VipRoles(commands.Cog):
         guild_ids=[1410006076400599235]
     )
 
-    # ==========================================
-    # 1. /cargo criar
-    # ==========================================
-    @cargo_group.command(name="criar", description="Cria o seu cargo VIP personalizado.")
+    @cargo_group.command(name="criar", description="Cria o seu cargo VIP personalizado uwu")
     @app_commands.describe(
         nome="Nome do cargo",
         cor="Cor em Hexadecimal (ex: #FF5733)",
-        cor2="Segunda cor para gradiente (Opcional)",
         icone="Imagem opcional para ser o ícone do cargo"
     )
     async def cargo_criar(
@@ -39,7 +373,6 @@ class VipRoles(commands.Cog):
         interaction: discord.Interaction, 
         nome: str, 
         cor: str, 
-        cor2: str = None, 
         icone: discord.Attachment = None
     ):
         await interaction.response.defer(ephemeral=True)
@@ -49,49 +382,39 @@ class VipRoles(commands.Cog):
         eh_booster = interaction.user.premium_since is not None
 
         if not tem_cargo_vip and not eh_booster:
-            embed = discord.Embed(
-                title="Sinto Muito :(",
-                description="Massss apenas membros com **cargos VIP** ou **Server Boosters** podem criar um cargo personalizado!",
-                color=discord.Color.red()
+            return await interaction.followup.send(
+                embed=discord.Embed(title="Sinto muito :(", description="massss, apenas membros com **cargos VIP autorizados** ou **Server Boosters** podem criar um cargo personalizado!", color=discord.Color.red()),
+                ephemeral=True
             )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
 
         if self.col_vips is None:
-            embed = discord.Embed(
-                title="Erro no Banco",
-                description="O banco de dados está temporariamente offline :( consulte um administrador.",
-                color=discord.Color.red()
+            return await interaction.followup.send(
+                embed=discord.Embed(title="Erro TwT", description="Banco de dados offline :(", color=discord.Color.red()),
+                ephemeral=True
             )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
 
         registro = await self.col_vips.find_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
         if registro:
-            embed = discord.Embed(
-                title="Cargo já existe >:3",
-                description="Você já possui um cargo VIP criado! Use `/cargo deletar` se quiser remover o atual antes de criar outro.",
-                color=discord.Color.orange()
+            return await interaction.followup.send(
+                embed=discord.Embed(title="Aviso", description="Você já possui um cargo VIP criado! Use `/cargo painel` para gerenciá-lo, okay?", color=discord.Color.orange()),
+                ephemeral=True
             )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-        
+
         try:
             color_obj = discord.Color.from_str(cor)
         except ValueError:
-            embed = discord.Embed(
-                title="Cor Inválida",
-                description="Use o formato hexadecimal correto, por exemplo: `#FF5733` :3",
-                color=discord.Color.red()
+            return await interaction.followup.send(
+                embed=discord.Embed(title="Cor Inválida", description="Use o formato hexadecimal ex: `#FF5733` owo", color=discord.Color.red()),
+                ephemeral=True
             )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
 
         icon_bytes = None
         if icone:
             if not icone.content_type or not icone.content_type.startswith("image/"):
-                embed = discord.Embed(
-                    title="Arquivo Inválido :(",
-                    description="O anexo precisa ser uma imagem válida!",
-                    color=discord.Color.red()
+                return await interaction.followup.send(
+                    embed=discord.Embed(title="Erro", description="O anexo precisa ser uma imagem válida rsrs", color=discord.Color.red()),
+                    ephemeral=True
                 )
-                return await interaction.followup.send(embed=embed, ephemeral=True)
             icon_bytes = await icone.read()
 
         try:
@@ -99,10 +422,10 @@ class VipRoles(commands.Cog):
                 name=nome,
                 color=color_obj,
                 icon=icon_bytes,
-                reason=f"Cargo VIP criado por {interaction.user} ({interaction.user.id}) ^w^"
+                reason=f"Cargo VIP criado por {interaction.user}"
             )
 
-            await interaction.user.add_roles(novo_cargo, reason="Cargo VIP criado pelo próprio usuário :3")
+            await interaction.user.add_roles(novo_cargo, reason="Cargo VIP criado pelo próprio usuário.")
 
             await self.col_vips.update_one(
                 {"_id": interaction.user.id, "guild_id": interaction.guild.id},
@@ -110,282 +433,60 @@ class VipRoles(commands.Cog):
                 upsert=True
             )
 
-            embed = discord.Embed(
-                title="Cargo VIP Criado!",
-                description=f"Seu cargo VIP {novo_cargo.mention} foi criado e atribuído a você com sucesso UwU",
-                color=color_obj
+            await interaction.followup.send(
+                embed=discord.Embed(title="✨ Criado com Sucesso!", description=f"Seu cargo {novo_cargo.mention} foi criado! Use `/cargo painel` para abrir suas configurações ^w^", color=color_obj),
+                ephemeral=True
             )
-            await interaction.followup.send(embed=embed, ephemeral=True)
 
-        except discord.Forbidden:
-            embed = discord.Embed(
-                title="Sem Permissão",
-                description="Eu não tenho permissão para gerenciar cargos neste servidor. Consulte um administador.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception as e:
-            embed = discord.Embed(
-                title="Erro Inesperado",
-                description=f"Ocorreu um erro 'diferenciado' ao criar o cargo: `{e}`",
-                color=discord.Color.red()
+            await interaction.followup.send(
+                embed=discord.Embed(title="Erro", description=f"Ocorreu um erro ao criar o cargo: `{e}`", color=discord.Color.red()),
+                ephemeral=True
             )
-            await interaction.followup.send(embed=embed, ephemeral=True)
 
-    # ==========================================
-    # 2. /cargo atribuir (Até 5 pessoas)
-    # ==========================================
-    @cargo_group.command(name="atribuir", description="Atribui ou remove seu cargo VIP de um membro (máximo de 5 pessoas).")
-    @app_commands.describe(membro="Membro que receberá ou perderá o cargo")
-    async def cargo_atribuir(self, interaction: discord.Interaction, membro: discord.Member):
+    @cargo_group.command(name="painel", description="Abre o painel interativo de gerenciamento do seu cargo VIP.")
+    async def cargo_painel(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
+
+        # Checagem de VIP/Booster
+        user_roles = [role.id for role in interaction.user.roles]
+        tem_cargo_vip = any(role_id in self.VIP_ROLE_IDS for role_id in user_roles)
+        eh_booster = interaction.user.premium_since is not None
+
+        if not tem_cargo_vip and not eh_booster:
+            return await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Sinto muito :(", 
+                    description="Apenas membros com **cargos VIP autorizados** ou **Server Boosters** podem criar e gerenciar cargos personalizados!", 
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
 
         if self.col_vips is None:
-            embed = discord.Embed(
-                title="Erro no Banco",
-                description="O banco de dados está temporariamente offline :( consulte um administrador",
-                color=discord.Color.red()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
+            return await interaction.followup.send("Banco de dados offline, consulte um administrador owo", ephemeral=True)
 
         registro = await self.col_vips.find_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
-        if not registro:
-            embed = discord.Embed(
-                title="Nenhum Cargo Encontrado",
-                description="Você ainda não criou nenhum cargo VIP! Use `/cargo criar` antes de tuduwu",
-                color=discord.Color.orange()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        role = interaction.guild.get_role(registro["role_id"])
-        if not role:
-            embed = discord.Embed(
-                title="Cargo Excluído",
-                description="O seu cargo VIP foi deletado do servidor. Crie um novo com `/cargo criar` :3",
-                color=discord.Color.red()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        if membro.bot:
-            embed = discord.Embed(
-                title="Ação Inválida",
-                description="Você não pode atribuir seu cargo a bots, bobinho TwT",
-                color=discord.Color.red()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        if membro == interaction.user:
-            embed = discord.Embed(
-                title="Ação Inválida",
-                description="Você já possui o cargo principal ksks",
-                color=discord.Color.red()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        membros_com_cargo = [m for m in role.members if m.id != interaction.user.id]
-
-        if membro in role.members:
-            await membro.remove_roles(role, reason=f"Removido pelo dono do VIP ({interaction.user})")
-            embed = discord.Embed(
-                title="Cargo Removido!",
-                description=f"O cargo {role.mention} foi **removido** de {membro.mention}.",
-                color=discord.Color.orange()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-        else:
-            if len(membros_com_cargo) >= 5:
-                embed = discord.Embed(
-                    title="Limite Atingido",
-                    description="Você atingiu o limite máximo de **5 pessoas** compartilhando o seu cargo VIP.",
-                    color=discord.Color.orange()
-                )
-                return await interaction.followup.send(embed=embed, ephemeral=True)
-            
-            await membro.add_roles(role, reason=f"Atribuído pelo dono do VIP ({interaction.user})")
-            embed = discord.Embed(
-                title="Cargo Atribuído",
-                description=f"O cargo {role.mention} foi **atribuído** para {membro.mention} com sucesso!",
-                color=discord.Color.green()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-    # ==========================================
-    # 3. /cargo cor (Editar cor)
-    # ==========================================
-    @cargo_group.command(name="cor", description="Altera a cor do seu cargo VIP.")
-    @app_commands.describe(cor="Nova cor em formato Hexadecimal (ex: #00FFCC)")
-    async def cargo_cor(self, interaction: discord.Interaction, cor: str):
-        await interaction.response.defer(ephemeral=True)
-
-        registro = await self.col_vips.find_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
-        if not registro:
-            embed = discord.Embed(
-                title="Nenhum Cargo Encontrado",
-                description="Você não tem um cargo VIP criado, sry",
-                color=discord.Color.orange()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        role = interaction.guild.get_role(registro["role_id"])
-        if not role:
-            embed = discord.Embed(
-                title="Cargo Excluído",
-                description="Seu cargo VIP não existe mais no servidor, sryy",
-                color=discord.Color.red()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        try:
-            color_obj = discord.Color.from_str(cor)
-        except ValueError:
-            embed = discord.Embed(
-                title="Cor Inválida",
-                description="Código de cor inválido. Use o formato Hex ex: `#FF0000` >:3",
-                color=discord.Color.red()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        try:
-            await role.edit(color=color_obj, reason=f"Cor alterada por {interaction.user}")
-            embed = discord.Embed(
-                title="Cor Atualizada",
-                description=f"A cor do seu cargo {role.mention} foi atualizada com sucesso uwu",
-                color=color_obj
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-        except discord.Forbidden:
-            embed = discord.Embed(
-                title="Sem Permissão",
-                description="Não tenho permissão para editar este cargo :( consulte um administrador.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-
-    # ==========================================
-    # 4. /cargo deletar
-    # ==========================================
-    @cargo_group.command(name="deletar", description="Exclui permanentemente o seu cargo VIP atual.")
-    async def cargo_deletar(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
-
-        registro = await self.col_vips.find_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
-        if not registro:
-            embed = discord.Embed(
-                title="Nenhum Cargo Encontrado",
-                description="Você não possui nenhum cargo VIP registrado, sinto muito :(",
-                color=discord.Color.orange()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        role = interaction.guild.get_role(registro["role_id"])
-        if role:
-            try:
-                await role.delete(reason=f"Deletado pelo dono do VIP ({interaction.user})")
-            except discord.Forbidden:
-                pass
-
-        await self.col_vips.delete_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
         
-        embed = discord.Embed(
-            title="Cargo Deletado",
-            description="Seu cargo VIP foi deletado com sucesso. Agora você pode criar um novo se desejar ^w^",
-            color=discord.Color.green()
-        )
-        await interaction.followup.send(embed=embed, ephemeral=True)
-
-    # ==========================================
-    # 5. /cargo nome (Editar nome do cargo)
-    # ==========================================
-    @cargo_group.command(name="nome", description="Altera o nome do seu cargo VIP.")
-    @app_commands.describe(nome="Novo nome para o seu cargo")
-    async def cargo_nome(self, interaction: discord.Interaction, nome: str):
-        await interaction.response.defer(ephemeral=True)
-
-        registro = await self.col_vips.find_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
         if not registro:
-            embed = discord.Embed(
-                title="Nenhum Cargo Encontrado",
-                description="Você não tem um cargo VIP criado, sorryyyyy :(",
-                color=discord.Color.orange()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
+            prompt_view = VipCreatePromptView(self)
+            return await interaction.followup.send(view=prompt_view, ephemeral=True)
 
         role = interaction.guild.get_role(registro["role_id"])
+
         if not role:
-            embed = discord.Embed(
-                title="Cargo Excluído",
-                description="Seu cargo VIP não existe mais no servidor rsrs",
-                color=discord.Color.red()
+            await self.col_vips.delete_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
+            prompt_view = VipCreatePromptView(self)
+            return await interaction.followup.send(
+                embed=discord.Embed(title="Cargo Não Encontrado :(", description="Seu cargo VIP antigo foi removido do servidor. Você pode criar um novo abaixo!", color=discord.Color.orange()),
+                view=prompt_view, 
+                ephemeral=True
             )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
 
-        try:
-            await role.edit(name=nome, reason=f"Nome alterado por {interaction.user}")
-            embed = discord.Embed(
-                title="Nome Atualizado",
-                description=f"O nome do seu cargo {role.mention} foi alterado para **{nome}** com sucesso owo",
-                color=role.color
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-        except discord.Forbidden:
-            embed = discord.Embed(
-                title="Sem Permissão",
-                description="Não tenho permissão para editar o nome deste cargo :( consulte um administrador",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
+        view = VipRolePanel(self, interaction.user, role)
+        view.build_interface()
 
-    # ==========================================
-    # 6. /cargo icone (Editar ícone do cargo)
-    # ==========================================
-    @cargo_group.command(name="icone", description="Altera a imagem/ícone do seu cargo VIP.")
-    @app_commands.describe(icone="Nova imagem para o ícone do cargo")
-    async def cargo_icone(self, interaction: discord.Interaction, icone: discord.Attachment):
-        await interaction.response.defer(ephemeral=True)
-
-        registro = await self.col_vips.find_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
-        if not registro:
-            embed = discord.Embed(
-                title="Nenhum Cargo Encontrado",
-                description="Você não tem um cargo VIP criado, sorryy",
-                color=discord.Color.orange()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        role = interaction.guild.get_role(registro["role_id"])
-        if not role:
-            embed = discord.Embed(
-                title="Cargo Excluído",
-                description="Seu cargo VIP não existe mais no servidor owo",
-                color=discord.Color.red()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        if not icone.content_type or not icone.content_type.startswith("image/"):
-            embed = discord.Embed(
-                title="Arquivo Inválido",
-                description="O anexo precisa ser uma imagem válida!",
-                color=discord.Color.red()
-            )
-            return await interaction.followup.send(embed=embed, ephemeral=True)
-
-        try:
-            icon_bytes = await icone.read()
-            await role.edit(icon=icon_bytes, reason=f"Ícone alterado por {interaction.user}")
-            
-            embed = discord.Embed(
-                title="Ícone Atualizado",
-                description=f"O ícone do seu cargo {role.mention} foi atualizado com sucesso ^w^",
-                color=role.color
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-        except discord.Forbidden:
-            embed = discord.Embed(
-                title="Sem Permissão",
-                description="Não tenho permissão para alterar o ícone (servidor não tem level 2).",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.followup.send(view=view, ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(VipRoles(bot))
