@@ -358,6 +358,15 @@ class VipRolePanel(ui.LayoutView):
         self.user = user
         self.role = role
 
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message(
+                "Ei! Este painel de cargo VIP pertence a outra pessoa. Você não pode mexer nele >:c",
+                ephemeral=True
+            )
+            return False
+        return True
+
     def build_interface(self):
         self.clear_items()
 
