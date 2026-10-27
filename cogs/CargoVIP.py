@@ -403,7 +403,7 @@ class VipRoles(commands.Cog):
         view = VipRolePanel(self, interaction.user, role)
         view.build_interface()
 
-        await interaction.followup.send(view=view, ephemeral=True)
+        await interaction.followup.send(view=view)
 
 async def setup(bot):
     await bot.add_cog(VipRoles(bot))
