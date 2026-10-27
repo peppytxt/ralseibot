@@ -29,7 +29,7 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
         self.prompt_interaction = prompt_interaction 
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
 
         ID_CARGO_ANCORA = 1410303016980054087
 
