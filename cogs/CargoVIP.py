@@ -29,7 +29,29 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
         self.prompt_interaction = prompt_interaction 
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
+
+        # 🔒 PROTEÇÃO EXTRA: Verifica se o usuário já tem um cargo criado no banco
+        registro_existente = await self.cog.col_vips.find_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
+        if registro_existente:
+            cargo_atual = interaction.guild.get_role(registro_existente["role_id"])
+            if cargo_atual:
+                # Se já tem um cargo válido, cancela a criação duplicada e abre o painel direto
+                painel_existente = VipRolePanel(self.cog, interaction.user, cargo_atual)
+                painel_existente.build_interface()
+                
+                container_aviso = ui.Container(accent_color=discord.Color.orange())
+                container_aviso.add_item(ui.TextDisplay(
+                    "**Atenção:** Você já possui um cargo personalizado criado >:3\n"
+                    "Gerencie o seu atual abaixo:"
+                ))
+                
+                view_aviso = ui.LayoutView()
+                view_aviso.add_item(container_aviso)
+                for item in painel_existente.children:
+                    view_aviso.add_item(item)
+
+                return await interaction.followup.send(view=view_aviso, ephemeral=True)
 
         ID_CARGO_ANCORA = 1410303016980054087
 
@@ -39,7 +61,7 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
             kwargs = {
                 "name": self.nome.value,
                 "color": color_obj,
-                "reason": f"Cargo VIP criado por {interaction.user}"
+                "reason": f"Cargo personalizado criado por {interaction.user}"
             }
 
             if self.segunda_cor.value and self.segunda_cor.value.strip():
@@ -398,7 +420,7 @@ class VipRolePanel(ui.LayoutView):
 
         await self.cog.col_vips.delete_one({"_id": self.user.id, "guild_id": interaction.guild.id})
         
-        embed = discord.Embed(title="🗑️ Cargo Deletado", description="Seu cargo VIP foi excluído com sucesso. Use `/cargo criar` se quiser gerar outro UwU", color=discord.Color.green())
+        embed = discord.Embed(title="🗑️ Cargo Deletado", description="Seu cargo VIP personalizado foi excluído com sucesso. Use `/cargo criar` se quiser gerar outro UwU", color=discord.Color.green())
         await interaction.followup.send(embed=embed)
         await interaction.delete_original_response()
 
@@ -461,7 +483,7 @@ class VipRoles(commands.Cog):
             await self.col_vips.delete_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
             prompt_view = VipCreatePromptView(self)
             return await interaction.followup.send(
-                embed=discord.Embed(title="Cargo Não Encontrado :(", description="Seu cargo VIP antigo foi removido do servidor. Você pode criar um novo abaixo!", color=discord.Color.orange()),
+                embed=discord.Embed(title="Cargo Não Encontrado :(", description="Seu cargo personalizado antigo foi removido do servidor. Você pode criar um novo abaixo!", color=discord.Color.orange()),
                 view=prompt_view
             )
 
