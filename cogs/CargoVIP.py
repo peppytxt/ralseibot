@@ -1,6 +1,7 @@
 import discord
 from discord import app_commands, ui
 from discord.ext import commands
+
 class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
     nome = ui.TextInput(
         label="Nome do Cargo",
@@ -30,6 +31,9 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
+        # ID do cargo âncora/separador
+        ID_CARGO_ANCORA = 1410303016980054087
+
         try:
             color_obj = discord.Color.from_str(self.cor.value)
             
@@ -51,6 +55,15 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
 
         try:
             novo_cargo = await interaction.guild.create_role(**kwargs)
+
+            cargo_ancora = interaction.guild.get_role(ID_CARGO_ANCORA)
+            if cargo_ancora:
+                posicao_desejada = max(1, cargo_ancora.position - 1)
+                try:
+                    await novo_cargo.edit(position=posicao_desejada)
+                except discord.HTTPException:
+                    pass
+                
             await interaction.user.add_roles(novo_cargo, reason="Cargo VIP criado pelo próprio usuário.")
 
             await self.cog.col_vips.update_one(
@@ -63,14 +76,14 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
             novo_painel.build_interface()
 
             await interaction.followup.send(
-                content=f"✨ **Criado com Sucesso!** Seu cargo {novo_cargo.mention} foi gerado. Gerencie-o abaixo:",
+                content=f"✨ **Criado com Sucesso!** Seu cargo {novo_cargo.mention} foi gerado abaixo do cargo separador. Gerencie-o abaixo:",
                 view=novo_painel,
                 ephemeral=True
             )
 
         except discord.Forbidden:
             await interaction.followup.send(
-                "Não tenho permissão para criar cargos ou o servidor não atinge os requisitos de Boost para gradientes :(",
+                "Não tenho permissão para criar/gerenciar cargos ou o servidor não atinge os requisitos de Boost para gradientes :(",
                 ephemeral=True
             )
         except Exception as e:
