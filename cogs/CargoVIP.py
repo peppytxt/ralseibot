@@ -23,15 +23,14 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
         required=False
     )
 
-    def __init__(self, cog, panel_view=None):
+    def __init__(self, cog, prompt_interaction=None):
         super().__init__()
         self.cog = cog
-        self.panel_view = panel_view
+        self.prompt_interaction = prompt_interaction 
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
-        # ID do cargo âncora/separador
         ID_CARGO_ANCORA = 1410303016980054087
 
         try:
@@ -63,7 +62,7 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
                     await novo_cargo.edit(position=posicao_desejada)
                 except discord.HTTPException:
                     pass
-                
+
             await interaction.user.add_roles(novo_cargo, reason="Cargo VIP criado pelo próprio usuário.")
 
             await self.cog.col_vips.update_one(
@@ -75,11 +74,26 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
             novo_painel = VipRolePanel(self.cog, interaction.user, novo_cargo)
             novo_painel.build_interface()
 
-            await interaction.followup.send(
-                content=f"✨ **Criado com Sucesso!** Seu cargo {novo_cargo.mention} foi gerado abaixo do cargo separador. Gerencie-o abaixo:",
-                view=novo_painel,
-                ephemeral=True
-            )
+            container_sucesso = ui.Container(accent_color=color_obj)
+            container_sucesso.add_item(ui.TextDisplay(
+                f"✨ **Criado com Sucesso!**\n"
+                f"Seu cargo {novo_cargo.mention} foi gerado e posicionado corretamente.\n\n"
+                f"-# Gerencie-o através do painel abaixo:"
+            ))
+            
+            view_final = ui.LayoutView()
+            view_final.add_item(container_sucesso)
+            
+            for item in novo_painel.children:
+                view_final.add_item(item)
+
+            await interaction.followup.send(view=view_final, ephemeral=True)
+
+            if self.prompt_interaction:
+                try:
+                    await self.prompt_interaction.delete_original_response()
+                except Exception:
+                    pass
 
         except discord.Forbidden:
             await interaction.followup.send(
