@@ -77,7 +77,7 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
             container_sucesso = ui.Container(accent_color=color_obj)
             container_sucesso.add_item(ui.TextDisplay(
                 f"✨ **Criado com Sucesso!**\n"
-                f"Seu cargo {novo_cargo.mention} foi gerado e posicionado corretamente.\n\n"
+                f"Seu cargo {novo_cargo.mention} foi criado ^w^.\n\n"
                 f"-# Gerencie-o através do painel abaixo:"
             ))
             
