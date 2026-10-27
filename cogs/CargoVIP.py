@@ -397,8 +397,7 @@ class VipRoles(commands.Cog):
             prompt_view = VipCreatePromptView(self)
             return await interaction.followup.send(
                 embed=discord.Embed(title="Cargo Não Encontrado :(", description="Seu cargo VIP antigo foi removido do servidor. Você pode criar um novo abaixo!", color=discord.Color.orange()),
-                view=prompt_view, 
-                ephemeral=True
+                view=prompt_view,
             )
 
         view = VipRolePanel(self, interaction.user, role)
