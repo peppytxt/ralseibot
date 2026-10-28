@@ -367,7 +367,7 @@ class VipInviteView(ui.LayoutView):
 
         cargo_atualizado = interaction.guild.get_role(self.role.id)
         if not cargo_atualizado:
-            return await interaction.response.send_message("❌ Este cargo não existe mais.", ephemeral=True)
+            return await interaction.response.send_message("Este cargo não existe mais.", ephemeral=True)
 
         membros_atuais = [m for m in cargo_atualizado.members if m.id != self.dono.id]
         
