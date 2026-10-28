@@ -310,12 +310,12 @@ class EditRoleIconModal(ui.Modal, title="Alterar Ícone do Cargo"):
                         if resp.status == 200:
                             icon_bytes = await resp.read()
                         else:
-                            return await interaction.followup.send("Não foi possível baixar a imagem do link fornecido. Verifique se a URL é válida.", ephemeral=True)
+                            return await interaction.followup.send("❌ Não foi possível baixar a imagem do link fornecido. Verifique se a URL é válida.", ephemeral=True)
             except Exception:
-                return await interaction.followup.send("Erro ao processar o link da imagem. Certifique-se de que é um link direto de imagem.", ephemeral=True)
+                return await interaction.followup.send("❌ Erro ao processar o link da imagem. Certifique-se de que é um link direto de imagem.", ephemeral=True)
 
         try:
-            await self.role.edit(icon=icon_bytes, reason=f"Ícone alterado por {interaction.user}")
+            await self.role.edit(display_icon=icon_bytes, reason=f"Ícone alterado por {interaction.user}")
             
             await self.view.refresh_panel(interaction)
             
