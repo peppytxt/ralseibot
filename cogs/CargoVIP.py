@@ -344,6 +344,8 @@ class VipInviteView(ui.LayoutView):
         self.dono = dono
         self.amigo = amigo
         self.panel_view = panel_view
+        self.is_accepted = False
+        self.message = None
 
         container = ui.Container(accent_color=role.color if role.color.value != 0 else discord.Color.blue())
         container.add_item(ui.TextDisplay(
@@ -365,6 +367,8 @@ class VipInviteView(ui.LayoutView):
         if interaction.user.id != self.amigo.id:
             return await interaction.response.send_message("Este convite não é para você, bobinho >:3", ephemeral=True)
 
+        self.is_accepted = True
+
         cargo_atualizado = interaction.guild.get_role(self.role.id)
         if not cargo_atualizado:
             return await interaction.response.send_message("Este cargo não existe mais.", ephemeral=True)
@@ -373,7 +377,7 @@ class VipInviteView(ui.LayoutView):
         
         if len(membros_atuais) >= 5:
             container_erro = ui.Container(accent_color=discord.Color.red())
-            container_erro.add_item(ui.TextDisplay("❌ O limite máximo de **5 membros** compartilhando este cargo já foi atingido!"))
+            container_erro.add_item(ui.TextDisplay("O limite máximo de **5 membros** compartilhando este cargo já foi atingido!"))
             layout = ui.LayoutView()
             layout.add_item(container_erro)
             return await interaction.response.edit_message(view=layout)
@@ -398,7 +402,7 @@ class VipInviteView(ui.LayoutView):
             await interaction.response.send_message("Não tenho permissão para atribuir este cargo :( consulte um administrador", ephemeral=True)
 
     async def on_timeout(self):
-        if getattr(self, "is_accepted", False):
+        if self.is_accepted:
             return
 
         container_expired = ui.Container(accent_color=discord.Color.dark_gray())
@@ -406,7 +410,7 @@ class VipInviteView(ui.LayoutView):
         layout = ui.LayoutView()
         layout.add_item(container_expired)
         try:
-            if hasattr(self, "message") and self.message:
+            if self.message:
                 await self.message.edit(view=layout)
         except Exception:
             pass
@@ -541,7 +545,7 @@ class VipRolePanel(ui.LayoutView):
         
         invite_view = VipInviteView(self.role, self.user, membro, self)
         msg_convite = await interaction.channel.send(view=invite_view)
-        invite_view.message = msg_convite
+        invite_view.message = msg_convite  # <-- Essencial para o on_timeout saber qual mensagem editar!
 
         await interaction.followup.send(
             embed=discord.Embed(
