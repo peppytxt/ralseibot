@@ -153,7 +153,7 @@ class VipCreatePromptView(ui.LayoutView):
 
         if not tem_cargo_vip and not eh_booster:
             return await interaction.response.send_message(
-                "Apenas membros com **cargos VIP autorizados** ou **Boosters** podem criar um cargo personalizado!",
+                "Apenas membros com **cargos VIP autorizados** ou **Boosters** podem criar um cargo personalizado rsrs",
                 ephemeral=True
             )
 
