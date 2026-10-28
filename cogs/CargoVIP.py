@@ -347,27 +347,34 @@ class VipInviteView(ui.LayoutView):
         self.is_accepted = False
         self.message = None
 
-        container = ui.Container(accent_color=role.color if role.color.value != 0 else discord.Color.blue())
-        container.add_item(ui.TextDisplay(
+        self.container = ui.Container(accent_color=role.color if role.color.value != 0 else discord.Color.blue())
+        self.container.add_item(ui.TextDisplay(
             f"## 📜 Convite de Cargo VIP!\n"
             f"{self.amigo.mention}, você recebeu um convite de {self.dono.mention} "
             f"para receber o cargo personalizado {self.role.mention}!\n\n"
             f"⏰ **Você tem 3 minutos para aceitar este convite ^w^**"
         ))
 
-        row = ui.ActionRow()
-        btn_accept = ui.Button(label="Aceitar Convite", style=discord.ButtonStyle.success, emoji="✅")
-        btn_accept.callback = self.press_accept
-        row.add_item(btn_accept)
+        self.row = ui.ActionRow()
+        self.btn_accept = ui.Button(label="Aceitar Convite", style=discord.ButtonStyle.success, emoji="✅")
+        self.btn_accept.callback = self.press_accept
+        self.row.add_item(self.btn_accept)
 
-        container.add_item(row)
-        self.add_item(container)
+        self.container.add_item(self.row)
+        self.add_item(self.container)
 
     async def press_accept(self, interaction: discord.Interaction):
         if interaction.user.id != self.amigo.id:
             return await interaction.response.send_message("Este convite não é para você, bobinho >:3", ephemeral=True)
 
+        if self.is_accepted:
+            return await interaction.response.send_message("Este convite já foi aceito!", ephemeral=True)
+
         self.is_accepted = True
+
+        self.btn_accept.disabled = True
+        self.btn_accept.label = "Convite Aceito!"
+        self.btn_accept.style = discord.ButtonStyle.secondary
 
         cargo_atualizado = interaction.guild.get_role(self.role.id)
         if not cargo_atualizado:
@@ -377,26 +384,24 @@ class VipInviteView(ui.LayoutView):
         
         if len(membros_atuais) >= 5:
             container_erro = ui.Container(accent_color=discord.Color.red())
-            container_erro.add_item(ui.TextDisplay("O limite máximo de **5 membros** compartilhando este cargo já foi atingido!"))
+            container_erro.add_item(ui.TextDisplay("O limite máximo de **5 membros** compartilhando este cargo já foi atingido ksks"))
             layout = ui.LayoutView()
             layout.add_item(container_erro)
             return await interaction.response.edit_message(view=layout)
 
         try:
             await self.amigo.add_roles(cargo_atualizado, reason=f"Convite VIP aceito (enviado por {self.dono})")
-            
+
             container_sucesso = ui.Container(accent_color=discord.Color.green())
             container_sucesso.add_item(ui.TextDisplay(
-                f"🎉 **Convite Aceito!**\n"
-                f"{self.amigo.mention} agora possui o cargo {cargo_atualizado.mention}!"
+                f"🎉 **Convite Aceito com Sucesso!**\n"
+                f"{self.amigo.mention} agora possui o cargo {cargo_atualizado.mention} ✨"
             ))
             
             layout = ui.LayoutView()
             layout.add_item(container_sucesso)
-            await interaction.response.send_message(view=layout)
-
-            if self.panel_view:
-                await self.panel_view.refresh_panel(interaction)
+            
+            await interaction.response.edit_message(view=layout)
 
         except discord.Forbidden:
             await interaction.response.send_message("Não tenho permissão para atribuir este cargo :( consulte um administrador", ephemeral=True)
@@ -416,7 +421,7 @@ class VipInviteView(ui.LayoutView):
             pass
 
 # ==========================================
-# PAINEL PRINCIPAL (LAYOUT V2)
+# PAINEL PRINCIPAL
 # ==========================================
 class VipRolePanel(ui.LayoutView):
     def __init__(self, cog, user, role):
