@@ -282,6 +282,53 @@ class EditRoleColorModal(ui.Modal, title="Altere a Cor do Cargo"):
         except discord.Forbidden:
             await interaction.followup.send("Não tenho permissão para alterar a cor ou o servidor não tem Boost suficiente para gradientes :( consulte um administrador", ephemeral=True)
 
+class EditRoleIconModal(ui.Modal, title="Alterar Ícone do Cargo"):
+    url_icone = ui.TextInput(
+        label="Link Direto da Imagem (URL)",
+        placeholder="https://exemplo.com/icone.png (Deixe vazio para remover)",
+        min_length=0,
+        max_length=500,
+        required=False
+    )
+
+    def __init__(self, role, view):
+        super().__init__()
+        self.role = role
+        self.view = view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        url = self.url_icone.value.strip()
+        icon_bytes = None
+
+        if url:
+            import aiohttp
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as resp:
+                        if resp.status == 200:
+                            icon_bytes = await resp.read()
+                        else:
+                            return await interaction.followup.send("Não foi possível baixar a imagem do link fornecido. Verifique se a URL é válida.", ephemeral=True)
+            except Exception:
+                return await interaction.followup.send("Erro ao processar o link da imagem. Certifique-se de que é um link direto de imagem.", ephemeral=True)
+
+        try:
+            await self.role.edit(icon=icon_bytes, reason=f"Ícone alterado por {interaction.user}")
+            
+            await self.view.refresh_panel(interaction)
+            
+            container_icon = ui.Container(accent_color=self.role.color)
+            container_icon.add_item(ui.TextDisplay("✨ **Ícone Atualizado com Sucesso!** O ícone do seu cargo foi modificaduwu"))
+            view_icon = ui.LayoutView()
+            view_icon.add_item(container_icon)
+            
+            await interaction.followup.send(view=view_icon, ephemeral=True)
+
+        except discord.Forbidden:
+            await interaction.followup.send("Não tenho permissão para alterar o ícone ou o servidor não atinge o nível de Boost necessário para ícones de cargo :(", ephemeral=True)
+
 class VipInviteView(ui.LayoutView):
     def __init__(self, role, dono, amigo, panel_view):
         super().__init__(timeout=180)
@@ -401,11 +448,15 @@ class VipRolePanel(ui.LayoutView):
         btn_cor = ui.Button(label="Mudar Cor", style=discord.ButtonStyle.secondary, emoji="🎨")
         btn_cor.callback = self.callback_editar_cor
 
+        btn_icone = ui.Button(label="Mudar Ícone", style=discord.ButtonStyle.secondary, emoji="🖼️")
+        btn_icone.callback = self.callback_editar_icone
+
         btn_deletar = ui.Button(label="Deletar Cargo", style=discord.ButtonStyle.danger, emoji="🗑️")
         btn_deletar.callback = self.callback_deletar
 
         row1.add_item(btn_nome)
         row1.add_item(btn_cor)
+        row1.add_item(btn_icone)
         row1.add_item(btn_deletar)
         container.add_item(row1)
 
@@ -432,6 +483,9 @@ class VipRolePanel(ui.LayoutView):
 
     async def callback_editar_nome(self, interaction: discord.Interaction):
         await interaction.response.send_modal(EditRoleNameModal(self.role, self))
+
+    async def callback_editar_icone(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(EditRoleIconModal(self.role, self))
 
     async def callback_editar_cor(self, interaction: discord.Interaction):
         await interaction.response.send_modal(EditRoleColorModal(self.role, self))
