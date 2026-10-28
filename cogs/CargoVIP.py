@@ -393,7 +393,7 @@ class VipInviteView(ui.LayoutView):
             
             layout = ui.LayoutView()
             layout.add_item(container_sucesso)
-            await interaction.response.edit_message(view=layout)
+            await interaction.response.send_message(view=layout)
 
             if self.panel_view:
                 await self.panel_view.refresh_panel(interaction)
