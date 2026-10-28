@@ -147,7 +147,17 @@ class VipCreatePromptView(ui.LayoutView):
         self.add_item(container)
 
     async def press_criar(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(CreateRoleModal(self.cog, self))
+        user_roles = [role.id for role in interaction.user.roles]
+        tem_cargo_vip = any(role_id in self.cog.VIP_ROLE_IDS for role_id in user_roles)
+        eh_booster = interaction.user.premium_since is not None
+
+        if not tem_cargo_vip and not eh_booster:
+            return await interaction.response.send_message(
+                "Apenas membros com **cargos VIP autorizados** ou **Boosters** podem criar um cargo personalizado!",
+                ephemeral=True
+            )
+
+        await interaction.response.send_modal(CreateRoleModal(self.cog, interaction))
 
 class ConfirmDeleteView(ui.LayoutView):
     def __init__(self, cog, user, role, panel_view):
