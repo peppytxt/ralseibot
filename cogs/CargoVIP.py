@@ -414,7 +414,7 @@ class VipInviteView(ui.LayoutView):
                     for child in self.panel_view.children:
                         view_notif.add_item(child)
 
-                    await interaction.followup.send(view=view_notif)
+                    await interaction.followup.send(view=view_notif, allowed_mentions=discord.AllowedMentions.none())
                 except Exception:
                     pass
 
