@@ -365,21 +365,26 @@ class VipInviteView(ui.LayoutView):
         if interaction.user.id != self.amigo.id:
             return await interaction.response.send_message("Este convite não é para você, bobinho >:3", ephemeral=True)
 
-        membros_atuais = [m for m in self.role.members if m.id != self.dono.id]
+        cargo_atualizado = interaction.guild.get_role(self.role.id)
+        if not cargo_atualizado:
+            return await interaction.response.send_message("❌ Este cargo não existe mais.", ephemeral=True)
+
+        membros_atuais = [m for m in cargo_atualizado.members if m.id != self.dono.id]
+        
         if len(membros_atuais) >= 5:
             container_erro = ui.Container(accent_color=discord.Color.red())
-            container_erro.add_item(ui.TextDisplay("O limite de 5 membros para este cargo foi atingido antes de você aceitar."))
+            container_erro.add_item(ui.TextDisplay("❌ O limite máximo de **5 membros** compartilhando este cargo já foi atingido!"))
             layout = ui.LayoutView()
             layout.add_item(container_erro)
             return await interaction.response.edit_message(view=layout)
 
         try:
-            await self.amigo.add_roles(self.role, reason=f"Convite VIP aceito -> enviado por {self.dono})")
+            await self.amigo.add_roles(cargo_atualizado, reason=f"Convite VIP aceito (enviado por {self.dono})")
             
             container_sucesso = ui.Container(accent_color=discord.Color.green())
             container_sucesso.add_item(ui.TextDisplay(
                 f"🎉 **Convite Aceito!**\n"
-                f"{self.amigo.mention} agora possui o cargo {self.role.mention}!"
+                f"{self.amigo.mention} agora possui o cargo {cargo_atualizado.mention}!"
             ))
             
             layout = ui.LayoutView()
@@ -393,8 +398,11 @@ class VipInviteView(ui.LayoutView):
             await interaction.response.send_message("Não tenho permissão para atribuir este cargo :( consulte um administrador", ephemeral=True)
 
     async def on_timeout(self):
+        if getattr(self, "is_accepted", False):
+            return
+
         container_expired = ui.Container(accent_color=discord.Color.dark_gray())
-        container_expired.add_item(ui.TextDisplay(f"⏰ **Convite Expirado**\nO tempo para aceitar o cargo {self.role.name} esgotou :("))
+        container_expired.add_item(ui.TextDisplay(f"⏰ **Convite Expirado**\nO tempo para aceitar o cargo {self.role.name} esgotou."))
         layout = ui.LayoutView()
         layout.add_item(container_expired)
         try:
