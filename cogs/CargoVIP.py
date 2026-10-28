@@ -545,7 +545,7 @@ class VipRolePanel(ui.LayoutView):
         
         invite_view = VipInviteView(self.role, self.user, membro, self)
         msg_convite = await interaction.channel.send(view=invite_view)
-        invite_view.message = msg_convite  # <-- Essencial para o on_timeout saber qual mensagem editar!
+        invite_view.message = msg_convite
 
         await interaction.followup.send(
             embed=discord.Embed(
