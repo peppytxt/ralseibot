@@ -31,12 +31,10 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
-        # 🔒 PROTEÇÃO EXTRA: Verifica se o usuário já tem um cargo criado no banco
         registro_existente = await self.cog.col_vips.find_one({"_id": interaction.user.id, "guild_id": interaction.guild.id})
         if registro_existente:
             cargo_atual = interaction.guild.get_role(registro_existente["role_id"])
             if cargo_atual:
-                # Se já tem um cargo válido, cancela a criação duplicada e abre o painel direto
                 painel_existente = VipRolePanel(self.cog, interaction.user, cargo_atual)
                 painel_existente.build_interface()
                 
@@ -310,9 +308,9 @@ class EditRoleIconModal(ui.Modal, title="Alterar Ícone do Cargo"):
                         if resp.status == 200:
                             icon_bytes = await resp.read()
                         else:
-                            return await interaction.followup.send("❌ Não foi possível baixar a imagem do link fornecido. Verifique se a URL é válida.", ephemeral=True)
+                            return await interaction.followup.send("Não foi possível baixar a imagem do link fornecido. Verifique se a URL é válida.", ephemeral=True)
             except Exception:
-                return await interaction.followup.send("❌ Erro ao processar o link da imagem. Certifique-se de que é um link direto de imagem.", ephemeral=True)
+                return await interaction.followup.send("Erro ao processar o link da imagem. Certifique-se de que é um link direto de imagem owo", ephemeral=True)
 
         try:
             await self.role.edit(display_icon=icon_bytes, reason=f"Ícone alterado por {interaction.user}")
