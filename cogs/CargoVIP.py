@@ -406,7 +406,7 @@ class VipInviteView(ui.LayoutView):
                     container_notif = ui.Container(accent_color=discord.Color.blue())
                     container_notif.add_item(ui.TextDisplay(
                         f"🔔 {self.dono.mention}, {self.amigo.mention} aceitou o seu convite!\n"
-                        f"-# A lista de membros do seu cargo foi atualizada:"
+                        f"-# A lista de membros do seu cargo foi atualizada :3"
                     ))
                     
                     view_notif = ui.LayoutView()
@@ -414,7 +414,7 @@ class VipInviteView(ui.LayoutView):
                     for child in self.panel_view.children:
                         view_notif.add_item(child)
 
-                    await interaction.followup.send(view=view_notif, ephemeral=True)
+                    await interaction.followup.send(view=view_notif)
                 except Exception:
                     pass
 
