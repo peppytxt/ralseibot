@@ -356,7 +356,7 @@ class VipInviteView(ui.LayoutView):
         ))
 
         self.row = ui.ActionRow()
-        self.btn_accept = ui.Button(label="Aceitar Convite", style=discord.ButtonStyle.success, emoji="✅")
+        self.btn_accept = ui.Button(label="Aceitar Cargo", style=discord.ButtonStyle.success, emoji="✅")
         self.btn_accept.callback = self.press_accept
         self.row.add_item(self.btn_accept)
 
@@ -372,10 +372,6 @@ class VipInviteView(ui.LayoutView):
 
         self.is_accepted = True
 
-        self.btn_accept.disabled = True
-        self.btn_accept.label = "Convite Aceito!"
-        self.btn_accept.style = discord.ButtonStyle.secondary
-
         cargo_atualizado = interaction.guild.get_role(self.role.id)
         if not cargo_atualizado:
             return await interaction.response.send_message("Este cargo não existe mais.", ephemeral=True)
@@ -384,24 +380,43 @@ class VipInviteView(ui.LayoutView):
         
         if len(membros_atuais) >= 5:
             container_erro = ui.Container(accent_color=discord.Color.red())
-            container_erro.add_item(ui.TextDisplay("O limite máximo de **5 membros** compartilhando este cargo já foi atingido ksks"))
+            container_erro.add_item(ui.TextDisplay("❌ O limite máximo de **5 membros** compartilhando este cargo já foi atingido!"))
             layout = ui.LayoutView()
             layout.add_item(container_erro)
             return await interaction.response.edit_message(view=layout)
 
         try:
             await self.amigo.add_roles(cargo_atualizado, reason=f"Convite VIP aceito (enviado por {self.dono})")
-
+            
             container_sucesso = ui.Container(accent_color=discord.Color.green())
             container_sucesso.add_item(ui.TextDisplay(
-                f"🎉 **Convite Aceito com Sucesso!**\n"
+                f"🎉 **Convite Aceito!**\n"
                 f"{self.amigo.mention} agora possui o cargo {cargo_atualizado.mention} ✨"
             ))
             
-            layout = ui.LayoutView()
-            layout.add_item(container_sucesso)
+            layout_sucesso = ui.LayoutView()
+            layout_sucesso.add_item(container_sucesso)
             
-            await interaction.response.edit_message(view=layout)
+            await interaction.response.edit_message(view=layout_sucesso)
+
+            if self.panel_view:
+                try:
+                    self.panel_view.build_interface()
+
+                    container_notif = ui.Container(accent_color=discord.Color.blue())
+                    container_notif.add_item(ui.TextDisplay(
+                        f"🔔 {self.dono.mention}, {self.amigo.mention} aceitou o seu convite!\n"
+                        f"-# A lista de membros do seu cargo foi atualizada:"
+                    ))
+                    
+                    view_notif = ui.LayoutView()
+                    view_notif.add_item(container_notif)
+                    for child in self.panel_view.children:
+                        view_notif.add_item(child)
+
+                    await interaction.followup.send(view=view_notif, ephemeral=True)
+                except Exception:
+                    pass
 
         except discord.Forbidden:
             await interaction.response.send_message("Não tenho permissão para atribuir este cargo :( consulte um administrador", ephemeral=True)
@@ -411,7 +426,7 @@ class VipInviteView(ui.LayoutView):
             return
 
         container_expired = ui.Container(accent_color=discord.Color.dark_gray())
-        container_expired.add_item(ui.TextDisplay(f"⏰ **Convite Expirado**\nO tempo para aceitar o cargo {self.role.name} esgotou."))
+        container_expired.add_item(ui.TextDisplay(f"⏰ **Convite Expirado**\nO tempo para aceitar o cargo {self.role.name} esgotou, desculpe."))
         layout = ui.LayoutView()
         layout.add_item(container_expired)
         try:
