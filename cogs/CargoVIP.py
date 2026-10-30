@@ -78,11 +78,16 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
             cargo_ancora = interaction.guild.get_role(ID_CARGO_ANCORA)
             if cargo_ancora:
                 posicao_desejada = max(1, cargo_ancora.position - 1)
+                
                 try:
-                    await novo_cargo.edit(position=posicao_desejada)
-                except discord.HTTPException:
-                    pass
+                    positions = {
+                        novo_cargo: posicao_desejada
+                    }
+                    await interaction.guild.edit_role_positions(positions=positions, reason="Posicionando cargo VIP abaixo do cargo âncora.")
+                except Exception as e:
+                    print(f"Erro de hierarquia ao posicionar cargo :( código do erro: {e}")
 
+            # 3. Atribui o cargo ao criador
             await interaction.user.add_roles(novo_cargo, reason="Cargo VIP criado pelo próprio usuário.")
 
             await self.cog.col_vips.update_one(
@@ -559,7 +564,7 @@ class VipRolePanel(ui.LayoutView):
         membros_com_cargo = [m for m in self.role.members if m.id != self.user.id]
         if len(membros_com_cargo) >= 5:
             return await interaction.followup.send(
-                "⚠️ Você atingiu o limite máximo de **5 pessoas** compartilhando seu cargo TwT", 
+                "Você atingiu o limite máximo de **5 pessoas** compartilhando seu cargo TwT", 
                 ephemeral=True
             )
         
