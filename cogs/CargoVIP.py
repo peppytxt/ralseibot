@@ -87,7 +87,6 @@ class CreateRoleModal(ui.Modal, title="Criar Cargo VIP Personalizado"):
                 except Exception as e:
                     print(f"Erro de hierarquia ao posicionar cargo :( código do erro: {e}")
 
-            # 3. Atribui o cargo ao criador
             await interaction.user.add_roles(novo_cargo, reason="Cargo VIP criado pelo próprio usuário.")
 
             await self.cog.col_vips.update_one(
@@ -630,7 +629,6 @@ class VipRoles(commands.Cog):
     async def cargo_painel(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=False)
 
-        # Checagem de VIP/Booster
         user_roles = [role.id for role in interaction.user.roles]
         tem_cargo_vip = any(role_id in self.VIP_ROLE_IDS for role_id in user_roles)
         eh_booster = interaction.user.premium_since is not None
@@ -666,7 +664,7 @@ class VipRoles(commands.Cog):
         view = VipRolePanel(self, interaction.user, role)
         view.build_interface()
 
-        await interaction.followup.send(view=view)
+        await interaction.followup.send(view=view, allowed_mentions=discord.AllowedMentions.none())
 
 async def setup(bot):
     await bot.add_cog(VipRoles(bot))
